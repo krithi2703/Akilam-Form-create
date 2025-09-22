@@ -1,0 +1,559 @@
+import { useState, useEffect } from "react";
+import {
+  Container,
+  Box,
+  Tabs,
+  Tab,
+  TextField,
+  Button,
+  InputAdornment,
+  IconButton,
+  Alert,
+  Typography,
+  Card,
+  CardContent,
+  Divider,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { toast } from 'react-toastify';
+import api from "../axiosConfig";
+import axios from "axios"; // Import axios directly
+import { useNavigate, useLocation, useParams } from "react-router-dom";
+
+const sendWhatsAppMessage = async (mobileNumber, message) => {
+    try {
+        // Use a clean axios instance for external API calls
+        const response = await axios.post("https://wav5.algotechnosoft.com/api/send", {
+            number: mobileNumber.replace('+91', ''), // Remove '+' to ensure correct format like 919876543210
+            type: "text",
+            message: message,
+            instance_id: "68258041C38DE",
+            access_token: "675fece35d27f",
+        });
+        console.log("WhatsApp API response:", response.data); // Log the response from the external API
+        return response.data;
+    } catch (error) {
+        console.error("Failed to send WhatsApp message:", error);
+        throw new Error("WhatsApp message sending failed.");
+    }
+};
+
+function useQuery() {
+  return new URLSearchParams(useLocation().search);
+}
+
+export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
+  const navigate = useNavigate();
+  const query = useQuery();
+  const { formId } = useParams();
+
+  const [tab, setTab] = useState(0);
+  const [forceFormRegister, setForceFormRegister] = useState(false);
+  const [showDistributeMessage, setShowDistributeMessage] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [showEditPreviewDialog, setShowEditPreviewDialog] = useState(false); // New state
+
+  const [registerData, setRegisterData] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+  const [loginData, setLoginData] = useState({ email: "", password: "" });
+  const [formRegData, setFormRegData] = useState({
+    identifier: "",
+  });
+  const [firebaseUID, setFirebaseUID] = useState(null); // New state for Firebase UID
+  const [showPassword, setShowPassword] = useState(false);
+  const [alert, setAlert] = useState(null);
+  const [emailError, setEmailError] = useState("");
+  const [identifierError, setIdentifierError] = useState("");
+
+  const [otp, setOtp] = useState("");
+  const [showOtpDialog, setShowOtpDialog] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [provisionalToken, setProvisionalToken] = useState(null);
+
+  const handleEditPreview = () => {
+    setShowEditPreviewDialog(false);
+    // Navigate to ViewSubmissions.jsx, passing formId and identifier
+    // Assuming ViewSubmissions.jsx expects formId and identifier in the URL or state
+    navigate(`/form/submissions/${formId}?identifier=${formRegData.identifier}`);
+  };
+
+  const formNo = query.get("formNo");
+
+  useEffect(() => {
+    if (formId) {
+      setTab(2);
+      setForceFormRegister(true);
+    } else {
+      setTab(0);
+      setForceFormRegister(false);
+    }
+  }, [formId]);
+
+  const handleChange = (event, newValue) => {
+    setTab(newValue);
+    setAlert(null);
+  };
+
+  const validateEmail = (email) => {
+    const re = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
+    return re.test(String(email).toLowerCase());
+  };
+
+  const validateIdentifier = (identifier) => {
+    const isPhone = /^(\+91)?[0-9]{10}$/.test(identifier);
+    return isPhone;
+  };
+
+  const handleRegisterChange = (e) => {
+    const { name, value } = e.target;
+    setRegisterData({ ...registerData, [name]: value });
+
+    if (name === "email") {
+      if (value && !validateEmail(value)) {
+        setEmailError("Invalid email address.");
+      } else {
+        setEmailError("");
+      }
+    }
+  };
+
+  const handleLoginChange = (e) => {
+    setLoginData({ ...loginData, [e.target.name]: e.target.value });
+  };
+
+  const handleFormRegChange = (e) => {
+    const { name, value } = e.target;
+    setFormRegData({ ...formRegData, [name]: value });
+
+    if (name === 'identifier') {
+        if (value && !validateIdentifier(value)) {
+            setIdentifierError('Please enter a valid 10-digit phone number, optionally with a +91 prefix.');
+        } else {
+            setIdentifierError('');
+        }
+    }
+  };
+
+  const handleSendOtp = async (identifier) => {
+    console.log("Sending OTP to:", identifier);
+    setOtpLoading(true);
+    setOtpError("");
+    
+    try {
+      const phoneNumber = identifier.startsWith('+91') ? identifier : `+91${identifier}`;
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const message = `Your OTP is: ${otpCode}`;
+
+      console.log("Generated OTP:", otpCode);
+      
+      await sendWhatsAppMessage(phoneNumber, message);
+
+      sessionStorage.setItem('currentOtp', otpCode); 
+
+      setShowOtpDialog(true);
+      toast.success("OTP sent successfully via WhatsApp!");
+    } catch (error) {
+      console.error("Error sending OTP via WhatsApp:", error);
+      let errorMessage = "Failed to send OTP via WhatsApp. Please try again later.";
+      
+      setAlert({ type: "error", message: errorMessage });
+      toast.error(errorMessage);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otp || otp.length !== 6) {
+      setOtpError("Please enter a valid 6-digit OTP");
+      return;
+    }
+    
+    setOtpLoading(true);
+    setOtpError("");
+    
+    try {
+      const storedOtp = sessionStorage.getItem('currentOtp');
+
+      if (otp === storedOtp) {
+        await api.post("/formregister/verify-whatsapp-otp", {
+          identifier: formRegData.identifier,
+          otp: otp,
+        });
+        
+        handleFormRegistrationSuccess({ token: provisionalToken }, formRegData.identifier);
+        setShowOtpDialog(false);
+        sessionStorage.removeItem('currentOtp');
+      } else {
+        throw new Error("Invalid OTP. Please try again.");
+      }
+
+    } catch (error) {
+      console.error("Error verifying OTP:", error);
+      let errorMessage = error.message || "Invalid OTP. Please try again.";
+      
+      setOtpError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (type) => {
+    setLoading(true);
+    setAlert(null);
+
+    let url = "";
+    let data = {};
+
+    if (type === "login") {
+      url = "/users/login";
+      data = loginData;
+    } else if (type === "register") {
+      if (emailError) {
+        setAlert({ type: "error", message: "Please enter a valid email address." });
+        setLoading(false);
+        return;
+      }
+      url = "/users/register";
+      data = registerData;
+    } else if (type === "formregister") {
+      if (identifierError) {
+        setAlert({ type: "error", message: "Please enter a valid phone number." });
+        setLoading(false);
+        return;
+      }
+      url = "/formregister/insert";
+      data = {
+        identifier: formRegData.identifier,
+        formId: formId,
+      };
+    }
+
+    if (Object.values(data).some((val) => !val && val !== 0)) {
+      if (type === "formregister" && !data.identifier) {
+        setAlert({ type: "error", message: "Phone No is required." });
+        setLoading(false);
+        return;
+      } else if (type !== "formregister") {
+        setAlert({ type: "error", message: "All fields are required" });
+        setLoading(false);
+        return;
+      } 
+    }
+
+    try {
+      const res = await api.post(url, data);
+      const result = res.data;
+
+      if (type === "login") {
+        sessionStorage.setItem("userId", result.id);
+        sessionStorage.setItem("userName", result.name);
+        sessionStorage.setItem("token", result.token);
+        if (result.userRole) {
+          sessionStorage.setItem("userRole", result.userRole);
+        }
+        sessionStorage.setItem("isFormOnlyUser", "false");
+
+        setIsLoggedIn(true);
+        if (setIsFormOnlyUser) setIsFormOnlyUser(false);
+
+        toast.success(`Welcome, ${result.name}`);
+        setLoginData({ email: "", password: "" });
+        navigate("/home");
+
+      } else if (type === "register") {
+        toast.success("Registration successful! Please log in to continue.");
+        setRegisterData({ name: "", email: "", password: "" });
+        setTab(0);
+
+      } else if (type === "formregister") {
+        if (result.isFormOnlyUserAlreadyRegistered) { // This is a hypothetical flag from the backend
+          setShowEditPreviewDialog(true);
+        } else {
+          setProvisionalToken(result.token);
+          // User is provisionally registered or already exists. Send OTP.
+          await handleSendOtp(formRegData.identifier);
+        }
+      }
+    } catch (err) {
+      console.error("Form registration error:", err);
+      let errorMessage = err.response?.data?.message || err.message || "Something went wrong during registration.";
+      setAlert({ type: "error", message: errorMessage });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFormRegistrationSuccess = (result, identifier) => {
+    sessionStorage.setItem("userId", identifier);
+    sessionStorage.setItem("userName", identifier);
+    sessionStorage.setItem("isFormOnlyUser", "true");
+    sessionStorage.setItem("token", result.token);
+
+    setIsLoggedIn(true);
+    if (setIsFormOnlyUser) setIsFormOnlyUser(true);
+
+    toast.success(`Welcome, ${identifier}`);
+    setFormRegData({ identifier: "" });
+    setShowDistributeMessage(true);
+    setTimeout(() => {
+      navigate(`/form/view/${formId}?formNo=${formNo || 1}`, { replace: true });
+    }, 1500);
+  };
+
+  return (
+    <Container
+      component="main"
+      maxWidth="sm"
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "100vh",
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          width: "100%",
+        }}
+      >
+        <Card elevation={6} sx={{ width: "100%", p: 3 }}>
+          <CardContent>
+            <Typography component="h1" variant="h4" align="center" gutterBottom>
+              {forceFormRegister
+                ? "Register to Access Form"
+                : tab === 0 
+                ? "Sign In"
+                : "Sign Up"}
+            </Typography>
+
+            {alert && (
+              <Alert severity={alert.type} sx={{ mt: 2, mb: 2 }}>
+                {alert.message}
+              </Alert>
+            )}
+
+            {!forceFormRegister && (
+              <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}>
+                <Tabs value={tab} onChange={handleChange} centered  >
+                  <Tab label="Login" sx={{ backgroundColor: tab === 0 ? 'grey.300' : 'transparent' }} />
+                  <Tab label="Register" sx={{ backgroundColor: tab === 1 ? 'grey.300' : 'transparent' }} />
+                </Tabs>
+              </Box>
+            )}
+
+            {tab === 0 && !forceFormRegister && (
+              <Box component="form" sx={{ mt: 1 }}>
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="email"
+                  label="Email Address"
+                  name="email"
+                  autoComplete="email"
+                  value={loginData.email}
+                  onChange={handleLoginChange}
+                />
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  name="password"
+                  label="Password"
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  autoComplete="current-password"
+                  value={loginData.password}
+                  onChange={handleLoginChange}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                <Button
+                  type="button"
+                  fullWidth
+                  variant="contained"
+                  sx={{ mt: 3, mb: 2 }}
+                  onClick={() => handleSubmit("login")}
+                  disabled={loading}
+                >
+                  {loading ? <CircularProgress size={24} /> : "Sign In"}
+                </Button>
+              </Box>
+            )}
+
+            {tab === 1 && !forceFormRegister && (
+              <Box component="form" sx={{ mt: 1 }}>
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="name"
+                  label="Full Name"
+                  name="name"
+                  autoComplete="name"
+                  value={registerData.name}
+                  onChange={handleRegisterChange}
+                />
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="email"
+                  label="Email Address"
+                  name="email"
+                  autoComplete="email"
+                  value={registerData.email}
+                  onChange={handleRegisterChange}
+                  error={!!emailError}
+                  helperText={emailError}
+                />
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  name="password"
+                  label="Password"
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  autoComplete="current-password"
+                  value={registerData.password}
+                  onChange={handleRegisterChange}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                <Button
+                  type="button"
+                  fullWidth
+                  variant="contained"
+                  sx={{ mt: 3, mb: 2 }}
+                  onClick={() => handleSubmit("register")}
+                  disabled={loading}
+                >
+                  {loading ? <CircularProgress size={24} /> : "Sign Up"}
+                </Button>
+              </Box>
+            )}
+
+            {forceFormRegister && (
+              <Box component="form" sx={{ mt: 1 }}>
+                {showDistributeMessage ? (
+                  <Typography
+                    variant="h6"
+                    color="primary"
+                    sx={{ textAlign: "center", mt: 3 }}
+                  >
+                    Verification Successful! Redirecting to form...
+                  </Typography>
+                ) : (
+                  <>
+                    <TextField
+                      margin="normal"
+                      required
+                      fullWidth
+                      id="identifier"
+                      label="Phone No"
+                      name="identifier"
+                      value={formRegData.identifier}
+                      onChange={handleFormRegChange}
+                      error={!!identifierError}
+                      helperText={identifierError || "Please enter a 10-digit phone number."}
+                    />
+                    <Button
+                      type="button"
+                      fullWidth
+                      variant="contained"
+                      sx={{ mt: 3, mb: 2 }}
+                      onClick={() => handleSubmit("formregister")}
+                      disabled={loading || !/^(\+91)?[0-9]{10}$/.test(formRegData.identifier)}
+                    >
+                      {loading ? <CircularProgress size={24} /> : "Register and Continue"}
+                    </Button>
+                  </>
+                )}
+              </Box>
+            )}
+            
+            <div id="recaptcha-container" style={{ marginTop: '1rem' }}></div>
+
+            {!forceFormRegister && (
+              <>
+                <Divider sx={{ my: 2 }} />
+                <Box textAlign="center">
+                  <Button
+                    onClick={() => setTab(tab === 0 ? 1 : 0)}
+                    variant="text"
+                    sx={{ textTransform: "none" }}
+                  >
+                    {tab === 0
+                      ? "Don't have an account? Sign Up"
+                      : "Already have an account? Sign In"}
+                  </Button>
+                </Box>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </Box>
+
+      <Dialog open={showOtpDialog} onClose={() => !otpLoading && setShowOtpDialog(false)}>
+        <DialogTitle>Verify Phone Number</DialogTitle>
+        <DialogContent>
+          <Typography>
+            An OTP has been sent to your phone number. Please enter it below.
+          </Typography>
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            id="otp"
+            label="Enter OTP"
+            name="otp"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            error={!!otpError}
+            helperText={otpError}
+            inputProps={{ maxLength: 6 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowOtpDialog(false)} disabled={otpLoading}>Cancel</Button>
+          <Button onClick={handleVerifyOtp} variant="contained" disabled={otpLoading || otp.length !== 6}>
+            {otpLoading ? <CircularProgress size={24} /> : "Verify"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Container>
+  );
+}

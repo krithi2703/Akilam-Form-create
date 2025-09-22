@@ -1,0 +1,313 @@
+import React, { useState, useEffect, useRef } from "react";
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  TextField,
+  Button,
+  Alert,
+  CircularProgress,
+  Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from "@mui/material";
+import api from "../axiosConfig";
+import { useNavigate, useLocation } from "react-router-dom";
+import { toast } from "react-toastify";
+
+export default function MasterPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [formId, setFormId] = useState(null);
+  const [formName, setFormName] = useState("");
+  const [createdDate, setCreatedDate] = useState("");
+  const [enddate, setEnddate] = useState("");
+  const [fee, setFee] = useState("");
+  const [activeStatus, setActiveStatus] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [formNameError, setFormNameError] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const isSubmitting = useRef(false);
+
+  // ✅ Read user details from sessionStorage
+  const userName = sessionStorage.getItem("userName");
+  const userId = sessionStorage.getItem("userId");
+
+  // ---------------- Check authentication on component mount ----------------
+  useEffect(() => {
+    const token = sessionStorage.getItem("token");
+    if (!token) {
+      toast.error("User not authenticated. Please log in.");
+      navigate("/login");
+      return;
+    }
+
+    const params = new URLSearchParams(location.search);
+    const editId = params.get("editId");
+
+    if (editId) {
+      setFormId(editId);
+      fetchForm(editId);
+    } else {
+      const today = new Date().toISOString().split("T")[0];
+      setCreatedDate(today);
+    }
+  }, [location.search, navigate]);
+
+  // ---------------- Fetch form details for editing ----------------
+  const fetchForm = async (id) => {
+    try {
+      setLoading(true);
+      const res = await api.get(`/formmaster/${id}`);
+
+      if (res.status === 200) {
+        const form = res.data;
+        setFormName(form.FormName);
+        setCreatedDate(form.CreatedDate);
+        setEnddate(form.Enddate || "");
+        setFee(form.Fee || "");
+        setActiveStatus(form.Active);
+      }
+    } catch (err) {
+      console.error("Fetch form error:", err);
+      if (err.response?.status === 401) {
+        toast.error("Session expired. Please log in again.");
+        sessionStorage.clear();
+        navigate("/login");
+      } else {
+        toast.error(err.response?.data?.error || "Failed to fetch form for editing");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---------------- Validate form ----------------
+  const validateForm = () => {
+    let isValid = true;
+
+    if (!formName.trim()) {
+      setFormNameError("Form Name is required.");
+      isValid = false;
+    } else {
+      setFormNameError("");
+    }
+
+    if (!createdDate) {
+      toast.error("Created Date is required.");
+      isValid = false;
+    }
+
+    if (createdDate && enddate && new Date(enddate) < new Date(createdDate)) {
+      toast.error("End Date cannot be before Created Date.");
+      isValid = false;
+    }
+
+    return isValid;
+  };
+
+  // ---------------- Handle form submit ----------------
+  const handleSubmit = async () => {
+    if (isSubmitting.current) return;
+    if (!validateForm()) return;
+
+    isSubmitting.current = true;
+    setLoading(true);
+
+    try {
+      const formData = {
+        formName: formName.trim(),
+        createdDate,
+        enddate: enddate || null,
+        fee: fee ? parseFloat(fee) : null,
+        // ⚠️ No need to send UserId here — backend reads from token
+      };
+
+      if (formId) {
+        const res = await api.put(`/formmaster/${formId}`, formData);
+        if (res.status === 200) {
+          toast.success("Form updated successfully!");
+          navigate("/mastertable");
+        }
+      } else {
+        const res = await api.post("/formmaster", formData);
+        if (res.status === 201) {
+          toast.success("Form submitted successfully!");
+          navigate("/mastertable");
+        }
+      }
+    } catch (err) {
+      console.error("Submit error:", err);
+      if (err.response?.status === 401) {
+        toast.error("Session expired. Please log in again.");
+        sessionStorage.clear();
+        navigate("/login");
+      } else {
+        toast.error(err.response?.data?.error || "Error submitting form");
+      }
+    } finally {
+      setLoading(false);
+      isSubmitting.current = false;
+    }
+  };
+
+  // ---------------- Soft delete ----------------
+  const handleSoftDelete = async () => {
+    try {
+      setLoading(true);
+      const res = await api.put(`/formmaster/soft-delete/${formId}`);
+
+      if (res.status === 200) {
+        toast.success("Form soft deleted successfully!");
+        setDeleteDialogOpen(false);
+        navigate("/mastertable");
+      }
+    } catch (err) {
+      console.error("Delete error:", err);
+      if (err.response?.status === 401) {
+        toast.error("Session expired. Please log in again.");
+        sessionStorage.clear();
+        navigate("/login");
+      } else {
+        toast.error(err.response?.data?.error || "Failed to delete form");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh" p={2}>
+      <Card sx={{ width: "100%", maxWidth: 500, borderRadius: "16px", boxShadow: 3 }}>
+        <CardContent sx={{ textAlign: "center" }}>
+          <Typography variant="h5" gutterBottom>
+            {formId ? "Edit Form" : "Form Master"}
+          </Typography>
+
+          {activeStatus === 0 && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              This form has been deactivated and cannot be edited.
+            </Alert>
+          )}
+
+          <Stack spacing={2} sx={{ width: "100%" }}>
+            <TextField
+              label="Form Name"
+              fullWidth
+              value={formName}
+              onChange={(e) => {
+                setFormName(e.target.value);
+                if (e.target.value.trim()) {
+                  setFormNameError("");
+                }
+              }}
+              required
+              error={!!formNameError}
+              helperText={formNameError}
+              disabled={activeStatus === 0 || loading}
+            />
+
+            {/* ✅ Show Username, not UserId */}
+            <TextField
+              label="User"
+              fullWidth
+              value={userName || ""}
+              InputProps={{ readOnly: true }}
+              disabled={loading}
+            />
+
+            <TextField
+              label="Created Date"
+              type="date"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              value={createdDate}
+              onChange={(e) => setCreatedDate(e.target.value)}
+              required
+              disabled={activeStatus === 0 || loading}
+            />
+
+            <TextField
+              label="End Date"
+              type="date"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              value={enddate}
+              onChange={(e) => setEnddate(e.target.value)}
+              disabled={activeStatus === 0 || loading}
+            />
+
+            <TextField
+              label="Fee"
+              type="number"
+              fullWidth
+              value={fee}
+              onChange={(e) => setFee(e.target.value.replace(/[^0-9.]/g, ""))}
+              inputProps={{ min: 0, step: 0.01 }}
+              disabled={activeStatus === 0 || loading}
+            />
+
+            <Button
+              variant="contained"
+              color="primary"
+              fullWidth
+              disabled={loading || activeStatus === 0}
+              onClick={handleSubmit}
+            >
+              {loading ? <CircularProgress size={24} /> : formId ? "Update" : "Submit"}
+            </Button>
+
+            {formId && activeStatus === 1 && (
+              <Button
+                variant="outlined"
+                color="error"
+                fullWidth
+                onClick={() => setDeleteDialogOpen(true)}
+                disabled={loading}
+              >
+                Soft Delete
+              </Button>
+            )}
+
+            <Button
+              variant="text"
+              color="secondary"
+              fullWidth
+              onClick={() => navigate("/formtable")}
+              disabled={loading}
+            >
+              Back to List
+            </Button>
+          </Stack>
+        </CardContent>
+      </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => !loading && setDeleteDialogOpen(false)}>
+        <DialogTitle>Confirm Soft Delete</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to soft delete this form? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={loading}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSoftDelete}
+            color="error"
+            disabled={loading}
+            startIcon={loading && <CircularProgress size={16} />}
+          >
+            {loading ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+}
