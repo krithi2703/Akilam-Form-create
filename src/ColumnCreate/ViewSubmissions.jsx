@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 // Helper to read query params
 function useQuery() {
@@ -39,7 +39,10 @@ import {
   FormControlLabel,
   AppBar,
   Toolbar,
-  useTheme
+  useTheme,
+  RadioGroup,
+  Radio,
+  FormLabel
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -56,6 +59,7 @@ const ViewSubmissions = () => {
   const navigate = useNavigate();
   const query = useQuery();
   const theme = useTheme();
+  const { formId: formIdFromParams } = useParams();
 
   // Prioritize state, then fallback to query params
   const formIdFromState = location.state?.formId;
@@ -64,7 +68,7 @@ const ViewSubmissions = () => {
   const formIdFromQuery = query.get("formId");
   const formNoFromQuery = query.get("formNo");
 
-  const formId = formIdFromState || formIdFromQuery;
+  const formId = formIdFromParams || formIdFromState || formIdFromQuery;
   const formNo = formNoFromState || formNoFromQuery;
 
   const [submissions, setSubmissions] = useState([]);
@@ -82,13 +86,14 @@ const ViewSubmissions = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editSubmission, setEditSubmission] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [editColumnOptions, setEditColumnOptions] = useState({});
 
   const userId = sessionStorage.getItem('userId');
   const isFormOnlyUser = sessionStorage.getItem('isFormOnlyUser') === 'true';
 
   const handleLogout = () => {
     localStorage.clear();
-    navigate(`/${formId}`, { replace: true });
+    navigate(`/form/view/${formId}`, { replace: true });
   };
 
   const fetchData = async () => {
@@ -157,9 +162,45 @@ const ViewSubmissions = () => {
   };
 
   // Edit
-  const handleEditClick = (submission) => {
+  const handleEditClick = async (submission) => {
     setEditSubmission({ ...submission }); // clone for editing
-    setEditDialogOpen(true);
+
+    // Fetch options for select, radio, checkbox
+    try {
+      const optionsPromises = columns.map(async (col) => {
+        const dataType = col.DataType?.toLowerCase();
+        if (dataType === 'select' || dataType === 'radio' || dataType === 'checkbox') {
+          const endpoint = 
+            dataType === 'select' ? `/dropdown-dtl/${col.ColId}` :
+            dataType === 'radio' ? `/radiobox-dtl/${col.ColId}` :
+            `/checkbox-dtl/${col.ColId}`;
+          
+          const res = await api.get(endpoint);
+
+          const options = 
+            dataType === 'select' ? res.data.map(item => item.DropdownName) :
+            dataType === 'radio' ? res.data.map(item => item.RadioBoxName) :
+            res.data.map(item => item.CheckBoxName);
+
+          return { colId: col.ColId, options };
+        }
+        return null;
+      });
+
+      const fetchedOptions = await Promise.all(optionsPromises);
+      const newColumnOptions = {};
+      fetchedOptions.forEach(item => {
+        if (item) {
+          newColumnOptions[item.colId] = item.options;
+        }
+      });
+      setEditColumnOptions(newColumnOptions);
+      setEditDialogOpen(true); // Open dialog after options are fetched
+
+    } catch (err) {
+      console.error("Error fetching options for edit dialog:", err);
+      toast.error("Failed to load options for editing.");
+    }
   };
 
   const handleEditChange = (colId, value) => {
@@ -177,8 +218,9 @@ const ViewSubmissions = () => {
 
     setSaving(true);
     try {
+      const submissionId = editSubmission.SubmissionId.toString().replace(':', '/');
       await api.put(
-        `/formvalues/values/${editSubmission.SubmissionId}`,
+        `/formvalues/values/${submissionId}`,
         {
           formId: parseInt(formId), // Ensure formId is parsed as integer here too
           values: editSubmission.values
@@ -200,8 +242,9 @@ const ViewSubmissions = () => {
 
   // Helper function to render input based on column type
   const renderEditInput = (col) => {
-    const { ColId, ColumnName, DataType, Options } = col;
+    const { ColId, ColumnName, DataType } = col;
     const value = editSubmission?.values[ColId] || '';
+    const options = editColumnOptions[ColId] || [];
 
     switch (DataType?.toLowerCase()) {
       case 'number':
@@ -217,21 +260,32 @@ const ViewSubmissions = () => {
         );
       
       case 'boolean':
+      case 'checkbox':
         return (
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={value === '1' || value === 'true' || value === true}
-                onChange={(e) => handleEditChange(ColId, e.target.checked ? '1' : '0')}
+          <FormControl component="fieldset" fullWidth sx={{ mb: 2 }}>
+            <FormLabel component="legend">{ColumnName}</FormLabel>
+            {options.map((option) => (
+              <FormControlLabel
+                key={option}
+                control={
+                  <Checkbox
+                    checked={editSubmission?.values[ColId]?.includes(option) || false}
+                    onChange={(e) => {
+                      const currentValues = editSubmission?.values[ColId] || [];
+                      const newValues = e.target.checked
+                        ? [...currentValues, option]
+                        : currentValues.filter((val) => val !== option);
+                      handleEditChange(ColId, newValues);
+                    }}
+                  />
+                }
+                label={option}
               />
-            }
-            label={ColumnName}
-            sx={{ mb: 2 }}
-          />
+            ))}
+          </FormControl>
         );
       
-      case 'dropdown':
-        const options = Options ? Options.split(',') : [];
+      case 'select':
         return (
           <FormControl fullWidth sx={{ mb: 2 }}>
             <InputLabel>{ColumnName}</InputLabel>
@@ -241,11 +295,33 @@ const ViewSubmissions = () => {
               onChange={(e) => handleEditChange(ColId, e.target.value)}
             >
               {options.map((option) => (
-                <MenuItem key={option} value={option.trim()}>
-                  {option.trim()}
+                <MenuItem key={option} value={option}>
+                  {option}
                 </MenuItem>
               ))}
             </Select>
+          </FormControl>
+        );
+      
+      case 'radio':
+        return (
+          <FormControl component="fieldset" fullWidth sx={{ mb: 2 }}>
+            <FormLabel component="legend">{ColumnName}</FormLabel>
+            <RadioGroup
+              aria-label={ColumnName}
+              name={ColId}
+              value={value}
+              onChange={(e) => handleEditChange(ColId, e.target.value)}
+            >
+              {options.map((option) => (
+                <FormControlLabel
+                  key={option}
+                  value={option}
+                  control={<Radio />}
+                  label={option}
+                />
+              ))}
+            </RadioGroup>
           </FormControl>
         );
       
@@ -408,8 +484,15 @@ const ViewSubmissions = () => {
                 <Grid item xs />
                 <Grid item>
                   <Tooltip title="Refresh data">
-                    <IconButton onClick={fetchData} size="large">
-                      <Refresh />
+                    <IconButton 
+                      onClick={fetchData} 
+                      size="large"
+                      sx={{
+                        color: isFormOnlyUser ? 'primary.main' : 'inherit',
+                        transform: isFormOnlyUser ? 'scale(1.2)' : 'none', // Increase size for form-only user
+                      }}
+                    >
+                      <Refresh sx={{ fontSize: isFormOnlyUser ? '2rem' : '1.5rem' }} hidden={isFormOnlyUser} />
                     </IconButton>
                   </Tooltip>
                 </Grid>
@@ -443,27 +526,36 @@ const ViewSubmissions = () => {
             <Box sx={{ width: '100%', overflow: 'hidden' }}>
               {!error && (
                 <TableContainer component={Paper} elevation={0} sx={{
-                  maxHeight: 'calc(100vh - 250px)', // Adjusted height slightly
+                  maxHeight: 'calc(100vh - 250px)', 
                   borderRadius: 0,
+                  borderRight: isFormOnlyUser ? '3px solid #999' : 'none', // Thicker right border
+                  borderLeft: isFormOnlyUser ? '3px solid #999' : 'none', // Thicker left border
                   '& .MuiTableCell-head': {
                     fontWeight: 'bold',
-                    backgroundColor: 'action.hover',
+                    backgroundColor: isFormOnlyUser ? '#e9ecef' : 'action.hover', // Header color
                     borderBottom: '2px solid',
                     borderColor: 'divider',
                   },
-                  '& .MuiTableRow-root:nth-of-type(odd)': { // Zebra striping
+                  '& .MuiTableRow-root:nth-of-type(odd)': { 
                     backgroundColor: 'action.hover',
                   },
                   '& .MuiTableCell-root': {
                     borderBottom: '1px solid',
                     borderColor: 'divider',
-                    padding: '12px 16px', // Adjusted padding
+                    padding: '12px 16px', 
+                    borderRight: isFormOnlyUser ? '1px solid #dee2e6' : 'none', // Vertical line
+                    borderLeft: isFormOnlyUser ? '1px solid #dee2e6' : 'none', // Vertical line
                   },
-                }}>
+                  '& .MuiTableCell-root:last-child': {
+                    borderRight: 'none',
+                  },
+                  '& .MuiTableCell-root:first-child': {
+                    borderLeft: 'none',
+                  }                }}>
                   <Table stickyHeader aria-label="submissions table">
                     <TableHead>
                       <TableRow>
-                        <TableCell width="100">ID</TableCell>
+                        
                         {columns.map((col) => (
                           <TableCell key={col.ColId}>{col.ColumnName}</TableCell>
                         ))}
@@ -474,7 +566,7 @@ const ViewSubmissions = () => {
                       {submissions.length > 0 ? (
                         submissions.map((submission) => (
                           <TableRow key={submission.SubmissionId} hover>
-                            <TableCell>#{submission.SubmissionId}</TableCell>
+                            
                             {columns.map((col) => (
                               <TableCell key={col.ColId}>
                                 {submission.values[col.ColId] || (
@@ -496,21 +588,23 @@ const ViewSubmissions = () => {
                                   </IconButton>
                                 </Tooltip>
                               )}
-                              <Tooltip title="Edit submission">
-                                <IconButton 
-                                  size="small" 
-                                  onClick={() => handleEditClick(submission)}
-                                  sx={{ color: 'secondary.main' }}
-                                >
-                                  <Edit fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
+                              {isFormOnlyUser && (
+                                <Tooltip title="Edit submission">
+                                  <IconButton 
+                                    size="small" 
+                                    onClick={() => handleEditClick(submission)}
+                                    sx={{ color: 'secondary.main' }}
+                                  >
+                                    <Edit fontSize="small"/>
+                                  </IconButton>
+                                </Tooltip>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={columns.length + 2} align="center" sx={{ p: 4 }}>
+                          <TableCell colSpan={columns.length + 1} align="center" sx={{ p: 4 }}>
                             <Typography variant="h6" color="text.secondary">No submissions yet</Typography>
                           </TableCell>
                         </TableRow>

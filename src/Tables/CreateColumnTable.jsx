@@ -32,7 +32,7 @@ import {
 
 // import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import axios from "axios";
+import api from "../axiosConfig";
 import { toast } from 'react-toastify';
 
 const CreateColumnTable = () => {
@@ -65,8 +65,6 @@ const CreateColumnTable = () => {
   ];
 
   const userId = sessionStorage.getItem("userId");
-  const userName = sessionStorage.getItem("userName");
-  const token = sessionStorage.getItem("token");
 
   useEffect(() => {
     if (!userId) {
@@ -90,9 +88,7 @@ const CreateColumnTable = () => {
   const fetchForms = async () => {
     try {
       setLoading(true);
-      const response = await axios.get("http://localhost:5000/api/formdetails/show", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get("/formdetails/show");
       
       // Extract unique forms from the response
       const uniqueForms = [];
@@ -124,9 +120,8 @@ const CreateColumnTable = () => {
   const fetchFormColumns = async (formId, formNo) => {
     try {
       setLoading(true);
-      const response = await axios.get(
-        `http://localhost:5000/api/formdetails/user/form-columns?formId=${formId}&formNo=${formNo}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+      const response = await api.get(
+        `/formdetails/user/form-columns?formId=${formId}&formNo=${formNo}`
       );
       setFormColumns(response.data);
       console.log(`Fetched columns for FormId: ${formId}, FormNo: ${formNo}:`, response.data);
@@ -166,9 +161,8 @@ const CreateColumnTable = () => {
   const handleEditConfirm = async () => {
     if (!editingColumn) return;
     try {
-      await axios.put(`http://localhost:5000/api/formdetails/sequence/${editingColumn.Id}`, 
-        { sequenceNo: newSequence },
-        { headers: { Authorization: `Bearer ${token}` } }
+      await api.put(`/formdetails/sequence/${editingColumn.Id}`, 
+        { sequenceNo: newSequence }
       );
       toast.success("Column sequence updated successfully!");
       fetchFormColumns(selectedForm.id, selectedForm.no); // Refresh
@@ -182,9 +176,7 @@ const CreateColumnTable = () => {
   const handleDeleteClick = async (id) => {
     try {
       // First, check if the column is in use
-      const response = await axios.get(`http://localhost:5000/api/formdetails/usage/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get(`/formdetails/usage/${id}`);
 
       if (response.data.InUse) {
         // If in use, show the "cannot delete" dialog
@@ -209,9 +201,7 @@ const CreateColumnTable = () => {
     try {
       if (!deletingColumnId) return;
 
-      await axios.delete(`http://localhost:5000/api/formdetails/${deletingColumnId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.delete(`/formdetails/${deletingColumnId}`);
 
       // Refresh
       if (selectedForm.id && selectedForm.no) {
@@ -235,9 +225,7 @@ const CreateColumnTable = () => {
 
     try {
       // Fetch the next available FormNo for the selected FormId
-      const response = await axios.get(`http://localhost:5000/api/formdetails/next-formno/${selectedForm.id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get(`/formdetails/next-formno/${selectedForm.id}`);
       const nextFormNo = response.data.nextFormNo;
 
       // Navigate to the details page to add columns to this new version
@@ -256,14 +244,14 @@ const CreateColumnTable = () => {
   }
 
   return (
-    <Box sx={{ p: 3, bgcolor: 'background.default', minHeight: '100vh' }}>
+    <Box sx={{ p: { xs: 1, sm: 2, md: 3 }, bgcolor: 'background.default', minHeight: '100vh' }}>
       {/* Header */}
       <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 3, bgcolor: 'background.paper' }}>
-        <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+        <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: { xs: 'column', sm: 'row' } }}>
+          <Typography variant={{ xs: 'h5', sm: 'h4' }} component="h1" sx={{ fontWeight: 'bold', color: 'primary.main', mb: { xs: 2, sm: 0 } }}>
             Form Details
           </Typography>
-          <Box sx={{ display: "flex", gap: 2 }}>
+          <Box sx={{ display: "flex", gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
 
             <Button
               variant="contained"
@@ -276,7 +264,7 @@ const CreateColumnTable = () => {
             <Button
               variant="contained"
               color="success"
-              onClick={() => navigate("/view-submissions", { state: { formId: selectedForm.id, formNo: selectedForm.no } })}
+              onClick={() => navigate(`/form/submissions/${selectedForm.id}`, { state: { formNo: selectedForm.no } })}
               disabled={!selectedForm.id}
             >
               View Submissions
@@ -320,40 +308,42 @@ const CreateColumnTable = () => {
             Columns for {forms.find(f => f.FormId == selectedForm.id && f.FormNo == selectedForm.no)?.FormName} (FormNo: {selectedForm.no})
           </Typography>
           <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3, bgcolor: 'background.paper' }}>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ backgroundColor: "primary.main" }}>
-                  <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>S.No.</TableCell>
-                  <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Column Name</TableCell>
-                  <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Data Type</TableCell>
-                  <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Sequence No</TableCell>
-                  <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }} hidden>User Name</TableCell>
-                  <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }} align="center">Actions</TableCell>
-                </TableRow>
-              </TableHead>
+            <Box sx={{ overflowX: 'auto' }}>
+              <Table sx={{ minWidth: 650 }}>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: "primary.main" }}>
+                    <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>S.No.</TableCell>
+                    <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Column Name</TableCell>
+                    <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Data Type</TableCell>
+                    <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Sequence No</TableCell>
+                    <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }} hidden>User Name</TableCell>
+                    <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }} align="center">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
 
-              <TableBody>
-                {formColumns.length > 0 ? formColumns.map((col, index) => (
-                  <TableRow key={col.Id} sx={{ "&:hover": { backgroundColor: "action.hover" } }}>
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell>{col.ColumnName}</TableCell>
-                    <TableCell><Chip label={col.DataType} size="small" variant="outlined" color="primary" /></TableCell>
-                    <TableCell>{col.SequenceNo}</TableCell>
-                    <TableCell hidden>{col.UserName}</TableCell>
-                    <TableCell align="center">
-                      <IconButton color="primary" onClick={() => handleEditClick(col)}><EditIcon /></IconButton>
-                      {/* <IconButton color="error" onClick={() => handleDeleteClick(col.Id)}><DeleteIcon /></IconButton> */}
-                    </TableCell>
-                  </TableRow>
-                )) : (
-                  <TableRow>
-                    <TableCell colSpan={5} align="center">
-                      <Typography variant="subtitle1" sx={{ p: 3 }}>No columns found for the selected form.</Typography>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                <TableBody>
+                  {formColumns.length > 0 ? formColumns.map((col, index) => (
+                    <TableRow key={col.Id} sx={{ "&:hover": { backgroundColor: "action.hover" } }}>
+                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>{col.ColumnName}</TableCell>
+                      <TableCell><Chip label={col.DataType} size="small" variant="outlined" color="primary" /></TableCell>
+                      <TableCell>{col.SequenceNo}</TableCell>
+                      <TableCell hidden>{col.UserName}</TableCell>
+                      <TableCell align="center">
+                        <IconButton color="primary" onClick={() => handleEditClick(col)}><EditIcon /></IconButton>
+                        {/* <IconButton color="error" onClick={() => handleDeleteClick(col.Id)}><DeleteIcon /></IconButton> */}
+                      </TableCell>
+                    </TableRow>
+                  )) : (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center">
+                        <Typography variant="subtitle1" sx={{ p: 3 }}>No columns found for the selected form.</Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </Box>
           </TableContainer>
         </>
       )}

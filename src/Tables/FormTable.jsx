@@ -187,19 +187,32 @@ export default function FormTable() {
   }
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" sx={{ fontWeight: "bold", color: "primary.main" }}>
+    <Box sx={{ p: { xs: 1, sm: 2, md: 4 } }}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+        flexDirection={{ xs: 'column', sm: 'row' }}
+      >
+        <Typography
+          variant={{ xs: 'h5', sm: 'h4' }}
+          sx={{ fontWeight: 'bold', color: 'primary.main', mb: { xs: 2, sm: 0 } }}
+        >
           All Columns
         </Typography>
-        <Stack direction="row" spacing={2}>
-         
-            <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddColumn}>
-              Add Column
-            </Button> <Button
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleAddColumn}
+          >
+            Add Column
+          </Button>
+          <Button
             variant="contained"
             color="success"
-            onClick={() => navigate("/masterpage")}
+            onClick={() => navigate('/masterpage')}
           >
             FormName
           </Button>
@@ -207,84 +220,114 @@ export default function FormTable() {
       </Box>
 
       <TableContainer component={Paper} elevation={2} sx={{ borderRadius: 2 }}>
-        <Table>
-          <TableHead sx={{ backgroundColor: "primary.light" }}>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 700, color: "white" }}>S.No</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: "white" }}>Column Name</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: "white" }}>Data Type</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: "white" }} hidden>Created By</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: "white" }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: "white" }}>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {columns.length > 0 ? (
-              columns.map((col, idx) => (
-                <TableRow key={col.ColumnId || idx} hover>
-                  <TableCell>{idx + 1}</TableCell>
-                  <TableCell>
-                    <Typography fontWeight="medium">{col.ColumnName}</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip label={col.DataType} size="small" color="primary" variant="outlined" />
-                  </TableCell>
-                  <TableCell hidden>{col.UserName}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={col.IsActive ? "Active" : "Inactive"}
-                      size="small"
-                      color={col.IsActive ? "success" : "error"}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Stack direction="row" spacing={1}>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleEditColumn(col)}
-                        color="primary"
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDeleteColumn(col.ColumnId)}
-                        color="error"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Stack>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
+        <Box sx={{ overflowX: 'auto' }}>
+          <Table sx={{ minWidth: 650 }}>
+            <TableHead sx={{ backgroundColor: 'primary.light' }}>
               <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    No columns found.
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={handleAddColumn}
-                    sx={{ mt: 1 }}
-                  >
-                    Add your first column
-                  </Button>
+                <TableCell sx={{ fontWeight: 700, color: 'white' }}>
+                  S.No
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, color: 'white' }}>
+                  Column Name
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, color: 'white' }}>
+                  Data Type
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, color: 'white' }} hidden>
+                  Created By
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, color: 'white' }}>
+                  Status
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700, color: 'white' }}>
+                  Actions
                 </TableCell>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {columns.length > 0 ? (
+                columns.map((col, idx) => (
+                  <TableRow key={col.ColumnId || idx} hover>
+                    <TableCell>{idx + 1}</TableCell>
+                    <TableCell>
+                      <Typography fontWeight="medium">
+                        {col.ColumnName}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={col.DataType}
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                      />
+                    </TableCell>
+                    <TableCell hidden>{col.UserName}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={col.IsActive ? 'Active' : 'Inactive'}
+                        size="small"
+                        color={col.IsActive ? 'success' : 'error'}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={1}>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleEditColumn(col)}
+                          color="primary"
+                        >
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDeleteColumn(col.ColumnId)}
+                          color="error"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      gutterBottom
+                    >
+                      No columns found.
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      startIcon={<AddIcon />}
+                      onClick={handleAddColumn}
+                      sx={{ mt: 1 }}
+                    >
+                      Add your first column
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Box>
       </TableContainer>
 
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>
-          {editingColumn ? "Edit Column" : "Add New Column"}
+          {editingColumn ? 'Edit Column' : 'Add New Column'}
           <IconButton
             aria-label="close"
             onClick={() => setDialogOpen(false)}
-            sx={{ position: "absolute", right: 8, top: 8 }}
+            sx={{ position: 'absolute', right: 8, top: 8 }}
           >
             <CloseIcon />
           </IconButton>
@@ -294,7 +337,7 @@ export default function FormTable() {
             <Typography
               variant="subtitle1"
               gutterBottom
-              sx={{ fontWeight: "bold", color: "primary.main" }}
+              sx={{ fontWeight: 'bold', color: 'primary.main' }}
             >
               Column Details
             </Typography>
@@ -302,7 +345,9 @@ export default function FormTable() {
               label="Column Name"
               fullWidth
               value={newColumn.ColumnName}
-              onChange={(e) => setNewColumn({ ...newColumn, ColumnName: e.target.value })}
+              onChange={(e) =>
+                setNewColumn({ ...newColumn, ColumnName: e.target.value })
+              }
               margin="normal"
               required
               placeholder="Enter column name"
@@ -312,12 +357,17 @@ export default function FormTable() {
               select
               fullWidth
               value={newColumn.DataType}
-              onChange={(e) => setNewColumn({ ...newColumn, DataType: e.target.value })}
+              onChange={(e) =>
+                setNewColumn({ ...newColumn, DataType: e.target.value })
+              }
               margin="normal"
             >
               <MenuItem value="text">Text</MenuItem>
               <MenuItem value="number">Number</MenuItem>
               <MenuItem value="date">Date</MenuItem>
+              <MenuItem value="select">Dropdown</MenuItem>
+              <MenuItem value="checkbox">Checkbox</MenuItem>
+              <MenuItem value="radio">Radio</MenuItem>
               <MenuItem value="flg">Flag</MenuItem>
             </TextField>
           </Box>
@@ -326,8 +376,21 @@ export default function FormTable() {
           <Button onClick={() => setDialogOpen(false)} variant="outlined">
             Cancel
           </Button>
-          <Button onClick={handleSaveColumn} variant="contained" disabled={saving || !newColumn.ColumnName}>
-            {saving ? <CircularProgress size={20} color="inherit" /> : editingColumn ? "Update" : "Create"} Column
+          <Button
+            onClick={handleSaveColumn}
+            variant="contained"
+            disabled={saving || !newColumn.ColumnName}
+          >
+            {saving ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : editingColumn ? (
+              'Update'
+            ) : (
+              'Create'
+            )}
+            {' '
+            }
+            Column
           </Button>
         </DialogActions>
       </Dialog>
@@ -346,7 +409,11 @@ export default function FormTable() {
           <Button onClick={() => setDeleteDialogOpen(false)} variant="outlined">
             Cancel
           </Button>
-          <Button onClick={confirmDeleteColumn} variant="contained" color="error">
+          <Button
+            onClick={confirmDeleteColumn}
+            variant="contained"
+            color="error"
+          >
             Delete
           </Button>
         </DialogActions>
@@ -356,7 +423,7 @@ export default function FormTable() {
         open={!!success}
         autoHideDuration={4000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert severity="success" onClose={handleCloseSnackbar}>
           {success}
@@ -366,7 +433,7 @@ export default function FormTable() {
         open={!!error}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert severity="error" onClose={handleCloseSnackbar}>
           {error}

@@ -17,7 +17,8 @@ import Home from './Home/Home';
 import Navbar from './SideBar/NavBar';
 import Sidebar from './SideBar/Sidebar';
 import ViewSubmissions from './ColumnCreate/ViewSubmissions';
-import UserList from './Registration/UserList'; // Import the new UserList componentimport axios from "axios";
+import UserList from './Registration/UserList'; // Import the new UserList component
+import axios from "axios";
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -88,6 +89,7 @@ function App() {
               darkMode={darkMode}
               handleLogout={handleLogout}
               showSidebarToggle={!isFormOnlyUser}
+              toggleSidebar={toggleSidebar}
             />
           )}
           <Box sx={{ display: 'flex' }}>
@@ -110,6 +112,7 @@ function App() {
                     ? 'calc(100% - 240px)'
                     : '100%',
                 ml: shouldShowLayout && sidebarOpen ? '240px' : 0,
+                textAlign: 'left',
               }}
             >
               <Routes>

@@ -1,4 +1,3 @@
-// SideBar/NavBar.jsx
 import React, { useEffect, useState } from 'react';
 import {
   AppBar,
@@ -9,11 +8,13 @@ import {
   useTheme,
   Box,
   Snackbar,
-  Alert
+  Alert,
+  useMediaQuery // Import useMediaQuery
 } from '@mui/material';
 import {
   Brightness4 as DarkIcon,
   Brightness7 as LightIcon,
+  Menu as MenuIcon // Import MenuIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
@@ -22,9 +23,11 @@ export default function Navbar({
   darkMode,
   handleLogout,
   successMessage,
-  setSuccessMessage
+  setSuccessMessage,
+  toggleSidebar // Add toggleSidebar prop
 }) {
   const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm')); // Detect small screens
   const navigate = useNavigate();
   const [userName, setUserName] = useState('');
 
@@ -54,14 +57,24 @@ export default function Navbar({
   return (
     <AppBar position="fixed" sx={{ zIndex: theme.zIndex.drawer + 1 }}>
       <Toolbar>
-        <Typography variant="h6" component="div">
+        <IconButton
+          color="inherit"
+          aria-label="open drawer"
+          edge="start"
+          onClick={toggleSidebar}
+          sx={{ mr: 2, display: { md: 'none' } }} // Show only on mobile
+        >
+          <MenuIcon />
+        </IconButton>
+        <Typography variant="h6" component="div" noWrap={isSmallScreen}>
           My Form Creation
         </Typography>
 
         {userName && (
           <Typography
             variant="body1"
-            sx={{ fontWeight: 'bold', ml: 15 }}
+            sx={{ fontWeight: 'bold', ml: isSmallScreen ? 1 : 15 }}
+            noWrap={isSmallScreen}
           >
             Welcome, {userName}
           </Typography>
@@ -69,7 +82,7 @@ export default function Navbar({
 
         <Box sx={{ flexGrow: 1 }} />
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: isSmallScreen ? 1 : 2 }}>
           <IconButton color="inherit" onClick={toggleDarkMode}>
             {darkMode ? <LightIcon /> : <DarkIcon />}
           </IconButton>

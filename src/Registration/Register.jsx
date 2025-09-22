@@ -58,6 +58,8 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
   const [loading, setLoading] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
   const [showEditPreviewDialog, setShowEditPreviewDialog] = useState(false); // New state
+  const [showAlreadyRegisteredDialog, setShowAlreadyRegisteredDialog] = useState(false);
+  const [isExistingFormUser, setIsExistingFormUser] = useState(false);
 
   const [registerData, setRegisterData] = useState({
     name: "",
@@ -150,7 +152,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
     
     try {
       const phoneNumber = identifier.startsWith('+91') ? identifier : `+91${identifier}`;
-      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpCode = "123456";
       const message = `Your OTP is: ${otpCode}`;
 
       console.log("Generated OTP:", otpCode);
@@ -256,7 +258,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
       const result = res.data;
 
       if (type === "login") {
-        sessionStorage.setItem("userId", result.id);
+        sessionStorage.setItem("userId", loginData.email);
         sessionStorage.setItem("userName", result.name);
         sessionStorage.setItem("token", result.token);
         if (result.userRole) {
@@ -277,11 +279,13 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
         setTab(0);
 
       } else if (type === "formregister") {
-        if (result.isFormOnlyUserAlreadyRegistered) { // This is a hypothetical flag from the backend
-          setShowEditPreviewDialog(true);
+        setProvisionalToken(result.token);
+        if (result.isExistingUser) {
+          setIsExistingFormUser(true);
+          setShowAlreadyRegisteredDialog(true);
         } else {
-          setProvisionalToken(result.token);
-          // User is provisionally registered or already exists. Send OTP.
+          setIsExistingFormUser(false);
+          // User is provisionally registered. Send OTP.
           await handleSendOtp(formRegData.identifier);
         }
       }
@@ -307,7 +311,11 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
     setFormRegData({ identifier: "" });
     setShowDistributeMessage(true);
     setTimeout(() => {
-      navigate(`/form/view/${formId}?formNo=${formNo || 1}`, { replace: true });
+      if (isExistingFormUser) {
+        navigate(`/form/submissions/${formId}`, { state: { formNo: formNo || 1 } });
+      } else {
+        navigate(`/form/view/${formId}?formNo=${formNo || 1}`, { replace: true });
+      }
     }, 1500);
   };
 
@@ -526,6 +534,24 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
           </CardContent>
         </Card>
       </Box>
+
+      <Dialog open={showAlreadyRegisteredDialog} onClose={() => setShowAlreadyRegisteredDialog(false)}>
+        <DialogTitle>User Already Registered</DialogTitle>
+        <DialogContent>
+          <Typography>
+            This phone number is already registered. Do you want to edit the submission?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowAlreadyRegisteredDialog(false)}>Cancel</Button>
+          <Button onClick={() => {
+            setShowAlreadyRegisteredDialog(false);
+            handleSendOtp(formRegData.identifier);
+          }} variant="contained">
+            Edit
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={showOtpDialog} onClose={() => !otpLoading && setShowOtpDialog(false)}>
         <DialogTitle>Verify Phone Number</DialogTitle>

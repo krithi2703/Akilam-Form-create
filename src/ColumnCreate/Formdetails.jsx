@@ -31,6 +31,7 @@ import { Add as AddIcon, Close as CloseIcon } from '@mui/icons-material';
 import api from '../axiosConfig';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import ColumnOptionEditorDialog from './ColumnOptionEditorDialog';
 
 const FormDetailsCreator = () => {
   const location = useLocation();
@@ -49,6 +50,9 @@ const FormDetailsCreator = () => {
   const [sequenceErrors, setSequenceErrors] = useState({});
   const [dialogOpen, setDialogOpen] = useState(false);
   const [tempSelectedColumns, setTempSelectedColumns] = useState([]);
+  const [optionsDialogOpen, setOptionsDialogOpen] = useState(false);
+  const [selectedColForOptions, setSelectedColForOptions] = useState(null);
+  const [existingColumnIds, setExistingColumnIds] = useState([]);
 
   const userId = sessionStorage.getItem('userId');
 
@@ -83,9 +87,11 @@ const FormDetailsCreator = () => {
 
         if (formId && formNo) {
           const existingColumnsResponse = await api.get(
-            `/formdetails/form-columns?formId=${formId}&formNo=${formNo}`
+            `/formdetails/user/form-columns?formId=${formId}&formNo=${formNo}`
           );
           setExistingColumns(existingColumnsResponse.data);
+          const existingIds = existingColumnsResponse.data.map(c => c.ColId);
+          setExistingColumnIds(existingIds);
         }
       } catch (err) {
         setError(err.message || 'Failed to fetch initial data.');
@@ -111,11 +117,36 @@ const FormDetailsCreator = () => {
     setDialogOpen(false);
   };
 
-  const handleToggleColumn = (columnId) => {
+  const handleOpenOptionsDialog = (column) => {
+    setSelectedColForOptions({ colId: column.ColumnId, dataType: column.DataType, columnName: column.ColumnName });
+    setOptionsDialogOpen(true);
+  };
+
+  const handleCloseOptionsDialog = () => {
+    if (selectedColForOptions) {
+      const newSelected = tempSelectedColumns.filter(id => id !== selectedColForOptions.colId);
+      setTempSelectedColumns(newSelected);
+    }
+    setOptionsDialogOpen(false);
+    setSelectedColForOptions(null);
+  };
+
+  const handleOptionsSubmitSuccess = () => {
+    setOptionsDialogOpen(false);
+    setSelectedColForOptions(null);
+  };
+
+  const handleToggleColumn = (column) => {
+    const columnId = column.ColumnId;
     const currentIndex = tempSelectedColumns.indexOf(columnId);
     const newSelected = [...tempSelectedColumns];
+
     if (currentIndex === -1) {
       newSelected.push(columnId);
+      const dataType = column.DataType?.toLowerCase();
+      if (dataType === 'select' || dataType === 'radio' || dataType === 'checkbox') {
+        handleOpenOptionsDialog(column);
+      }
     } else {
       newSelected.splice(currentIndex, 1);
     }
@@ -236,7 +267,6 @@ const FormDetailsCreator = () => {
               )}
             </Grid>
 
-            {/* Selected Columns with Sequence Inputs */}
             {selectedColumns.length > 0 && (
               <Card sx={{ mt: 4 }}>
                 <CardContent>
@@ -281,7 +311,6 @@ const FormDetailsCreator = () => {
                     </Table>
                   </TableContainer>
 
-                  {/* ✅ Submit button should be here */}
                   <Box sx={{ mt: 2 }}>
                     <Button type="submit" variant="contained" color="primary" fullWidth>
                       Add Selected Columns
@@ -291,7 +320,6 @@ const FormDetailsCreator = () => {
               </Card>
             )}
 
-            {/* Existing Columns Table */}
             {existingColumns.length > 0 && (
               <Card sx={{ mt: 4 }}>
                 <CardContent>
@@ -325,17 +353,40 @@ const FormDetailsCreator = () => {
         </CardContent>
       </Card>
 
-      {/* Column Selection Dialog */}
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>Select Columns</DialogTitle>
         <DialogContent>
           <List>
-            {availableColumns.map((col) => (
-              <ListItem key={col.ColumnId} button onClick={() => handleToggleColumn(col.ColumnId)}>
-                <Checkbox checked={tempSelectedColumns.indexOf(col.ColumnId) !== -1} />
-                <ListItemText primary={col.ColumnName} secondary={`ID: ${col.ColumnId}, Type: ${col.DataType}`} />
-              </ListItem>
-            ))}
+            {availableColumns.map((col) => {
+              const isExisting = existingColumnIds.includes(col.ColumnId);
+              return (
+                <ListItem key={col.ColumnId} button disabled={isExisting}>
+                  <Checkbox
+                    checked={isExisting || tempSelectedColumns.indexOf(col.ColumnId) !== -1}
+                    disabled={isExisting}
+                    onChange={() => handleToggleColumn(col)}
+                  />
+                  <ListItemText 
+                    primary={col.ColumnName} 
+                    secondary={`ID: ${col.ColumnId}, Type: ${col.DataType}${isExisting ? ' (Already in form)' : ''}`} 
+                  />
+                  {(col.DataType?.toLowerCase() === 'select' ||
+                    col.DataType?.toLowerCase() === 'radio' ||
+                    col.DataType?.toLowerCase() === 'checkbox') && !isExisting && (
+                    <IconButton
+                      edge="end"
+                      aria-label="manage options"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenOptionsDialog(col);
+                      }}
+                    >
+                      <AddIcon hidden/>
+                    </IconButton>
+                  )}
+                </ListItem>
+              );
+            })}
           </List>
         </DialogContent>
         <DialogActions>
@@ -343,6 +394,17 @@ const FormDetailsCreator = () => {
           <Button onClick={handleConfirmDialog} variant="contained">Confirm</Button>
         </DialogActions>
       </Dialog>
+
+      {optionsDialogOpen && selectedColForOptions && (
+        <ColumnOptionEditorDialog
+          open={optionsDialogOpen}
+          onClose={handleCloseOptionsDialog}
+          onSuccessfulSubmit={handleOptionsSubmitSuccess}
+          colId={selectedColForOptions.colId}
+          dataType={selectedColForOptions.dataType}
+          columnName={selectedColForOptions.columnName}
+        />
+      )}
     </Container>
   );
 };

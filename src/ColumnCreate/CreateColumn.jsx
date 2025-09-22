@@ -29,6 +29,9 @@ const dataTypes = [
   { value: "text", label: "Text" },
   { value: "number", label: "Number" },
   { value: "date", label: "Date" },
+  { value: "select", label: "Dropdown" },
+  { value: "checkbox", label: "Checkbox" },
+  { value: "radio", label: "Radio" },
   { value: "flg", label: "Flag" },
 ];
 
@@ -114,7 +117,7 @@ export default function CreateColumn() {
     <Container maxWidth="xl" sx={{ mt: 2, mb: 2 }}>
       <Grid container spacing={2}>
         {/* Left Side Form (fixed small card) */}
-        <Grid item xs={12} width={"30%"} md={4} lg={3}>
+        <Grid item xs={12} md={3} lg={3}>
           <Card sx={{ width: "100%", p: 2, boxShadow: 6 }}>
             <CardContent>
               <Typography variant="h5" sx={{ mb: 2 }} gutterBottom>
@@ -178,7 +181,7 @@ export default function CreateColumn() {
         </Grid>
 
         {/* Table below — takes full width */}
-        <Grid item xs={12} width={"65%"} md={8} lg={9}>
+        <Grid item xs={12} md={9} lg={9}>
           {gridColumns.length > 0 && (
             <Card sx={{ width: "100%", p: 2, boxShadow: 6 }}>
               <CardContent>
@@ -198,7 +201,7 @@ export default function CreateColumn() {
                     </TableHead>
                     <TableBody>
                       {gridColumns.map((col) => (
-                        <TableRow key={col.id} sx={{ height: 48 }}> {/* Reduced row height */}
+                        <TableRow key={col.id} sx={{ height: 48 }}>
                           <TableCell sx={{ fontSize: "14px", py: 1 }}>{col.name}</TableCell>
                           <TableCell sx={{ fontSize: "14px", py: 1 }}>{col.type}</TableCell>
                           <TableCell align="right" sx={{ py: 1 }}>

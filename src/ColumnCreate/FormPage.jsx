@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import api from "../axiosConfig";
 import { QRCodeCanvas } from "qrcode.react";
@@ -27,7 +27,11 @@ import {
   Select,
   AppBar,
   Toolbar,
-  IconButton
+  IconButton,
+  RadioGroup,
+  Radio,
+  FormHelperText,
+  FormLabel
 } from "@mui/material";
 import {
   ArrowBack as ArrowBackIcon,
@@ -53,114 +57,136 @@ const FormPage = ({ isPreview = false }) => {
   const [formValues, setFormValues] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+  const [columnOptions, setColumnOptions] = useState({});
 
-  const userId = localStorage.getItem("userId");
-  const userName = localStorage.getItem("userName");
+  const userId = sessionStorage.getItem("userId");
+  const userName = sessionStorage.getItem("userName");
   const isFormOnlyUser = sessionStorage.getItem("isFormOnlyUser") === "true";
-  const token = sessionStorage.getItem("token"); // Get token
-
+  const token = sessionStorage.getItem("token");
 
   const { open, handleOpen, handleClose } = useDialog();
   const handleLogout = () => {
-    
     setTimeout(() => {
       localStorage.clear();
       navigate(`/${formId}`, { replace: true });
     }, 3000);
   };
 
-  // ---------------- Fetch Form Layout ----------------
-  useEffect(() => {
+  const fetchFormAndOptions = useCallback(async () => {
     if (!formId) {
       setError("No form selected. Please go back and select a form.");
       setLoading(false);
       return;
     }
 
-    // Form-only users don't need a token, but others do.
     if (!isPreview && !isFormOnlyUser && !token) {
       setError("You must be logged in to view this page.");
       setLoading(false);
       return;
     }
 
-    const fetchFormLayout = async () => {
-      try {
-        setLoading(true);
-
-        let url = `/formdetails/user/form-columns?formId=${formId}`;
-        if (formNo) {
-          url += `&formNo=${formNo}`;
-        }
-
-        // The interceptor handles Authorization header.
-        // For preview, we may need to pass a special header if the interceptor doesn't handle it.
-        const headers = {};
-        if (isPreview) {
-          headers.userid = "preview";
-        }
-
-        const response = await api.get(url, { headers });
-
-        if (response.data && response.data.length > 0) {
-          const sortedColumns = response.data.sort(
-            (a, b) => a.SequenceNo - b.SequenceNo
-          );
-          setColumns(sortedColumns);
-          setFormDetails({
-            formName: sortedColumns[0].FormName,
-            formNo: sortedColumns[0].FormNo,
-            endDate: sortedColumns[0].Enddate, // Add Enddate here
-            startDate: sortedColumns[0].Startdate, // Add Startdate here
-          });
-          console.log("Form Details fetched:", {
-            formId: formId,
-            formNo: sortedColumns[0].FormNo,
-            startDate: sortedColumns[0].Startdate,
-            endDate: sortedColumns[0].Enddate,
-          });
-          console.log("Raw Start Date from backend:", sortedColumns[0].Startdate);
-          console.log("Raw End Date from backend:", sortedColumns[0].Enddate);
-        } else {
-          setError("No columns found for this form version.");
-        }
-      } catch (err) {
-        // The interceptor will handle token expiration.
-        // We can still show a generic error for other cases.
-        if (err.response?.status !== 401 && err.response?.status !== 403) {
-          console.error("Error fetching form layout:", err);
-          toast.error(err.response?.data?.message || "Failed to fetch form layout.");
-        }
-      } finally {
-        setLoading(false);
+    try {
+      setLoading(true);
+      let url = `/formdetails/user/form-columns?formId=${formId}`;
+      if (formNo) {
+        url += `&formNo=${formNo}`;
       }
+
+      const headers = {};
+      if (isPreview) {
+        headers.userid = "preview";
+      }
+
+      const response = await api.get(url, { headers });
+
+      if (response.data && response.data.length > 0) {
+        const sortedColumns = response.data.sort(
+          (a, b) => a.SequenceNo - b.SequenceNo
+        );
+        setColumns(sortedColumns);
+        setFormDetails({
+          formName: sortedColumns[0].FormName,
+          formNo: sortedColumns[0].FormNo,
+          endDate: sortedColumns[0].Enddate,
+          startDate: sortedColumns[0].Startdate,
+        });
+
+        const optionsPromises = sortedColumns.map(async (col) => {
+          if (col.DataType?.toLowerCase() === "select") {
+            const res = await api.get(`/dropdown-dtl/${col.ColId}`);
+            return { colId: col.ColId, options: res.data.map(item => item.DropdownName) };
+          } else if (col.DataType?.toLowerCase() === "radio") {
+            const res = await api.get(`/radiobox-dtl/${col.ColId}`);
+            return { colId: col.ColId, options: res.data.map(item => item.RadioBoxName) };
+          } else if (col.DataType?.toLowerCase() === "checkbox") {
+            const res = await api.get(`/checkbox-dtl/${col.ColId}`);
+            return { colId: col.ColId, options: res.data.map(item => item.CheckBoxName) };
+          }
+          return null;
+        });
+
+        const fetchedOptions = await Promise.all(optionsPromises);
+        const newColumnOptions = {};
+        fetchedOptions.forEach(item => {
+          if (item) {
+            newColumnOptions[item.colId] = item.options;
+          }
+        });
+        setColumnOptions(newColumnOptions);
+      } else {
+        setError("No columns found for this form version.");
+      }
+    } catch (err) {
+      if (err.response?.status !== 401 && err.response?.status !== 403) {
+        console.error("Error fetching form layout:", err);
+        toast.error(err.response?.data?.message || "Failed to fetch form layout.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [formId, formNo, isPreview, isFormOnlyUser, token]);
+
+  useEffect(() => {
+    fetchFormAndOptions();
+
+    const handleOptionsUpdate = () => {
+      toast.info('Refreshing form with new options...');
+      fetchFormAndOptions();
     };
 
-    fetchFormLayout();
-  }, [formId, formNo, userId, isPreview, isFormOnlyUser, token]); // Added token to dependency array
+    window.addEventListener('optionsUpdated', handleOptionsUpdate);
 
-  // ---------------- Input Change ----------------
+    return () => {
+      window.removeEventListener('optionsUpdated', handleOptionsUpdate);
+    };
+  }, [fetchFormAndOptions]);
+
   const handleInputChange = (colId, event, type) => {
     const value =
       type === "checkbox" ? event.target.checked : event.target.value;
     setFormValues((prev) => ({ ...prev, [colId]: value }));
   };
 
-  // ---------------- Submit Form ----------------
   const handleSubmit = async () => {
+    let errors = {};
+    let hasError = false;
 
-    // Basic validation: ensure all fields have a value.
     for (const col of columns) {
       const value = formValues[col.ColId];
-      // Check for undefined, null, or empty string.
-      // Allows `false` for checkboxes and `0` for numbers.
       if (value === undefined || value === null || value === "") {
-        toast.error(`Please fill out the "${col.ColumnName}" field.`);
-        return; // Stop submission
+        errors[col.ColId] = `"${col.ColumnName}" is required.`;
+        hasError = true;
       }
     }
 
-    // Also, check if the form is completely empty, even if there are no columns.
+    setValidationErrors(errors);
+
+    if (hasError) {
+      toast.error("Please fill out all required fields.");
+      return;
+    }
+
     if (columns.length > 0 && Object.keys(formValues).length === 0) {
       toast.error("The form is empty and cannot be submitted.");
       return;
@@ -168,7 +194,6 @@ const FormPage = ({ isPreview = false }) => {
 
     setIsSubmitting(true);
     try {
-      // Interceptor handles headers
       await api.post(
         "/formvalues/submit",
         {
@@ -176,19 +201,13 @@ const FormPage = ({ isPreview = false }) => {
           values: formValues,
         }
       );
-
-
-
       toast.success("Form submitted successfully!");
       setFormValues({});
-handleOpen(true);
-      // ✅ Always go to /view-submissions
+      handleOpen(true);
       setTimeout(() => {
-      handleLogout()
+        handleLogout();
       }, 2500);
     } catch (err) {
-      // Interceptor will handle token expiration.
-      // We can still show a generic error for other cases.
       if (err.response?.status !== 401 && err.response?.status !== 403) {
         toast.error(err.response?.data?.message || "Failed to submit form.");
       }
@@ -197,38 +216,33 @@ handleOpen(true);
     }
   };
 
-  // ---------------- QR Handling ----------------
   const handleDistribute = () => setQrDialogOpen(true);
   const handleCloseQrDialog = () => setQrDialogOpen(false);
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(formUrl);
-    toast.success("Link copied to clipboard!");
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(formUrl);
+      toast.success("Link copied to clipboard!");
+    } catch (err) {
+      toast.error("Failed to copy link. Please copy it manually.");
+    }
   };
 
-  const formUrl = `${window.location.origin}/${formId}?formNo=${formDetails?.formNo || formNo || 1
-    }`;
+  const formUrl = `${window.location.origin}/${formId}?formNo=${formDetails?.formNo || formNo || 1}`;
 
-
-  // ---------------- Loading Spinner ----------------
   if (loading) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
         <CircularProgress />
       </Box>
     );
   }
 
-  // ---------------- Render Input by Type ----------------
   const renderInput = (column) => {
-    const { DataType, ColumnName, ColId, Options } = column;
+    const { DataType, ColumnName, ColId } = column;
     const value = formValues[ColId] || "";
+    const isError = !!validationErrors[ColId];
+    const errorMessage = validationErrors[ColId];
+    const options = columnOptions[ColId] || [];
 
     switch (DataType?.toLowerCase()) {
       case "date":
@@ -244,6 +258,9 @@ handleOpen(true);
             InputLabelProps={{ shrink: true }}
             variant="outlined"
             sx={{ mb: 3 }}
+            required
+            error={isError}
+            helperText={errorMessage}
           />
         );
       case "datetime":
@@ -259,6 +276,9 @@ handleOpen(true);
             InputLabelProps={{ shrink: true }}
             variant="outlined"
             sx={{ mb: 3 }}
+            required
+            error={isError}
+            helperText={errorMessage}
           />
         );
       case "int":
@@ -275,29 +295,44 @@ handleOpen(true);
             type="number"
             variant="outlined"
             sx={{ mb: 3 }}
+            required
+            error={isError}
+            helperText={errorMessage}
           />
         );
       case "boolean":
       case "flg":
+      case "checkbox":
         return (
-          <FormControlLabel
-            control={
-              <Checkbox
-                id={ColId}
-                name={ColId}
-                checked={!!value}
-                onChange={(e) => handleInputChange(ColId, e, "checkbox")}
+          <FormControl fullWidth sx={{ mb: 3 }} error={isError}>
+            <FormLabel component="legend" required>{ColumnName}</FormLabel>
+            {options.map((option) => (
+              <FormControlLabel
+                key={option}
+                control={
+                  <Checkbox
+                    id={`${ColId}-${option}`}
+                    name={ColId}
+                    checked={formValues[ColId]?.includes(option) || false}
+                    onChange={(e) => {
+                      const currentValues = formValues[ColId] || [];
+                      const newValues = e.target.checked
+                        ? [...currentValues, option]
+                        : currentValues.filter((val) => val !== option);
+                      setFormValues((prev) => ({ ...prev, [ColId]: newValues }));
+                    }}
+                  />
+                }
+                label={option}
               />
-            }
-            label={ColumnName}
-            sx={{ mb: 2 }}
-          />
+            ))}
+            {isError && <FormHelperText>{errorMessage}</FormHelperText>}
+          </FormControl>
         );
-      case "dropdown":
-        const options = Options ? Options.split(',') : [];
+      case "select":
         return (
-          <FormControl fullWidth sx={{ mb: 3 }}>
-            <InputLabel id={`${ColId}-label`}>{ColumnName}</InputLabel>
+          <FormControl fullWidth sx={{ mb: 3 }} error={isError}>
+            <InputLabel id={`${ColId}-label`} required>{ColumnName}</InputLabel>
             <Select
               labelId={`${ColId}-label`}
               id={ColId}
@@ -305,13 +340,37 @@ handleOpen(true);
               value={value}
               label={ColumnName}
               onChange={(e) => handleInputChange(ColId, e)}
+              required
             >
               {options.map((option) => (
-                <MenuItem key={option} value={option.trim()}>
-                  {option.trim()}
+                <MenuItem key={option} value={option}>
+                  {option}
                 </MenuItem>
               ))}
             </Select>
+            {isError && <FormHelperText>{errorMessage}</FormHelperText>}
+          </FormControl>
+        );
+      case "radio":
+        return (
+          <FormControl component="fieldset" fullWidth sx={{ mb: 3 }} error={isError}>
+            <FormLabel component="legend" required>{ColumnName}</FormLabel>
+            <RadioGroup
+              aria-label={ColumnName}
+              name={ColId}
+              value={value}
+              onChange={(e) => handleInputChange(ColId, e)}
+            >
+              {options.map((option) => (
+                <FormControlLabel
+                  key={option}
+                  value={option}
+                  control={<Radio />}
+                  label={option}
+                />
+              ))}
+            </RadioGroup>
+            {isError && <FormHelperText>{errorMessage}</FormHelperText>}
           </FormControl>
         );
       case "textarea":
@@ -327,6 +386,9 @@ handleOpen(true);
             onChange={(e) => handleInputChange(ColId, e)}
             variant="outlined"
             sx={{ mb: 3 }}
+            required
+            error={isError}
+            helperText={errorMessage}
           />
         );
       default:
@@ -340,12 +402,14 @@ handleOpen(true);
             onChange={(e) => handleInputChange(ColId, e)}
             variant="outlined"
             sx={{ mb: 3 }}
+            required
+            error={isError}
+            helperText={errorMessage}
           />
         );
     }
   };
 
-  // ---------------- Render Page ----------------
   return (
     <>
       {isFormOnlyUser && (
@@ -380,13 +444,13 @@ handleOpen(true);
                   </Typography>
                 )}
 
-                {isFormOnlyUser && (userId || userName) && ( // Check for userId or userName
+                {isFormOnlyUser && (userId || userName) && (
                   <Box sx={{ textAlign: 'center', mb: 3, p: 2, backgroundColor: 'grey.100', borderRadius: 1 }}>
                     <Typography variant="body1" color="text.secondary">
                       You are submitting as:
                     </Typography>
                     <Typography variant="h6" color="primary">
-                      {userName || userId} {/* Display userName if available, else userId */}
+                      {userName || userId}
                     </Typography>
                   </Box>
                 )}
@@ -453,7 +517,6 @@ handleOpen(true);
           )}
         </Card>
 
-        {/* QR Dialog */}
         <Dialog
           open={qrDialogOpen}
           onClose={handleCloseQrDialog}
@@ -502,7 +565,6 @@ handleOpen(true);
           </DialogContent>
         </Dialog>
 
-        {/* Success Message */}
         <Snackbar
           open={!!successMessage}
           autoHideDuration={3000}

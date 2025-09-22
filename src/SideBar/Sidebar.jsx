@@ -80,7 +80,7 @@ export default function Sidebar({ sidebarOpen, toggleSidebar, darkMode, userRole
           display: { xs: 'block', md: 'none' },
           '& .MuiDrawer-paper': { 
             boxSizing: 'border-box', 
-            width: 240,
+            width: { xs: 200, sm: 240 },
             backgroundColor: darkMode ? '#1e1e1e' : '#fff',
             color: darkMode ? '#fff' : 'inherit'
           },

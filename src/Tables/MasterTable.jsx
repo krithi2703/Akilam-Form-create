@@ -110,22 +110,18 @@ export default function MasterTable() {
   };
 
   return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      mt={4}
-      width="100%"
-    >
+    <Box sx={{ p: { xs: 1, sm: 2, md: 4 } }}>
       {/* Header with title and create button */}
       <Box
         display="flex"
         justifyContent="space-between"
         alignItems="center"
-        width="90%"
-        mb={2}
+        mb={3}
+        flexDirection={{ xs: 'column', sm: 'row' }}
       >
-        <Typography variant="h5">Form Master Table</Typography>
+        <Typography variant={{ xs: 'h6', sm: 'h5' }} sx={{ mb: { xs: 2, sm: 0 }, fontWeight: 'bold', color: 'primary.main' }}>
+          Form Master Table
+        </Typography>
         <Button
           variant="contained"
           color="primary"
@@ -135,7 +131,7 @@ export default function MasterTable() {
         </Button>
       </Box>
 
-      {loading && <CircularProgress />}
+      {loading && <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}><CircularProgress /></Box>}
       {error && (
         <Alert severity="error" sx={{ my: 2 }}>
           {error}
@@ -143,9 +139,10 @@ export default function MasterTable() {
       )}
 
       {!loading && !error && (
-        <TableContainer component={Paper} sx={{ width: "90%" }}>
+        <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
           <Table
             sx={{
+              minWidth: 800,
               tableLayout: "fixed",
               borderCollapse: "collapse",
               border: "1px solid #ccc",
@@ -220,7 +217,7 @@ export default function MasterTable() {
                       </Button>
                       <Button
                         variant="outlined"
-                        color="primary"
+                        color="success"
                         size="small"
                         onClick={() => navigate("/create-column-table")}
                       >

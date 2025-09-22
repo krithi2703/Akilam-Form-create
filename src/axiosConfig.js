@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
+  //baseURL: 'http://136.185.14.8:8500/api',
   baseURL: 'http://localhost:5000/api', // Set your API base URL
   headers: {
     'Content-Type': 'application/json',
@@ -18,7 +19,7 @@ api.interceptors.request.use(
       console.log('Authorization header set:', config.headers.Authorization);
     }
     const userId = sessionStorage.getItem('userId');
-    if (userId) {
+    if (userId && config.headers.userid !== 'preview') {
       config.headers.userid = userId;
     }
     return config;
