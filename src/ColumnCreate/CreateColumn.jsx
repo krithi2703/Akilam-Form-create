@@ -33,6 +33,8 @@ const dataTypes = [
   { value: "checkbox", label: "Checkbox" },
   { value: "radio", label: "Radio" },
   { value: "flg", label: "Flag" },
+  { value: "file", label: "File" },
+  { value: "photo", label: "Photo" },
 ];
 
 export default function CreateColumn() {

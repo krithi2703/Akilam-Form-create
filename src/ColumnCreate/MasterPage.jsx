@@ -137,7 +137,14 @@ export default function MasterPage() {
         const res = await api.post("/formmaster", formData);
         if (res.status === 201) {
           toast.success("Form submitted successfully!");
-          navigate("/mastertable");
+          // Navigate to CreateColumnTable for the newly created form
+          navigate("/create-column-table", {
+            state: {
+              formId: res.data.FormId, // Assuming FormId is in res.data
+              formName: res.data.FormName, // Assuming FormName is in res.data
+              formNo: 1, // Assuming initial form number is 1 for a new form
+            },
+          });
         }
       }
     } catch (err) {
@@ -218,7 +225,7 @@ export default function MasterPage() {
               value={userName || ""}
               InputProps={{ readOnly: true }}
               disabled={loading}
-            />
+            hidden/>
 
             <TextField
               label="Created Date"

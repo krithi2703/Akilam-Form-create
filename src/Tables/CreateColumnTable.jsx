@@ -44,6 +44,7 @@ const CreateColumnTable = () => {
   const [error, setError] = useState("");
   const [selectedForm, setSelectedForm] = useState({ id: "", no: "" });
   const [formColumns, setFormColumns] = useState([]);
+  const [initialFormName, setInitialFormName] = useState(""); // New state for initial form name
   
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingColumnId, setDeletingColumnId] = useState(null);
@@ -77,12 +78,50 @@ const CreateColumnTable = () => {
 
   useEffect(() => {
     const { state } = location;
-    if (state && state.formId && state.formNo) {
-      const { formId, formNo } = state;
-      setSelectedForm({ id: formId, no: formNo });
-      fetchFormColumns(formId, formNo);
+    console.log("location.state in CreateColumnTable:", state);
+
+    if (state && state.formId) {
+      let { formId, formNo, formName } = state;
+
+      if (!formNo) {
+        // If formNo is missing, and forms are not yet loaded, we need to wait.
+        // If forms are loaded, try to find formNo.
+        if (forms.length > 0) {
+          const foundForm = forms.find(f => f.FormId === formId);
+          if (foundForm) {
+            formNo = foundForm.FormNo;
+            console.log("Found formNo from local state:", formNo);
+          }
+        } else {
+          // Forms not loaded yet, defer processing until forms are available.
+          // This useEffect will re-run when 'forms' changes.
+          return;
+        }
+      }
+
+      if (formId && formNo) {
+        setSelectedForm({ id: formId, no: formNo });
+        setInitialFormName(formName || "");
+        fetchFormColumns(formId, formNo);
+      } else if (formId && !formNo) {
+        setError("Form number (FormNo) is missing for the selected form.");
+        setLoading(false);
+      }
     }
-  }, [location.state]);
+  }, [location.state, forms]);
+
+  useEffect(() => {
+    const formId = selectedForm.id;
+     if (formId) {
+      // Find the selected form from the 'forms' state to get its FormNo
+      const form = forms.find(f => f.FormId === formId);
+      if (form) {
+        setSelectedForm({ id: form.FormId, no: form.FormNo });
+        fetchFormColumns(form.FormId, form.FormNo);
+      } 
+    }
+  }, []);
+
 
   // Fetch all forms with their columns
   const fetchForms = async () => {
@@ -90,26 +129,35 @@ const CreateColumnTable = () => {
       setLoading(true);
       const response = await api.get("/formdetails/show");
       
-      // Extract unique forms from the response
-      const uniqueForms = [];
-      const seenForms = new Set();
-      
+      // Process forms to get unique FormId with the latest FormNo
+      const formsMap = new Map(); // Map to store the latest version of each form by FormId
+
       response.data.forEach(formGroup => {
         formGroup.columns.forEach(column => {
-          const formKey = `${formGroup.FormId}-${column.FormNo}`;
-          if (!seenForms.has(formKey)) {
-            seenForms.add(formKey);
-            uniqueForms.push({
-              FormId: formGroup.FormId,
-              FormName: formGroup.FormName,
-              FormNo: column.FormNo
-            });
+          const currentForm = {
+            FormId: formGroup.FormId,
+            FormName: formGroup.FormName,
+            FormNo: column.FormNo,
+            EndDate: formGroup.EndDate,
+          };
+
+          if (!formsMap.has(currentForm.FormId)) {
+            formsMap.set(currentForm.FormId, currentForm);
+          } else {
+            // If a form with this FormId already exists, compare EndDate and keep the latest
+            const existingForm = formsMap.get(currentForm.FormId);
+            if (new Date(currentForm.EndDate) > new Date(existingForm.EndDate)) {
+              formsMap.set(currentForm.FormId, currentForm);
+            }
           }
         });
       });
       
+      // Convert map values to an array and sort by EndDate in descending order
+      const uniqueForms = Array.from(formsMap.values()).sort((a, b) => new Date(b.EndDate) - new Date(a.EndDate));
+      
       setForms(uniqueForms);
-      console.log("Fetched Forms:", uniqueForms);
+      console.log("Fetched and Sorted Unique Forms (latest version by FormId):", uniqueForms);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to fetch forms");
     } finally {
@@ -135,11 +183,18 @@ const CreateColumnTable = () => {
   };
 
   const handleFormChange = (event) => {
-    const selectedValue = event.target.value;
-    if (selectedValue) {
-      const [formId, formNo] = selectedValue.split('-');
-      setSelectedForm({ id: formId, no: formNo });
-      fetchFormColumns(formId, formNo);
+    const formId = event.target.value;
+    if (formId) {
+      // Find the selected form from the 'forms' state to get its FormNo
+      const form = forms.find(f => f.FormId === formId);
+      if (form) {
+        setSelectedForm({ id: form.FormId, no: form.FormNo });
+        fetchFormColumns(form.FormId, form.FormNo);
+      } else {
+        // Should not happen if forms state is correctly populated
+        setSelectedForm({ id: "", no: "" });
+        setFormColumns([]);
+      }
     } else {
       setSelectedForm({ id: "", no: "" });
       setFormColumns([]);
@@ -283,20 +338,32 @@ const CreateColumnTable = () => {
       {/* Form Selection */}
       <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 3, bgcolor: 'background.paper' }}>
         <CardContent>
-          <FormControl fullWidth>
-            <InputLabel>Select Form</InputLabel>
-            <Select
-              value={selectedForm.id ? `${selectedForm.id}-${selectedForm.no}` : ""}
-              onChange={handleFormChange}
-              label="Select Form"
-            >
-              {forms.map((form) => (
-                <MenuItem key={`${form.FormId}-${form.FormNo}`} value={`${form.FormId}-${form.FormNo}`}>
-                  {form.FormName}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {initialFormName ? (
+            <TextField
+              fullWidth
+              label="Selected Form Name"
+              value={initialFormName}
+              InputProps={{
+                readOnly: true,
+              }}
+              variant="outlined"
+            />
+          ) : (
+            <FormControl fullWidth>
+              <InputLabel>{selectedForm.id ? "Selected Form" : "Select Form"}</InputLabel>
+              <Select
+                value={selectedForm.id || ""}
+                onChange={handleFormChange}
+                label={selectedForm.id ? "Selected Form" : "Select Form"}
+              >
+                {forms.map((form) => (
+                  <MenuItem key={form.FormId} value={form.FormId}>
+                    {form.FormName}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
         </CardContent>
       </Card>
 

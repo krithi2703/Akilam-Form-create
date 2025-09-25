@@ -92,8 +92,8 @@ const ViewSubmissions = () => {
   const isFormOnlyUser = sessionStorage.getItem('isFormOnlyUser') === 'true';
 
   const handleLogout = () => {
-    localStorage.clear();
-    navigate(`/form/view/${formId}`, { replace: true });
+    sessionStorage.clear();
+    navigate(`/${formId}`, { replace: true });
   };
 
   const fetchData = async () => {
@@ -127,8 +127,9 @@ const ViewSubmissions = () => {
 
       if (valuesResponse.data && valuesResponse.data.length > 0) {
         const { submissions: groupedSubmissions, columns: dynamicColumns, formName: name } = valuesResponse.data[0];
+        const uniqueColumns = Array.from(new Map(dynamicColumns.map(item => [item.ColId, item])).values());
         setSubmissions(groupedSubmissions);
-        setColumns(dynamicColumns);
+        setColumns(uniqueColumns);
         setFormName(name);
         setStats({
           total: groupedSubmissions.length,
@@ -367,7 +368,33 @@ const ViewSubmissions = () => {
             sx={{ mb: 2 }}
           />
         );
-      
+      case 'file':
+        return (
+          <>
+            <Typography variant="body2" gutterBottom>{ColumnName}</Typography>
+            <TextField
+              fullWidth
+              type="file"
+              onChange={(e) => handleEditChange(ColId, e.target.files[0])}
+              sx={{ mb: 2 }}
+            />
+            {value && <Typography variant="caption">Current file: {value}</Typography>}
+          </>
+        );
+      case 'photo':
+        return (
+          <>
+            <Typography variant="body2" gutterBottom>{ColumnName}</Typography>
+            <TextField
+              fullWidth
+              type="file"
+              inputProps={{ accept: 'image/*' }}
+              onChange={(e) => handleEditChange(ColId, e.target.files[0])}
+              sx={{ mb: 2 }}
+            />
+            {value && <img src={`http://localhost:5000/${value}`} alt="preview" style={{ width: '100px', marginTop: '10px' }}/>}
+          </>
+        );
       default: // text
         return (
           <TextField
@@ -404,6 +431,25 @@ const ViewSubmissions = () => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast.success("Data exported successfully!");
+  };
+
+  const renderCellContent = (col, submission) => {
+    const value = submission.values[col.ColId];
+    if (!value) {
+      return (
+        <Typography variant="body2" color="text.secondary" fontStyle="italic">
+          Not provided
+        </Typography>
+      );
+    }
+
+    if (col.DataType.toLowerCase() === 'photo') {
+      return <img src={`http://localhost:5000/${value}`} alt="submission" style={{ width: '50px', height: '50px', objectFit: 'cover' }} />; 
+    } else if (col.DataType.toLowerCase() === 'file') {
+      return <a href={`http://localhost:5000/${value}`} target="_blank" rel="noopener noreferrer">View File</a>;
+    }
+
+    return value;
   };
 
   if (loading) {
@@ -569,11 +615,7 @@ const ViewSubmissions = () => {
                             
                             {columns.map((col) => (
                               <TableCell key={col.ColId}>
-                                {submission.values[col.ColId] || (
-                                  <Typography variant="body2" color="text.secondary" fontStyle="italic">
-                                    Not provided
-                                  </Typography>
-                                )}
+                                {renderCellContent(col, submission)}
                               </TableCell>
                             ))}
                             <TableCell align="center">
@@ -632,11 +674,7 @@ const ViewSubmissions = () => {
                         {col.ColumnName}
                       </Typography>
                       <Typography variant="body1" sx={{ mt: 0.5 }}>
-                        {selectedSubmission.values[col.ColId] || (
-                          <Typography variant="body2" color="text.secondary" fontStyle="italic">
-                            Not provided
-                          </Typography>
-                        )}
+                        {renderCellContent(col, selectedSubmission)}
                       </Typography>
                     </Grid>
                   ))}

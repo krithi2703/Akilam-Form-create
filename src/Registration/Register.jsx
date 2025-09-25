@@ -234,6 +234,24 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
         setLoading(false);
         return;
       }
+      
+      // Check for existing submission before proceeding
+      try {
+        const checkRes = await api.get(`/formvalues/check-submission?formId=${formId}`, {
+          headers: { userid: formRegData.identifier },
+        });
+
+        if (checkRes.data.hasSubmission) {
+          setIsExistingFormUser(true);
+          setShowAlreadyRegisteredDialog(true);
+          setLoading(false);
+          return; // Stop here and show the dialog
+        }
+      } catch (err) {
+        // If the check fails, log it but proceed as a new user for robustness
+        console.error("Error checking for existing submission:", err);
+      }
+
       url = "/formregister/insert";
       data = {
         identifier: formRegData.identifier,
@@ -280,14 +298,8 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
 
       } else if (type === "formregister") {
         setProvisionalToken(result.token);
-        if (result.isExistingUser) {
-          setIsExistingFormUser(true);
-          setShowAlreadyRegisteredDialog(true);
-        } else {
-          setIsExistingFormUser(false);
-          // User is provisionally registered. Send OTP.
-          await handleSendOtp(formRegData.identifier);
-        }
+        setIsExistingFormUser(false); // It's a new registration for this form
+        await handleSendOtp(formRegData.identifier);
       }
     } catch (err) {
       console.error("Form registration error:", err);
@@ -544,9 +556,9 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowAlreadyRegisteredDialog(false)}>Cancel</Button>
-          <Button onClick={() => {
+          <Button onClick={async () => {
             setShowAlreadyRegisteredDialog(false);
-            handleSendOtp(formRegData.identifier);
+            await handleSendOtp(formRegData.identifier);
           }} variant="contained">
             Edit
           </Button>

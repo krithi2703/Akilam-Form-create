@@ -31,12 +31,16 @@ import {
   RadioGroup,
   Radio,
   FormHelperText,
-  FormLabel
+  FormLabel,
+  DialogActions
 } from "@mui/material";
 import {
   ArrowBack as ArrowBackIcon,
-  Logout as LogoutIcon
+  Logout as LogoutIcon,
+  Login as LoginIcon,
+  Close as CloseIcon
 } from "@mui/icons-material";
+import Register from "../Registration/Register";
 
 // Helper to read query params
 function useQuery() {
@@ -59,6 +63,9 @@ const FormPage = ({ isPreview = false }) => {
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [columnOptions, setColumnOptions] = useState({});
+  const [isRegistrationEnded, setIsRegistrationEnded] = useState(false);
+  const [showRegistrationEndedDialog, setShowRegistrationEndedDialog] = useState(false);
+  const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
 
   const userId = sessionStorage.getItem("userId");
   const userName = sessionStorage.getItem("userName");
@@ -66,11 +73,16 @@ const FormPage = ({ isPreview = false }) => {
   const token = sessionStorage.getItem("token");
 
   const { open, handleOpen, handleClose } = useDialog();
-  const handleLogout = () => {
-    setTimeout(() => {
-      localStorage.clear();
-      navigate(`/${formId}`, { replace: true });
-    }, 3000);
+    const handleLogout = () => {
+    sessionStorage.clear();
+    navigate(`/${formId}`, { replace: true });
+  };
+
+  // const handleOpenRegisterDialog = () => setRegisterDialogOpen(true);
+  const handleCloseRegisterDialog = () => setRegisterDialogOpen(false);
+  const handleRegistrationSuccess = () => {
+    handleCloseRegisterDialog();
+    window.location.reload();
   };
 
   const fetchFormAndOptions = useCallback(async () => {
@@ -111,6 +123,13 @@ const FormPage = ({ isPreview = false }) => {
           endDate: sortedColumns[0].Enddate,
           startDate: sortedColumns[0].Startdate,
         });
+        // Calculate if registration has ended
+        const endDate = sortedColumns[0].Enddate;
+        if (endDate) {
+          setIsRegistrationEnded(new Date(endDate) < new Date());
+        } else {
+          setIsRegistrationEnded(false); // If no end date, registration is not considered ended
+        }
 
         const optionsPromises = sortedColumns.map(async (col) => {
           if (col.DataType?.toLowerCase() === "select") {
@@ -164,11 +183,19 @@ const FormPage = ({ isPreview = false }) => {
 
   const handleInputChange = (colId, event, type) => {
     const value =
-      type === "checkbox" ? event.target.checked : event.target.value;
+      type === "checkbox"
+        ? event.target.checked
+        : type === "file" || type === "photo"
+        ? event.target.files[0]
+        : event.target.value;
     setFormValues((prev) => ({ ...prev, [colId]: value }));
   };
 
   const handleSubmit = async () => {
+    if (isRegistrationEnded) {
+      toast.error("Registration for this form has ended and submissions are no longer accepted.");
+      return;
+    }
     let errors = {};
     let hasError = false;
 
@@ -193,14 +220,24 @@ const FormPage = ({ isPreview = false }) => {
     }
 
     setIsSubmitting(true);
+    const formData = new FormData();
+    formData.append("formId", formId);
+
+    for (const colId in formValues) {
+      const column = columns.find(c => c.ColId.toString() === colId);
+      if (column && (column.DataType.toLowerCase() === 'file' || column.DataType.toLowerCase() === 'photo')) {
+        formData.append(colId, formValues[colId]);
+      } else {
+        formData.append(colId, formValues[colId]);
+      }
+    }
+
     try {
-      await api.post(
-        "/formvalues/submit",
-        {
-          formId,
-          values: formValues,
-        }
-      );
+      await api.post("/formvalues/submit", formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       toast.success("Form submitted successfully!");
       setFormValues({});
       handleOpen(true);
@@ -216,8 +253,15 @@ const FormPage = ({ isPreview = false }) => {
     }
   };
 
-  const handleDistribute = () => setQrDialogOpen(true);
+  const handleDistribute = () => {
+    if (isRegistrationEnded) {
+      setShowRegistrationEndedDialog(true);
+    } else {
+      setQrDialogOpen(true);
+    }
+  };
   const handleCloseQrDialog = () => setQrDialogOpen(false);
+  const handleCloseRegistrationEndedDialog = () => setShowRegistrationEndedDialog(false);
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(formUrl);
@@ -391,6 +435,41 @@ const FormPage = ({ isPreview = false }) => {
             helperText={errorMessage}
           />
         );
+      case 'file':
+        return (
+            <TextField
+                fullWidth
+                id={ColId}
+                name={ColId}
+                label={ColumnName}
+                onChange={(e) => handleInputChange(ColId, e, 'file')}
+                type="file"
+                InputLabelProps={{ shrink: true }}
+                variant="outlined"
+                sx={{ mb: 3 }}
+                required
+                error={isError}
+                helperText={errorMessage}
+            />
+        );
+      case 'photo':
+        return (
+            <TextField
+                fullWidth
+                id={ColId}
+                name={ColId}
+                label={ColumnName}
+                onChange={(e) => handleInputChange(ColId, e, 'photo')}
+                type="file"
+                InputLabelProps={{ shrink: true }}
+                inputProps={{ accept: 'image/*' }}
+                variant="outlined"
+                sx={{ mb: 3 }}
+                required
+                error={isError}
+                helperText={errorMessage}
+            />
+        );
       default:
         return (
           <TextField
@@ -410,6 +489,29 @@ const FormPage = ({ isPreview = false }) => {
     }
   };
 
+  if (isRegistrationEnded && !isPreview) {
+    return (
+      <Dialog
+        open={true}
+        onClose={() => {}} // Prevent closing
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Registration Status</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", p: 2 }}>
+            <Typography variant="h6" color="error" sx={{ fontWeight: 'bold' }}>
+              Registration for this form has ended.
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              The end date for this form was {formDetails?.endDate ? new Date(formDetails.endDate).toLocaleDateString() : 'N/A'}.
+            </Typography>
+          </Box>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <>
       {isFormOnlyUser && (
@@ -418,6 +520,11 @@ const FormPage = ({ isPreview = false }) => {
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
               {formDetails?.formName}
             </Typography>
+            {formDetails?.endDate && (
+                <Typography variant="body1" sx={{ mr: 2 }}>
+                    End Date: {new Date(formDetails.endDate).toLocaleDateString()}
+                </Typography>
+            )}
             <IconButton color="inherit" onClick={handleLogout}>
               <LogoutIcon />
             </IconButton>
@@ -482,13 +589,19 @@ const FormPage = ({ isPreview = false }) => {
                   >
                     Go Back
                   </Button>
-                  <Button
-                    variant="contained"
-                    color="info"
-                    onClick={handleDistribute}
-                  >
-                    Distribute
-                  </Button>
+                  {isRegistrationEnded ? (
+                    <Typography variant="body2" color="error" sx={{ fontWeight: 'bold' }}>
+                      Registration Ended
+                    </Typography>
+                  ) : (
+                    <Button
+                      variant="contained"
+                      color="info"
+                      onClick={handleDistribute}
+                    >
+                      Distribute
+                    </Button>
+                  )}
                 </>
               ) : (
                 <>
@@ -565,6 +678,30 @@ const FormPage = ({ isPreview = false }) => {
           </DialogContent>
         </Dialog>
 
+        <Dialog
+          open={showRegistrationEndedDialog}
+          onClose={handleCloseRegistrationEndedDialog}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Registration Status</DialogTitle>
+          <DialogContent>
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", p: 2 }}>
+              <Typography variant="h6" color="error" sx={{ fontWeight: 'bold' }}>
+                Registration for this form has ended.
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                The end date for this form was {formDetails?.endDate ? new Date(formDetails.endDate).toLocaleDateString() : 'N/A'}.
+              </Typography>
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseRegistrationEndedDialog} color="primary">
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
+
         <Snackbar
           open={!!successMessage}
           autoHideDuration={3000}
@@ -572,6 +709,33 @@ const FormPage = ({ isPreview = false }) => {
           message={successMessage}
         />
         <CustomDialog open={open} handleClose={handleClose} />
+        <Dialog
+          open={registerDialogOpen}
+          onClose={handleCloseRegisterDialog}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Register for Form
+            <IconButton
+              aria-label="close"
+              onClick={handleCloseRegisterDialog}
+              sx={{
+                position: 'absolute',
+                right: 8,
+                top: 8,
+                color: (theme) => theme.palette.grey[500],
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent>
+            <Register 
+              setIsLoggedIn={handleRegistrationSuccess} 
+              setIsFormOnlyUser={() => {}} 
+            />
+          </DialogContent>
+        </Dialog>
       </Container>
     </>
   );

@@ -206,24 +206,30 @@ export default function MasterTable() {
                     {row.Enddate}
                   </TableCell>
                   <TableCell>
-                    <Stack direction="row" spacing={1}>
-                      <Button
-                        variant="outlined"
-                        color="primary"
-                        size="small"
-                        onClick={() => handleCreateNewVersion(row.FormId)}
-                      >
-                        Create New Form
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        color="success"
-                        size="small"
-                        onClick={() => navigate("/create-column-table")}
-                      >
-                        Column Table
-                      </Button>
-                    </Stack>
+                    {row.Active === 0 ? (
+                      <Typography variant="body2" color="error" sx={{ fontWeight: 'bold' }}>
+                        Registration Ended !!
+                      </Typography>
+                    ) : (
+                      <Stack direction="row" spacing={1}>
+                        <Button
+                          variant="outlined"
+                          color="primary"
+                          size="small"
+                          onClick={() => handleCreateNewVersion(row.FormId)}
+                        >
+                          Create New Form
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          color="success"
+                          size="small"
+                          onClick={() => navigate("/create-column-table", { state: { formId: row.FormId, formName: row.FormName } })}
+                        >
+                          Column Table
+                        </Button>
+                      </Stack>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

@@ -369,6 +369,8 @@ export default function FormTable() {
               <MenuItem value="checkbox">Checkbox</MenuItem>
               <MenuItem value="radio">Radio</MenuItem>
               <MenuItem value="flg">Flag</MenuItem>
+              <MenuItem value="file">File</MenuItem>
+              <MenuItem value="photo">Photo</MenuItem>
             </TextField>
           </Box>
         </DialogContent>

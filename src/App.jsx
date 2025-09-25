@@ -80,7 +80,7 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <ToastContainer />
+      <ToastContainer autoClose={1000} />
       {isLoggedIn ? (
         <>
           {shouldShowLayout && (
