@@ -138,7 +138,7 @@ export default function MasterPage() {
         if (res.status === 201) {
           toast.success("Form submitted successfully!");
           // Navigate to CreateColumnTable for the newly created form
-          navigate("/create-column-table", {
+          navigate("/mastertable", {
             state: {
               formId: res.data.FormId, // Assuming FormId is in res.data
               formName: res.data.FormName, // Assuming FormName is in res.data

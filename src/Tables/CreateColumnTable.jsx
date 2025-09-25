@@ -27,7 +27,8 @@ import {
   InputLabel,
   Select,
   Chip,
-  useTheme
+  useTheme,
+  TablePagination
 } from "@mui/material";
 
 // import DeleteIcon from "@mui/icons-material/Delete";
@@ -55,6 +56,9 @@ const CreateColumnTable = () => {
 
   const [cannotDeleteDialogOpen, setCannotDeleteDialogOpen] = useState(false);
   const [cannotDeleteDialogMessage, setCannotDeleteDialogMessage] = useState("");
+
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const dataTypes = [
     { value: "varchar", label: "Text" },
@@ -122,6 +126,14 @@ const CreateColumnTable = () => {
     }
   }, []);
 
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   // Fetch all forms with their columns
   const fetchForms = async () => {
@@ -389,9 +401,9 @@ const CreateColumnTable = () => {
                 </TableHead>
 
                 <TableBody>
-                  {formColumns.length > 0 ? formColumns.map((col, index) => (
+                  {formColumns.length > 0 ? formColumns.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((col, index) => (
                     <TableRow key={col.Id} sx={{ "&:hover": { backgroundColor: "action.hover" } }}>
-                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>{page * rowsPerPage + index + 1}</TableCell>
                       <TableCell>{col.ColumnName}</TableCell>
                       <TableCell><Chip label={col.DataType} size="small" variant="outlined" color="primary" /></TableCell>
                       <TableCell>{col.SequenceNo}</TableCell>
@@ -411,6 +423,15 @@ const CreateColumnTable = () => {
                 </TableBody>
               </Table>
             </Box>
+            <TablePagination
+              rowsPerPageOptions={[10, 25, 100]}
+              component="div"
+              count={formColumns.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+            />
           </TableContainer>
         </>
       )}

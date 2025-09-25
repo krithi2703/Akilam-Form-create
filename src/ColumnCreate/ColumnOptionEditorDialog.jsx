@@ -6,8 +6,6 @@ import {
   DialogActions,
   Button,
   TextField,
-  FormControlLabel,
-  Checkbox,
   Typography,
   Box,
   List,
@@ -17,65 +15,74 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
-import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Add as AddIcon, Delete as DeleteIcon, Edit as EditIcon, Check as CheckIcon, Close as CloseIcon } from '@mui/icons-material';
 import api from '../axiosConfig';
 import { toast } from 'react-toastify';
 
-const ColumnOptionEditorDialog = ({ open, onClose, onSuccessfulSubmit, colId, dataType, columnName }) => {
+const ColumnOptionEditorDialog = ({ open, onClose, onSuccessfulSubmit, colId, dataType, columnName, formId }) => {
   const [optionName, setOptionName] = useState('');
-  const [isActive, setIsActive] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [submitStatus, setSubmitStatus] = useState(null);
   const [currentOptions, setCurrentOptions] = useState([]);
   const [fetchingOptions, setFetchingOptions] = useState(true);
+  const [editingOptionId, setEditingOptionId] = useState(null);
+  const [editingOptionName, setEditingOptionName] = useState('');
 
+  // Determine API endpoints based on type
   const getApiEndpoints = useCallback(() => {
     switch (dataType?.toLowerCase()) {
       case 'select':
-        return { insert: '/dropdown-dtl/insert', fetch: `/dropdown-dtl/${colId}` };
+        return {
+          insert: '/dropdown-dtl/insert',
+          fetch: `/dropdown-dtl/${colId}?formId=${formId}`,
+          update: '/dropdown-dtl/update',
+          delete: '/dropdown-dtl/delete',
+        };
       case 'radio':
-        return { insert: '/radiobox-dtl/insert', fetch: `/radiobox-dtl/${colId}` };
+        return {
+          insert: '/radiobox-dtl/insert',
+          fetch: `/radiobox-dtl/${colId}?formId=${formId}`,
+          update: '/radiobox-dtl/update',
+          delete: '/radiobox-dtl/delete',
+        };
       case 'checkbox':
-        return { insert: '/checkbox-dtl/insert', fetch: `/checkbox-dtl/${colId}` };
+        return {
+          insert: '/checkbox-dtl/insert',
+          fetch: `/checkbox-dtl/${colId}?formId=${formId}`,
+          update: '/checkbox-dtl/update',
+          delete: '/checkbox-dtl/delete',
+        };
       default:
-        return { insert: null, fetch: null };
+        return { insert: null, fetch: null, update: null, delete: null };
     }
-  }, [dataType, colId]);
+  }, [dataType, colId, formId]);
 
   const getOptionLabel = useCallback(() => {
     switch (dataType?.toLowerCase()) {
-      case 'select':
-        return 'Dropdown Option Name';
-      case 'radio':
-        return 'Radio Button Option Name';
-      case 'checkbox':
-        return 'Checkbox Option Name';
-      default:
-        return 'Option Name';
+      case 'select': return 'Dropdown Option Name';
+      case 'radio': return 'Radio Button Option Name';
+      case 'checkbox': return 'Checkbox Option Name';
+      default: return 'Option Name';
     }
   }, [dataType]);
 
+  // Fetch existing options
   const fetchOptions = useCallback(async () => {
     if (!colId || !dataType) return;
-
     setFetchingOptions(true);
     setError(null);
     const { fetch: fetchEndpoint } = getApiEndpoints();
-
     if (!fetchEndpoint) {
       setError('Unsupported data type for fetching options.');
       setFetchingOptions(false);
       return;
     }
-
     try {
       const response = await api.get(fetchEndpoint);
       const normalizedOptions = response.data.map(item => {
-        if (dataType?.toLowerCase() === 'select') return { id: item.Id, name: item.DropdownName, isActive: item.isActive };
-        if (dataType?.toLowerCase() === 'radio') return { id: item.Id, name: item.RadioBoxName, isActive: item.isactive };
-        if (dataType?.toLowerCase() === 'checkbox') return { id: item.Id, name: item.checkBoxName, isActive: item.isactive };
-        return item;
+        const id = item.DropdownId || item.RadioBoxId || item.CheckBoxId;
+        const name = item.DropdownName || item.RadioBoxName || item.CheckBoxName;
+        return { id: id || `temp-${Date.now()}-${Math.random()}`, originalItemId: id, name, isActive: item.IsActive ?? 1, isNew: false };
       });
       setCurrentOptions(normalizedOptions);
     } catch (err) {
@@ -89,86 +96,95 @@ const ColumnOptionEditorDialog = ({ open, onClose, onSuccessfulSubmit, colId, da
   useEffect(() => {
     if (open && colId && dataType) {
       setOptionName('');
-      setIsActive(true);
       setError(null);
-      setSubmitStatus(null);
+      setEditingOptionId(null);
+      setEditingOptionName('');
       fetchOptions();
     }
   }, [open, colId, dataType, fetchOptions]);
 
+  // Add new option to local state
   const handleAddOptionToList = (event) => {
     event.preventDefault();
-    if (!optionName.trim()) {
-      setError('Option name cannot be empty.');
-      return;
-    }
+    if (!optionName.trim()) { setError('Option name cannot be empty.'); return; }
     setError(null);
-
-    const newOption = {
-      id: `temp-${Date.now()}`,
-      name: optionName,
-      isActive: isActive,
-      isNew: true,
-    };
-
-    setCurrentOptions(prevOptions => [...prevOptions, newOption]);
+    const newOption = { id: `temp-${Date.now()}`, name: optionName, isActive: 1, isNew: true };
+    setCurrentOptions(prev => [...prev, newOption]);
     setOptionName('');
-    setIsActive(true);
+  };
+
+  const handleDeleteExistingOption = async (optionId) => {
+    if (!window.confirm('Are you sure you want to delete this option?')) return;
+    const { delete: deleteEndpoint } = getApiEndpoints();
+    const option = currentOptions.find(opt => opt.id === optionId);
+    if (!option || !option.originalItemId) { toast.error('Cannot delete option.'); return; }
+    setLoading(true);
+    try {
+      await api.delete(`${deleteEndpoint}/${option.originalItemId}`);
+      toast.success('Option deleted successfully');
+      fetchOptions();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to delete option.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditOption = (option) => {
+    setEditingOptionId(option.id);
+    setEditingOptionName(option.name);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingOptionName.trim()) { setError('Option name cannot be empty'); return; }
+    const option = currentOptions.find(opt => opt.id === editingOptionId);
+    if (option && !option.isNew && option.originalItemId) {
+      const { update: updateEndpoint } = getApiEndpoints();
+      const payload = { colId, formId };
+      if (dataType === 'select') payload.dropdownName = editingOptionName;
+      if (dataType === 'radio') payload.radioBoxName = editingOptionName;
+      if (dataType === 'checkbox') payload.checkBoxName = editingOptionName;
+      setLoading(true);
+      try {
+        await api.put(`${updateEndpoint}/${option.originalItemId}`, payload);
+        toast.success('Option updated successfully');
+        fetchOptions();
+      } catch (err) {
+        console.error(err);
+        toast.error('Failed to update option.');
+      } finally {
+        setLoading(false);
+        setEditingOptionId(null);
+        setEditingOptionName('');
+      }
+    } else {
+      // New option: just update local state
+      setCurrentOptions(prev => prev.map(opt => opt.id === editingOptionId ? { ...opt, name: editingOptionName } : opt));
+      setEditingOptionId(null);
+      setEditingOptionName('');
+    }
   };
 
   const handleFinalSubmit = async () => {
     const { insert: insertEndpoint } = getApiEndpoints();
-    if (!insertEndpoint) {
-      setError('Unsupported data type for adding options.');
-      return;
-    }
-
-    const newOptions = currentOptions.filter(option => option.isNew);
-
-    if (newOptions.length === 0) {
-      toast.info("No new options to submit.");
-      if (onSuccessfulSubmit) onSuccessfulSubmit();
-      else onClose();
-      return;
-    }
-
+    const newOptions = currentOptions.filter(opt => opt.isNew);
+    if (!newOptions.length) { toast.info('No new options to submit'); onSuccessfulSubmit?.(); return; }
     setLoading(true);
-    setError(null);
-    setSubmitStatus(null);
-
     try {
       for (const option of newOptions) {
-        const payload = {
-          colId,
-          isActive: option.isActive ? 1 : 0,
-        };
-        switch (dataType?.toLowerCase()) {
-          case 'select':
-            payload.dropdownName = option.name;
-            break;
-          case 'radio':
-            payload.radioBoxName = option.name;
-            break;
-          case 'checkbox':
-            payload.checkBoxName = option.name;
-            break;
-          default:
-            break;
-        }
+        const payload = { colId, formId, isActive: option.isActive };
+        if (dataType === 'select') payload.dropdownName = option.name;
+        if (dataType === 'radio') payload.radioBoxName = option.name;
+        if (dataType === 'checkbox') payload.checkBoxName = option.name;
         await api.post(insertEndpoint, payload);
       }
-
-      toast.success('New options submitted successfully!');
-      window.dispatchEvent(new CustomEvent('optionsUpdated'));
-      if (onSuccessfulSubmit) {
-        onSuccessfulSubmit();
-      } else {
-        onClose();
-      }
+      toast.success('New options submitted successfully');
+      onSuccessfulSubmit?.();
+      onClose();
     } catch (err) {
-      const errorMessage = err.response?.data?.error || 'Failed to submit new options.';
-      setError(errorMessage);
-      toast.error(errorMessage);
+      console.error(err);
+      toast.error('Failed to submit new options.');
     } finally {
       setLoading(false);
     }
@@ -176,62 +192,42 @@ const ColumnOptionEditorDialog = ({ open, onClose, onSuccessfulSubmit, colId, da
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Add Options for {columnName} (ID: {colId})</DialogTitle>
+      <DialogTitle>Add Options for {columnName}</DialogTitle>
       <DialogContent>
-        <Typography variant="subtitle1" gutterBottom>Data Type: {dataType}</Typography>
-        <Box component="form" onSubmit={handleAddOptionToList} noValidate sx={{ mt: 2 }}>
+        <Typography variant="subtitle1">Data Type: {dataType}</Typography>
+        <Box component="form" onSubmit={handleAddOptionToList} sx={{ mt: 2 }}>
           <TextField
             fullWidth
             label={getOptionLabel()}
             value={optionName}
             onChange={(e) => setOptionName(e.target.value)}
-            margin="normal"
             required
           />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-                name="isActive"
-                color="primary"
-              />
-            }
-            label="Is Active"
-            sx={{ mt: 1, mb: 2 }}
-          />
           {error && <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>}
-          {submitStatus && <Alert severity={submitStatus.type} sx={{ my: 2 }}>{submitStatus.message}</Alert>}
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            fullWidth
-            sx={{ mt: 2 }}
-          >
-            Add Option
-          </Button>
+          <Button type="submit" variant="contained" startIcon={<AddIcon />} sx={{ mt: 2 }}>Add Option</Button>
         </Box>
-
         <Box sx={{ mt: 3 }}>
-          <Typography variant="h6">Existing & New Options:</Typography>
-          {fetchingOptions ? (
-            <CircularProgress />
-          ) : currentOptions.length === 0 ? (
-            <Typography>No options added yet.</Typography>
-          ) : (
+          {fetchingOptions ? <CircularProgress /> : (
             <List>
-              {currentOptions.map((option) => (
+              {currentOptions.map((option, index) => (
                 <ListItem key={option.id} secondaryAction={
-                  <IconButton edge="end" aria-label="delete">
-                    <DeleteIcon />
-                  </IconButton>
+                  option.id === editingOptionId ? (
+                    <Box>
+                      <IconButton onClick={handleSaveEdit}><CheckIcon /></IconButton>
+                      <IconButton onClick={() => { setEditingOptionId(null); setEditingOptionName(''); }}><CloseIcon /></IconButton>
+                    </Box>
+                  ) : (
+                    <Box>
+                      <IconButton onClick={() => handleEditOption(option)}><EditIcon /></IconButton>
+                      {!option.isNew && <IconButton onClick={() => handleDeleteExistingOption(option.id)}><DeleteIcon /></IconButton>}
+                    </Box>
+                  )
                 }>
-                  <ListItemText 
-                    primary={option.name} 
-                    secondary={`Active: ${option.isActive ? 'Yes' : 'No'}${option.isNew ? ' (New)' : ''}`} 
-                  />
+                  {option.id === editingOptionId ? (
+                    <TextField fullWidth value={editingOptionName} onChange={(e) => setEditingOptionName(e.target.value)} />
+                  ) : (
+                    <ListItemText primary={`${index + 1}. ${option.name}`} secondary={option.isActive ? 'Active' : 'Inactive'} />
+                  )}
                 </ListItem>
               ))}
             </List>
@@ -241,9 +237,7 @@ const ColumnOptionEditorDialog = ({ open, onClose, onSuccessfulSubmit, colId, da
       <DialogActions>
         {loading && <CircularProgress size={24} sx={{ mr: 2 }} />}
         <Button onClick={onClose} disabled={loading}>Close</Button>
-        <Button onClick={handleFinalSubmit} color="primary" variant="contained" disabled={loading}>
-          Submit
-        </Button>
+        <Button onClick={handleFinalSubmit} variant="contained" color="primary" disabled={loading}>Submit</Button>
       </DialogActions>
     </Dialog>
   );

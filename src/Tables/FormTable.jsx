@@ -371,6 +371,7 @@ export default function FormTable() {
               <MenuItem value="flg">Flag</MenuItem>
               <MenuItem value="file">File</MenuItem>
               <MenuItem value="photo">Photo</MenuItem>
+              <MenuItem value="textarea">Textarea</MenuItem>
             </TextField>
           </Box>
         </DialogContent>

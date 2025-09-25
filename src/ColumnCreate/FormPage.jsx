@@ -41,6 +41,8 @@ import {
   Close as CloseIcon
 } from "@mui/icons-material";
 import Register from "../Registration/Register";
+import { sendWhatsAppMessage } from "../whatsappService";
+import { validateField } from "../utils/validationUtils";
 
 // Helper to read query params
 function useQuery() {
@@ -63,6 +65,7 @@ const FormPage = ({ isPreview = false }) => {
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [columnOptions, setColumnOptions] = useState({});
+  const [formValidationRules, setFormValidationRules] = useState({});
   const [isRegistrationEnded, setIsRegistrationEnded] = useState(false);
   const [showRegistrationEndedDialog, setShowRegistrationEndedDialog] = useState(false);
   const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
@@ -113,9 +116,23 @@ const FormPage = ({ isPreview = false }) => {
       const response = await api.get(url, { headers });
 
       if (response.data && response.data.length > 0) {
-        const sortedColumns = response.data.sort(
+        let sortedColumns = response.data.sort(
           (a, b) => a.SequenceNo - b.SequenceNo
         );
+
+        // Fetch validation rules for the form
+        const validationRulesResponse = await api.get(`/validation/${formId}`);
+        const formValidationRulesMap = new Map();
+        validationRulesResponse.data.forEach(rule => {
+          formValidationRulesMap.set(rule.ColId, rule.ValidationList);
+        });
+
+        // Merge validation rules into columns
+        sortedColumns = sortedColumns.map(col => ({
+          ...col,
+          Validation: formValidationRulesMap.get(col.ColId) || null, // Add Validation property
+        }));
+
         setColumns(sortedColumns);
         setFormDetails({
           formName: sortedColumns[0].FormName,
@@ -133,13 +150,13 @@ const FormPage = ({ isPreview = false }) => {
 
         const optionsPromises = sortedColumns.map(async (col) => {
           if (col.DataType?.toLowerCase() === "select") {
-            const res = await api.get(`/dropdown-dtl/${col.ColId}`);
+            const res = await api.get(`/dropdown-dtl/${col.ColId}?formId=${formId}`);
             return { colId: col.ColId, options: res.data.map(item => item.DropdownName) };
           } else if (col.DataType?.toLowerCase() === "radio") {
-            const res = await api.get(`/radiobox-dtl/${col.ColId}`);
+            const res = await api.get(`/radiobox-dtl/${col.ColId}?formId=${formId}`);
             return { colId: col.ColId, options: res.data.map(item => item.RadioBoxName) };
           } else if (col.DataType?.toLowerCase() === "checkbox") {
-            const res = await api.get(`/checkbox-dtl/${col.ColId}`);
+            const res = await api.get(`/checkbox-dtl/${col.ColId}?formId=${formId}`);
             return { colId: col.ColId, options: res.data.map(item => item.CheckBoxName) };
           }
           return null;
@@ -201,8 +218,9 @@ const FormPage = ({ isPreview = false }) => {
 
     for (const col of columns) {
       const value = formValues[col.ColId];
-      if (value === undefined || value === null || value === "") {
-        errors[col.ColId] = `"${col.ColumnName}" is required.`;
+      const error = validateField(col, value);
+      if (error) {
+        errors[col.ColId] = error;
         hasError = true;
       }
     }
@@ -210,7 +228,7 @@ const FormPage = ({ isPreview = false }) => {
     setValidationErrors(errors);
 
     if (hasError) {
-      toast.error("Please fill out all required fields.");
+      toast.error("Please fill out all required fields correctly.");
       return;
     }
 
@@ -239,9 +257,28 @@ const FormPage = ({ isPreview = false }) => {
         },
       });
       toast.success("Form submitted successfully!");
+
+      console.log("Attempting to send WhatsApp message...");
+      console.log("User ID:", userId);
+      console.log("Form Details:", formDetails);
+
+      if (userId && formDetails && formDetails.formName) {
+        const message = `Your form "${formDetails.formName}" has been submitted successfully.`;
+        console.log("Message:", message);
+        try {
+          await sendWhatsAppMessage(userId, message);
+          toast.success("WhatsApp notification sent.");
+        } catch (whatsappError) {
+          console.error("WhatsApp Error:", whatsappError);
+          toast.error("Failed to send WhatsApp notification.");
+        }
+      } else {
+        console.log("Cannot send WhatsApp message because userId or formName is missing.");
+      }
+
       setFormValues({});
       handleOpen(true);
-      setTimeout(() => {
+       setTimeout(() => {
         handleLogout();
       }, 2500);
     } catch (err) {
@@ -363,7 +400,7 @@ const FormPage = ({ isPreview = false }) => {
                       const newValues = e.target.checked
                         ? [...currentValues, option]
                         : currentValues.filter((val) => val !== option);
-                      setFormValues((prev) => ({ ...prev, [ColId]: newValues }));
+                      setFormValues((prev) => ({ ...prev, [colId]: newValues }));
                     }}
                   />
                 }

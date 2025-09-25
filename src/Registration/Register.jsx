@@ -22,26 +22,8 @@ import {
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { toast } from 'react-toastify';
 import api from "../axiosConfig";
-import axios from "axios"; // Import axios directly
 import { useNavigate, useLocation, useParams } from "react-router-dom";
-
-const sendWhatsAppMessage = async (mobileNumber, message) => {
-    try {
-        // Use a clean axios instance for external API calls
-        const response = await axios.post("https://wav5.algotechnosoft.com/api/send", {
-            number: mobileNumber.replace('+91', ''), // Remove '+' to ensure correct format like 919876543210
-            type: "text",
-            message: message,
-            instance_id: "68258041C38DE",
-            access_token: "675fece35d27f",
-        });
-        console.log("WhatsApp API response:", response.data); // Log the response from the external API
-        return response.data;
-    } catch (error) {
-        console.error("Failed to send WhatsApp message:", error);
-        throw new Error("WhatsApp message sending failed.");
-    }
-};
+import { sendWhatsAppMessage } from "../whatsappService";
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);
@@ -75,6 +57,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
   const [alert, setAlert] = useState(null);
   const [emailError, setEmailError] = useState("");
   const [identifierError, setIdentifierError] = useState("");
+  const [formName, setFormName] = useState("");
 
   const [otp, setOtp] = useState("");
   const [showOtpDialog, setShowOtpDialog] = useState(false);
@@ -97,6 +80,22 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
     } else {
       setTab(0);
       setForceFormRegister(false);
+    }
+  }, [formId]);
+
+  useEffect(() => {
+    if (formId) {
+      const fetchFormName = async () => {
+        try {
+          const response = await api.get(`/public/formname/${formId}`);
+          if (response.data.FormName) {
+            setFormName(response.data.FormName);
+          }
+        } catch (error) {
+          console.error("Error fetching form name:", error);
+        }
+      };
+      fetchFormName();
     }
   }, [formId]);
 
@@ -151,9 +150,23 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
     setOtpError("");
     
     try {
+      let fetchedFormName = formName;
+      if (!fetchedFormName && formId) {
+        try {
+          const response = await api.get(`/public/formname/${formId}`);
+          if (response.data.FormName) {
+            fetchedFormName = response.data.FormName;
+            setFormName(response.data.FormName);
+          }
+        } catch (error) {
+          console.error("Error fetching form name:", error);
+        }
+      }
+
       const phoneNumber = identifier.startsWith('+91') ? identifier : `+91${identifier}`;
-      const otpCode = "123456";
-      const message = `Your OTP is: ${otpCode}`;
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      //const otpCode = "123456";
+      const message = `Your OTP for ${fetchedFormName ? `the ${fetchedFormName} form` : 'the form'} is: ${otpCode}`;
 
       console.log("Generated OTP:", otpCode);
       
@@ -508,7 +521,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
                       value={formRegData.identifier}
                       onChange={handleFormRegChange}
                       error={!!identifierError}
-                      helperText={identifierError || "Please enter a 10-digit phone number."}
+                      helperText={identifierError || "Please enter your 10-digit WhatsApp number to receive an OTP."}
                     />
                     <Button
                       type="button"

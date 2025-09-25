@@ -25,13 +25,58 @@ import {
   DialogActions,
   List,
   ListItem,
-  IconButton
+  IconButton,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel
 } from '@mui/material';
 import { Add as AddIcon, Close as CloseIcon } from '@mui/icons-material';
 import api from '../axiosConfig';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import ColumnOptionEditorDialog from './ColumnOptionEditorDialog';
+
+// New Dialog for Validation Rules
+const ValidationRuleDialog = ({ open, onClose, onSave, validationOptions, initialValue }) => {
+  const [selectedValue, setSelectedValue] = useState(initialValue || '');
+
+  useEffect(() => {
+    setSelectedValue(initialValue || '');
+  }, [initialValue, open]);
+
+  const handleSave = () => {
+    onSave(selectedValue);
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
+      <DialogTitle>Set Validation Rule</DialogTitle>
+      <DialogContent>
+        <FormControl fullWidth sx={{ mt: 2 }}>
+          <InputLabel id="validation-select-label">Validation</InputLabel>
+          <Select
+            labelId="validation-select-label"
+            value={selectedValue}
+            label="Validation"
+            onChange={(e) => setSelectedValue(e.target.value)}
+          >
+            <MenuItem value=""></MenuItem>
+            {validationOptions.map((option) => (
+              <MenuItem key={option.Id} value={option.Id}>
+                {option.ValidationList}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={handleSave} variant="contained">Save</Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
 
 const FormDetailsCreator = () => {
   const location = useLocation();
@@ -54,6 +99,12 @@ const FormDetailsCreator = () => {
   const [selectedColForOptions, setSelectedColForOptions] = useState(null);
   const [existingColumnIds, setExistingColumnIds] = useState([]);
 
+  // --- New State for Validation --- 
+  const [validationDialogOpen, setValidationDialogOpen] = useState(false);
+  const [selectedColForValidation, setSelectedColForValidation] = useState(null);
+  const [availableValidations, setAvailableValidations] = useState([]);
+  const [columnValidations, setColumnValidations] = useState({}); // { [colId]: validationId }
+
   const userId = sessionStorage.getItem('userId');
 
   useEffect(() => {
@@ -72,6 +123,7 @@ const FormDetailsCreator = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
+        // Fetch form details
         const formsResponse = await api.get('/formmaster');
         const foundForm = formsResponse.data.find(f => f.FormId == formId);
         if (foundForm) {
@@ -81,10 +133,12 @@ const FormDetailsCreator = () => {
           throw new Error(`Form with ID ${formId} not found.`);
         }
 
+        // Fetch all dynamic columns
         const columnsResponse = await api.get('/columns');
         setAllColumns(columnsResponse.data);
         setAvailableColumns(columnsResponse.data);
 
+        // Fetch columns already in this form version
         if (formId && formNo) {
           const existingColumnsResponse = await api.get(
             `/formdetails/user/form-columns?formId=${formId}&formNo=${formNo}`
@@ -93,8 +147,15 @@ const FormDetailsCreator = () => {
           const existingIds = existingColumnsResponse.data.map(c => c.ColId);
           setExistingColumnIds(existingIds);
         }
+
+        // --- Fetch available validation types ---
+        const validationTypesResponse = await api.get('/validation/types');
+        console.log('Validation Types API Response:', validationTypesResponse.data);
+        setAvailableValidations(validationTypesResponse.data);
+
       } catch (err) {
         setError(err.message || 'Failed to fetch initial data.');
+        toast.error(err.message || 'Failed to fetch initial data.');
       } finally {
         setLoading(false);
       }
@@ -136,6 +197,31 @@ const FormDetailsCreator = () => {
     setSelectedColForOptions(null);
   };
 
+  // --- Handlers for Validation Dialog ---
+  const handleOpenValidationDialog = (column) => {
+    setSelectedColForValidation(column);
+    setValidationDialogOpen(true);
+  };
+
+  const handleCloseValidationDialog = () => {
+    // If user cancels, deselect the column
+    if (selectedColForValidation) {
+      const newSelected = tempSelectedColumns.filter(id => id !== selectedColForValidation.ColumnId);
+      setTempSelectedColumns(newSelected);
+    }
+    setValidationDialogOpen(false);
+    setSelectedColForValidation(null);
+  };
+
+  const handleSaveValidationRule = (validationId) => {
+    if (selectedColForValidation) {
+      setColumnValidations(prev => ({ ...prev, [selectedColForValidation.ColumnId]: validationId }));
+      toast.success(`Validation set for ${selectedColForValidation.ColumnName}`);
+    }
+    setValidationDialogOpen(false);
+    setSelectedColForValidation(null);
+  };
+
   const handleToggleColumn = (column) => {
     const columnId = column.ColumnId;
     const currentIndex = tempSelectedColumns.indexOf(columnId);
@@ -146,9 +232,18 @@ const FormDetailsCreator = () => {
       const dataType = column.DataType?.toLowerCase();
       if (dataType === 'select' || dataType === 'radio' || dataType === 'checkbox') {
         handleOpenOptionsDialog(column);
+      } else {
+        // Open validation dialog for other types
+        handleOpenValidationDialog(column);
       }
     } else {
       newSelected.splice(currentIndex, 1);
+      // Also remove validation if it exists
+      if (columnValidations[columnId]) {
+        const newValidations = { ...columnValidations };
+        delete newValidations[columnId];
+        setColumnValidations(newValidations);
+      }
     }
     setTempSelectedColumns(newSelected);
   };
@@ -160,10 +255,18 @@ const FormDetailsCreator = () => {
     const newSequences = { ...sequences };
     delete newSequences[columnId];
     setSequences(newSequences);
+
+    // --- Remove validation rule as well ---
+    if (columnValidations[columnId]) {
+      const newValidations = { ...columnValidations };
+      delete newValidations[columnId];
+      setColumnValidations(newValidations);
+    }
   };
 
   const handleSequenceChange = (colId, value) => {
-    setSequences((prev) => ({ ...prev, [colId]: value }));
+    const numericValue = value === '' ? null : Number(value);
+    setSequences((prev) => ({ ...prev, [colId]: numericValue }));
     if (sequenceErrors[colId]) {
       setSequenceErrors(prev => {
         const newErrors = { ...prev };
@@ -180,36 +283,44 @@ const FormDetailsCreator = () => {
       return;
     }
 
+    // --- Validation logic for sequences (unchanged) ---
     const newErrors = {};
-    const sequenceValues = selectedColumns.map(colId => sequences[colId]);
     let hasErrors = false;
-
     selectedColumns.forEach(colId => {
-      if (!sequences[colId]) {
-        newErrors[colId] = "Sequence is required.";
+      const seq = sequences[colId];
+      if (seq === null || seq === undefined || isNaN(seq)) {
+        newErrors[colId] = "Sequence is required and must be a number.";
+        hasErrors = true;
+      } else if (Number(seq) <= 0) {
+        newErrors[colId] = "Sequence must be a positive number.";
         hasErrors = true;
       }
     });
-
-    const sequenceCounts = sequenceValues.reduce((acc, seq) => {
-      if (seq) acc[seq] = (acc[seq] || 0) + 1;
+    if (hasErrors) {
+      setSequenceErrors(newErrors);
+      return;
+    }
+    const validSequenceValues = selectedColumns
+      .map(colId => sequences[colId])
+      .filter(seq => seq !== null && seq !== undefined && !isNaN(seq) && Number(seq) > 0);
+    const sequenceCounts = validSequenceValues.reduce((acc, seq) => {
+      acc[seq] = (acc[seq] || 0) + 1;
       return acc;
     }, {});
-
     selectedColumns.forEach(colId => {
       const seq = sequences[colId];
-      if (seq && sequenceCounts[seq] > 1) {
+      if (seq !== null && seq !== undefined && !isNaN(seq) && Number(seq) > 0 && sequenceCounts[seq] > 1) {
         newErrors[colId] = "Sequence must be unique.";
         hasErrors = true;
       }
     });
-
     setSequenceErrors(newErrors);
     if (hasErrors) return;
+    // --- End of validation logic ---
 
-    setSubmitStatus({ type: 'info', message: 'Submitting...' });
+    setSubmitStatus({ type: 'info', message: 'Submitting columns...' });
 
-    const requests = selectedColumns.map(colId => {
+    const columnRequests = selectedColumns.map(colId => {
       return api.post('/formdetails/insert-formdetails', {
         formId,
         colId,
@@ -220,19 +331,42 @@ const FormDetailsCreator = () => {
     });
 
     try {
-      await Promise.all(requests);
-      setSubmitStatus({ type: 'success', message: 'Columns added successfully!' });
+      await Promise.all(columnRequests);
       toast.success('Columns added successfully!');
+      setSubmitStatus({ type: 'info', message: 'Saving validation rules...' });
+
+      // --- Now, save the validation rules ---
+      const validationRequests = selectedColumns.map(colId => {
+        const validationId = columnValidations[colId];
+        if (validationId) {
+          return api.post('/validation/insert', {
+            FormId: formId,
+            ColId: colId,
+            Validationid: validationId,
+            Active: 1,
+          });
+        }
+        return null;
+      }).filter(Boolean); // Filter out null requests
+
+      if (validationRequests.length > 0) {
+        await Promise.all(validationRequests);
+        toast.success('Validation rules saved successfully!');
+      }
+
+      setSubmitStatus({ type: 'success', message: 'All details saved successfully!' });
       setSelectedColumns([]);
       setSequences({});
-      setTimeout(() => setSubmitStatus(null), 5000);
-
+      setColumnValidations({}); // Clear validations
+      
       setTimeout(() => {
         navigate('/create-column-table', { state: { formId, formNo } });
       }, 1500);
+
     } catch (err) {
-      setSubmitStatus({ type: 'error', message: err.response?.data?.message || 'An error occurred.' });
-      toast.error(err.response?.data?.message || 'An error occurred.');
+      const errorMessage = err.response?.data?.message || 'An error occurred during submission.';
+      setSubmitStatus({ type: 'error', message: errorMessage });
+      toast.error(errorMessage);
     }
   };
 
@@ -246,10 +380,10 @@ const FormDetailsCreator = () => {
             <Typography variant="h5" gutterBottom>Add Columns to Form</Typography>
            
             <Grid container spacing={3}>
-              <Grid item xs={12}>
+              <Grid xs={12}>
                 <TextField fullWidth label="Form Name" value={formName} InputProps={{ readOnly: true }} variant="filled" />
               </Grid>
-              <Grid item xs={12}>
+              <Grid xs={12}>
                 <Button
                   variant="outlined"
                   startIcon={<AddIcon />}
@@ -261,7 +395,7 @@ const FormDetailsCreator = () => {
               </Grid>
 
               {submitStatus && (
-                <Grid item xs={12}>
+                <Grid xs={12}>
                   <Alert severity={submitStatus.type}>{submitStatus.message}</Alert>
                 </Grid>
               )}
@@ -277,6 +411,7 @@ const FormDetailsCreator = () => {
                         <TableRow>
                           <TableCell>Column Name</TableCell>
                           <TableCell>Data Type</TableCell>
+                          <TableCell>Validation Rule</TableCell>
                           <TableCell>Sequence Number</TableCell>
                           <TableCell>Action</TableCell>
                         </TableRow>
@@ -284,10 +419,13 @@ const FormDetailsCreator = () => {
                       <TableBody>
                         {selectedColumns.map(colId => {
                           const column = allColumns.find(c => c.ColumnId === colId);
+                          const validationId = columnValidations[colId];
+                          const validation = availableValidations.find(v => v.Id === validationId);
                           return (
                             <TableRow key={colId}>
                               <TableCell>{column?.ColumnName}</TableCell>
                               <TableCell>{column?.DataType}</TableCell>
+                              <TableCell>{validation ? validation.ValidationList : 'None'}</TableCell>
                               <TableCell>
                                 <TextField
                                   type="number"
@@ -360,7 +498,7 @@ const FormDetailsCreator = () => {
             {availableColumns.map((col) => {
               const isExisting = existingColumnIds.includes(col.ColumnId);
               return (
-                <ListItem key={col.ColumnId} button disabled={isExisting}>
+                <ListItem key={col.ColumnId} button="true" disabled={isExisting}>
                   <Checkbox
                     checked={isExisting || tempSelectedColumns.indexOf(col.ColumnId) !== -1}
                     disabled={isExisting}
@@ -403,8 +541,21 @@ const FormDetailsCreator = () => {
           colId={selectedColForOptions.colId}
           dataType={selectedColForOptions.dataType}
           columnName={selectedColForOptions.columnName}
+          formId={formId}
         />
       )}
+
+      {/* --- Validation Rule Dialog --- */}
+      {validationDialogOpen && selectedColForValidation && (
+        <ValidationRuleDialog
+          open={validationDialogOpen}
+          onClose={handleCloseValidationDialog}
+          onSave={handleSaveValidationRule}
+          validationOptions={availableValidations}
+          initialValue={columnValidations[selectedColForValidation.ColumnId]}
+        />
+      )}
+
     </Container>
   );
 };

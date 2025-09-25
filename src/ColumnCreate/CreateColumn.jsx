@@ -35,12 +35,14 @@ const dataTypes = [
   { value: "flg", label: "Flag" },
   { value: "file", label: "File" },
   { value: "photo", label: "Photo" },
+  { value: "textarea", label: "Textarea" },
 ];
 
 export default function CreateColumn() {
   const [column, setColumn] = useState({ name: "", type: "text" });
   const [gridColumns, setGridColumns] = useState([]);
   const [errorMsg, setErrorMsg] = useState("");
+  const [columnNameError, setColumnNameError] = useState(""); // New state for column name validation
   const [successMsg, setSuccessMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const [editingColumnId, setEditingColumnId] = useState(null);
