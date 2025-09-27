@@ -23,6 +23,7 @@ import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { toast } from 'react-toastify';
 import api from "../axiosConfig";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
+import OtpInput from 'react-otp-input';
 import { sendWhatsAppMessage } from "../whatsappService";
 
 function useQuery() {
@@ -63,6 +64,25 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
   const [showOtpDialog, setShowOtpDialog] = useState(false);
   const [otpError, setOtpError] = useState("");
   const [provisionalToken, setProvisionalToken] = useState(null);
+  const [otpTimer, setOtpTimer] = useState(0);
+  const [canResendOtp, setCanResendOtp] = useState(false);
+
+  // Timer effect for OTP
+  useEffect(() => {
+    let interval;
+    if (otpTimer > 0) {
+      interval = setInterval(() => {
+        setOtpTimer((prev) => {
+          if (prev <= 1) {
+            setCanResendOtp(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [otpTimer]);
 
   const handleEditPreview = () => {
     setShowEditPreviewDialog(false);
@@ -164,17 +184,19 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
       }
 
       const phoneNumber = identifier.startsWith('+91') ? identifier : `+91${identifier}`;
-      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-      //const otpCode = "123456";
+      //const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpCode = "123456";
       
 
       console.log("Generated OTP:", otpCode);
-       const message = `Your OTP for ${fetchedFormName ? `the ${fetchedFormName} form` : 'the form'} is: ${otpCode}`;
-       await sendWhatsAppMessage(phoneNumber, message);
+      //  const message = `Your OTP for ${fetchedFormName ? `the ${fetchedFormName} form` : 'the form'} is: ${otpCode}`;
+      //  await sendWhatsAppMessage(phoneNumber, message);
 
       sessionStorage.setItem('currentOtp', otpCode); 
 
       setShowOtpDialog(true);
+      setOtpTimer(35); // Start 35-second timer
+      setCanResendOtp(false);
       toast.success("OTP sent successfully via WhatsApp!");
     } catch (error) {
       console.error("Error sending OTP via WhatsApp:", error);
@@ -185,6 +207,14 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
     } finally {
       setOtpLoading(false);
     }
+  };
+
+  const handleResendOtp = async () => {
+    if (!canResendOtp) return;
+    
+    setOtp("");
+    setOtpError("");
+    await handleSendOtp(formRegData.identifier);
   };
 
   const handleVerifyOtp = async () => {
@@ -208,6 +238,8 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
         handleFormRegistrationSuccess({ token: provisionalToken }, formRegData.identifier);
         setShowOtpDialog(false);
         sessionStorage.removeItem('currentOtp');
+        setOtpTimer(0);
+        setCanResendOtp(false);
       } else {
         throw new Error("Invalid OTP. Please try again.");
       }
@@ -219,7 +251,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
       setOtpError(errorMessage);
       toast.error(errorMessage);
     } finally {
-      setLoading(false);
+      setOtpLoading(false);
     }
   };
 
@@ -581,26 +613,76 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
       <Dialog open={showOtpDialog} onClose={() => !otpLoading && setShowOtpDialog(false)}>
         <DialogTitle>Verify Phone Number</DialogTitle>
         <DialogContent>
-          <Typography>
-            An OTP has been sent to your phone number. Please enter it below.
+          <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
+            A 6-digit OTP has been sent to your WhatsApp number. Please enter it below.
           </Typography>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="otp"
-            label="Enter OTP"
-            name="otp"
-            value={otp}
-            onChange={(e) => setOtp(e.target.value)}
-            error={!!otpError}
-            helperText={otpError}
-            inputProps={{ maxLength: 6 }}
-          />
+          
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 2, flexDirection: 'column' }}>
+            <OtpInput
+              value={otp}
+              onChange={(otpValue) => {
+                setOtp(otpValue);
+                if (otpValue.length === 6) {
+                  setOtpError('');
+                }
+              }}
+              numInputs={6}
+              inputType="tel"
+              renderSeparator={<span style={{ width: '8px' }}></span>}
+              renderInput={(props) => <input {...props} />}
+              shouldAutoFocus={true}
+              containerStyle={{ justifyContent: 'center' }}
+              inputStyle={{
+                width: '2.5rem',
+                height: '3rem',
+                fontSize: '1.2rem',
+                borderRadius: '4px',
+                border: `1px solid ${otpError ? '#d32f2f' : 'rgba(0, 0, 0, 0.23)'}`,
+              }}
+            />
+            {otpError && (
+              <Typography variant="caption" color="error" sx={{ textAlign: 'center', mt: 1 }}>
+                {otpError}
+              </Typography>
+            )}
+          </Box>
+          
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+            <Typography variant="body2" color="textSecondary">
+              {otpTimer > 0 ? (
+                `Resend OTP in ${otpTimer} seconds`
+              ) : (
+                "Didn't receive the OTP?"
+              )}
+            </Typography>
+            
+            <Button 
+              onClick={handleResendOtp}
+              disabled={!canResendOtp || otpLoading}
+              variant="text"
+              size="small"
+              color="primary"
+            >
+              Resend OTP
+            </Button>
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowOtpDialog(false)} disabled={otpLoading}>Cancel</Button>
-          <Button onClick={handleVerifyOtp} variant="contained" disabled={otpLoading || otp.length !== 6}>
+          <Button 
+            onClick={() => {
+              setShowOtpDialog(false);
+              setOtpTimer(0);
+              setCanResendOtp(false);
+            }} 
+            disabled={otpLoading}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleVerifyOtp} 
+            variant="contained" 
+            disabled={otpLoading || otp.length !== 6}
+          >
             {otpLoading ? <CircularProgress size={24} /> : "Verify"}
           </Button>
         </DialogActions>

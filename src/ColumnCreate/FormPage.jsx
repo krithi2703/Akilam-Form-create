@@ -235,12 +235,29 @@ const FormPage = ({ isPreview = false }) => {
   }, [fetchFormAndOptions]);
 
   const handleInputChange = (colId, event, type) => {
-    const value =
-      type === "checkbox"
-        ? event.target.checked
-        : type === "file" || type === "photo"
-        ? event.target.files[0]
-        : event.target.value;
+    let value;
+    const file = event.target.files ? event.target.files[0] : null;
+
+    if (type === "checkbox") {
+      value = event.target.checked;
+    } else if (type === "file" || type === "photo") {
+      if (file) {
+        const MAX_PHOTO_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
+        // MAX_FILE_SIZE_BYTES is no longer needed for client-side validation as page count is server-side
+
+        if (type === "photo" && file.size > MAX_PHOTO_SIZE_BYTES) {
+          toast.error(`Photo "${file.name}" exceeds the 2MB limit.`);
+          event.target.value = null; // Clear the input
+          value = null;
+        } else { // No client-side size validation for 'file' type, as page count is server-side
+          value = file;
+        }
+      } else {
+        value = null;
+      }
+    } else {
+      value = event.target.value;
+    }
     setFormValues((prev) => ({ ...prev, [String(colId)]: value }));
   };
 
@@ -546,7 +563,7 @@ const FormPage = ({ isPreview = false }) => {
                 sx={{ mb: 3 }}
                 required={column.IsValid}
                 error={isError}
-                helperText={errorMessage}
+                helperText={errorMessage || 'Only 2-3 page PDFs allowed'}
             />
         );
       case 'photo':
@@ -564,7 +581,7 @@ const FormPage = ({ isPreview = false }) => {
                 sx={{ mb: 3 }}
                 required={column.IsValid}
                 error={isError}
-                helperText={errorMessage}
+                helperText={errorMessage || 'Max 2MB'}
             />
         );
       default:

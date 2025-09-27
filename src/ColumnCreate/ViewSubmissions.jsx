@@ -503,11 +503,15 @@ const ViewSubmissions = () => {
             <TextField
               fullWidth
               type="file"
-              onChange={(e) => handleEditChange(ColId, e.target.files[0])}
+              onChange={(e) => {
+                const file = e.target.files[0];
+                // No client-side size validation for 'file' type, as page count is server-side
+                handleEditChange(ColId, file);
+              }}
               sx={{ mb: 2 }}
               required={col.IsValid}
               error={isError}
-              helperText={errorMessage}
+              helperText={errorMessage || 'Only 2-3 page PDFs allowed'}
             />
             {value && <Typography variant="caption">Current file: {value}</Typography>}
           </>
@@ -520,11 +524,21 @@ const ViewSubmissions = () => {
               fullWidth
               type="file"
               inputProps={{ accept: 'image/*' }}
-              onChange={(e) => handleEditChange(ColId, e.target.files[0])}
+              onChange={(e) => {
+                const file = e.target.files[0];
+                const MAX_PHOTO_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
+                if (file && file.size > MAX_PHOTO_SIZE_BYTES) {
+                  toast.error(`Photo "${file.name}" exceeds the 2MB limit.`);
+                  e.target.value = null; // Clear the input
+                  handleEditChange(ColId, null);
+                } else {
+                  handleEditChange(ColId, file);
+                }
+              }}
               sx={{ mb: 2 }}
               required={col.IsValid}
               error={isError}
-              helperText={errorMessage}
+              helperText={errorMessage || 'Max 2MB'}
             />
             {value && <img src={`${getBaseUrl()}${value}`} alt="preview" style={{ width: '100px', marginTop: '10px' }}/>}
           </>
