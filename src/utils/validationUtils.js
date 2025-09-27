@@ -1,7 +1,7 @@
 export const validateField = (column, value) => {
-  const { ColumnName, IsMandatory, Validation } = column; // Assuming 'Validation' property exists on the column object
+  const { ColumnName, IsValid, Validation } = column; // Use IsValid instead of IsMandatory
 
-  if (IsMandatory && (value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0))) {
+  if (IsValid && (value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0))) {
     return `"${ColumnName}" is required.`;
   }
 

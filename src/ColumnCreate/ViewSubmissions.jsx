@@ -369,6 +369,7 @@ const ViewSubmissions = () => {
             value={value}
             onChange={(e) => handleEditChange(ColId, e.target.value)}
             sx={{ mb: 2 }}
+            required={col.IsValid}
             error={isError}
             helperText={errorMessage}
           />
@@ -378,7 +379,7 @@ const ViewSubmissions = () => {
       case 'checkbox':
         return (
           <FormControl component="fieldset" fullWidth sx={{ mb: 2 }} error={isError}>
-            <FormLabel component="legend">{ColumnName}</FormLabel>
+            <FormLabel component="legend" required={col.IsValid}>{ColumnName}</FormLabel>
             {options.map((option) => (
               <FormControlLabel
                 key={option}
@@ -404,11 +405,12 @@ const ViewSubmissions = () => {
       case 'select':
         return (
           <FormControl fullWidth sx={{ mb: 2 }} error={isError}>
-            <InputLabel>{ColumnName}</InputLabel>
+            <InputLabel required={col.IsValid}>{ColumnName}</InputLabel>
             <Select
               value={value}
               label={ColumnName}
               onChange={(e) => handleEditChange(ColId, e.target.value)}
+              required={col.IsValid}
             >
               {options.map((option) => (
                 <MenuItem key={option} value={option}>
@@ -423,7 +425,7 @@ const ViewSubmissions = () => {
       case 'radio':
         return (
           <FormControl component="fieldset" fullWidth sx={{ mb: 2 }} error={isError}>
-            <FormLabel component="legend">{ColumnName}</FormLabel>
+            <FormLabel component="legend" required={col.IsValid}>{ColumnName}</FormLabel>
             <RadioGroup
               aria-label={ColumnName}
               name={ColId}
@@ -455,6 +457,7 @@ const ViewSubmissions = () => {
               shrink: true,
             }}
             sx={{ mb: 2 }}
+            required={col.IsValid}
             error={isError}
             helperText={errorMessage}
           />
@@ -472,6 +475,7 @@ const ViewSubmissions = () => {
               shrink: true,
             }}
             sx={{ mb: 2 }}
+            required={col.IsValid}
             error={isError}
             helperText={errorMessage}
           />
@@ -487,6 +491,7 @@ const ViewSubmissions = () => {
             value={value}
             onChange={(e) => handleEditChange(ColId, e.target.value)}
             sx={{ mb: 2 }}
+            required={col.IsValid}
             error={isError}
             helperText={errorMessage}
           />
@@ -500,6 +505,7 @@ const ViewSubmissions = () => {
               type="file"
               onChange={(e) => handleEditChange(ColId, e.target.files[0])}
               sx={{ mb: 2 }}
+              required={col.IsValid}
               error={isError}
               helperText={errorMessage}
             />
@@ -516,6 +522,7 @@ const ViewSubmissions = () => {
               inputProps={{ accept: 'image/*' }}
               onChange={(e) => handleEditChange(ColId, e.target.files[0])}
               sx={{ mb: 2 }}
+              required={col.IsValid}
               error={isError}
               helperText={errorMessage}
             />
@@ -530,6 +537,7 @@ const ViewSubmissions = () => {
             value={value}
             onChange={(e) => handleEditChange(ColId, e.target.value)}
             sx={{ mb: 2 }}
+            required={col.IsValid}
             error={isError}
             helperText={errorMessage}
           />

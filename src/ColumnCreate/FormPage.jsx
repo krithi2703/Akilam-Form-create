@@ -43,6 +43,7 @@ import {
 import Register from "../Registration/Register";
 import { sendWhatsAppMessage } from "../whatsappService";
 import { validateField } from "../utils/validationUtils";
+import PaymentButton from '../Razor/PaymentButton';
 
 // Helper to read query params
 function useQuery() {
@@ -70,6 +71,11 @@ const FormPage = ({ isPreview = false }) => {
   const [showRegistrationEndedDialog, setShowRegistrationEndedDialog] = useState(false);
   const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
 
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState(0);
+  const [paymentDescription, setPaymentDescription] = useState('');
+  const [paymentOrderId, setPaymentOrderId] = useState(null); // To store order ID after successful payment
+
   const userId = sessionStorage.getItem("userId");
   const userName = sessionStorage.getItem("userName");
   const isFormOnlyUser = sessionStorage.getItem("isFormOnlyUser") === "true";
@@ -86,6 +92,35 @@ const FormPage = ({ isPreview = false }) => {
   const handleRegistrationSuccess = () => {
     handleCloseRegisterDialog();
     window.location.reload();
+  };
+
+  const handlePaymentSuccess = async (paymentId, orderId) => {
+    toast.success(`Payment successful! Payment ID: ${paymentId}.`);
+    setPaymentOrderId(orderId); // Store order ID if needed
+    setShowPaymentDialog(false); // Close payment dialog
+    handleOpen(); // Open the success dialog
+
+    if (userId && formDetails && formDetails.formName) {
+      const message = `Your form \"${formDetails.formName}\" has been submitted successfully.`;
+      try {
+        await sendWhatsAppMessage(userId, message);
+        toast.success("WhatsApp notification sent.");
+      } catch (whatsappError) {
+        console.error("WhatsApp Error:", whatsappError);
+        toast.error("Failed to send WhatsApp notification.");
+      }
+    }
+
+    setTimeout(() => {
+      handleLogout();
+    }, 2500);
+  };
+
+  const handlePaymentFailure = (error) => {
+    toast.error(`Payment failed: ${error}`);
+    setShowPaymentDialog(false); // Close payment dialog
+    // Decide what to do on failure: allow retry, show error, etc.
+    // For now, let's just close the dialog.
   };
 
   const fetchFormAndOptions = useCallback(async () => {
@@ -139,6 +174,7 @@ const FormPage = ({ isPreview = false }) => {
           formNo: sortedColumns[0].FormNo,
           endDate: sortedColumns[0].Enddate,
           startDate: sortedColumns[0].Startdate,
+          fee: sortedColumns[0].Fee,
         });
         // Calculate if registration has ended
         const endDate = sortedColumns[0].Enddate;
@@ -205,39 +241,11 @@ const FormPage = ({ isPreview = false }) => {
         : type === "file" || type === "photo"
         ? event.target.files[0]
         : event.target.value;
-    setFormValues((prev) => ({ ...prev, [colId]: value }));
+    setFormValues((prev) => ({ ...prev, [String(colId)]: value }));
   };
 
-  const handleSubmit = async () => {
-    if (isRegistrationEnded) {
-      toast.error("Registration for this form has ended and submissions are no longer accepted.");
-      return;
-    }
-    let errors = {};
-    let hasError = false;
-
-    for (const col of columns) {
-      const value = formValues[col.ColId];
-      const error = validateField(col, value);
-      if (error) {
-        errors[col.ColId] = error;
-        hasError = true;
-      }
-    }
-
-    setValidationErrors(errors);
-
-    if (hasError) {
-      toast.error("Please fill out all required fields correctly.");
-      return;
-    }
-
-    if (columns.length > 0 && Object.keys(formValues).length === 0) {
-      toast.error("The form is empty and cannot be submitted.");
-      return;
-    }
-
-    setIsSubmitting(true);
+  const submitFormDataAndFinalize = async () => {
+    setIsSubmitting(true); // Set submitting state
     const formData = new FormData();
     formData.append("formId", formId);
 
@@ -277,16 +285,68 @@ const FormPage = ({ isPreview = false }) => {
       }
 
       setFormValues({});
-      handleOpen(true);
-       setTimeout(() => {
-        handleLogout();
-      }, 2500);
+      handleOpen(true); // This opens the CustomDialog (success dialog)
+
     } catch (err) {
       if (err.response?.status !== 401 && err.response?.status !== 403) {
         toast.error(err.response?.data?.message || "Failed to submit form.");
       }
+      throw err; // Re-throw to be caught by caller if needed
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (isRegistrationEnded) {
+      toast.error("Registration for this form has ended and submissions are no longer accepted.");
+      return;
+    }
+    let errors = {};
+    let hasError = false;
+
+    for (const col of columns) {
+      const value = formValues[col.ColId];
+      const error = validateField(col, value);
+      if (error) {
+        errors[col.ColId] = error;
+        hasError = true;
+      }
+    }
+
+    setValidationErrors(errors);
+
+    if (hasError) {
+      toast.error("Please fill out all required fields correctly.");
+      return;
+    }
+
+    if (columns.length > 0 && Object.keys(formValues).length === 0) {
+      toast.error("The form is empty and cannot be submitted.");
+      return;
+    }
+
+    // --- Payment Logic Check ---
+    const requiresPayment = formDetails?.fee > 0;
+    const amountToPay = formDetails?.fee;
+    const paymentDesc = `Payment for form: ${formDetails?.formName || 'N/A'}`;
+
+    if (requiresPayment) {
+      setPaymentAmount(amountToPay);
+      setPaymentDescription(paymentDesc);
+      setShowPaymentDialog(true); // Open payment dialog
+      return; // IMPORTANT: Stop submission here, wait for payment
+    }
+
+    // If no payment required, proceed to submit form data
+    try {
+      await submitFormDataAndFinalize();
+      // If no payment was required, and form submitted, then logout
+      setTimeout(() => {
+        handleLogout();
+      }, 2500);
+    } catch (err) {
+      // Error handled in submitFormDataAndFinalize
     }
   };
 
@@ -339,7 +399,7 @@ const FormPage = ({ isPreview = false }) => {
             InputLabelProps={{ shrink: true }}
             variant="outlined"
             sx={{ mb: 3 }}
-            required
+            required={column.IsValid}
             error={isError}
             helperText={errorMessage}
           />
@@ -357,7 +417,7 @@ const FormPage = ({ isPreview = false }) => {
             InputLabelProps={{ shrink: true }}
             variant="outlined"
             sx={{ mb: 3 }}
-            required
+            required={column.IsValid}
             error={isError}
             helperText={errorMessage}
           />
@@ -376,7 +436,7 @@ const FormPage = ({ isPreview = false }) => {
             type="number"
             variant="outlined"
             sx={{ mb: 3 }}
-            required
+            required={column.IsValid}
             error={isError}
             helperText={errorMessage}
           />
@@ -386,7 +446,7 @@ const FormPage = ({ isPreview = false }) => {
       case "checkbox":
         return (
           <FormControl fullWidth sx={{ mb: 3 }} error={isError}>
-            <FormLabel component="legend" required>{ColumnName}</FormLabel>
+            <FormLabel component="legend" required={column.IsValid}>{ColumnName}</FormLabel>
             {options.map((option) => (
               <FormControlLabel
                 key={option}
@@ -413,7 +473,7 @@ const FormPage = ({ isPreview = false }) => {
       case "select":
         return (
           <FormControl fullWidth sx={{ mb: 3 }} error={isError}>
-            <InputLabel id={`${ColId}-label`} required>{ColumnName}</InputLabel>
+            <InputLabel id={`${ColId}-label`} required={column.IsValid}>{ColumnName}</InputLabel>
             <Select
               labelId={`${ColId}-label`}
               id={ColId}
@@ -421,7 +481,7 @@ const FormPage = ({ isPreview = false }) => {
               value={value}
               label={ColumnName}
               onChange={(e) => handleInputChange(ColId, e)}
-              required
+              required={column.IsValid}
             >
               {options.map((option) => (
                 <MenuItem key={option} value={option}>
@@ -435,7 +495,7 @@ const FormPage = ({ isPreview = false }) => {
       case "radio":
         return (
           <FormControl component="fieldset" fullWidth sx={{ mb: 3 }} error={isError}>
-            <FormLabel component="legend" required>{ColumnName}</FormLabel>
+            <FormLabel component="legend" required={column.IsValid}>{ColumnName}</FormLabel>
             <RadioGroup
               aria-label={ColumnName}
               name={ColId}
@@ -467,7 +527,7 @@ const FormPage = ({ isPreview = false }) => {
             onChange={(e) => handleInputChange(ColId, e)}
             variant="outlined"
             sx={{ mb: 3 }}
-            required
+            required={column.IsValid}
             error={isError}
             helperText={errorMessage}
           />
@@ -484,7 +544,7 @@ const FormPage = ({ isPreview = false }) => {
                 InputLabelProps={{ shrink: true }}
                 variant="outlined"
                 sx={{ mb: 3 }}
-                required
+                required={column.IsValid}
                 error={isError}
                 helperText={errorMessage}
             />
@@ -502,7 +562,7 @@ const FormPage = ({ isPreview = false }) => {
                 inputProps={{ accept: 'image/*' }}
                 variant="outlined"
                 sx={{ mb: 3 }}
-                required
+                required={column.IsValid}
                 error={isError}
                 helperText={errorMessage}
             />
@@ -518,7 +578,7 @@ const FormPage = ({ isPreview = false }) => {
             onChange={(e) => handleInputChange(ColId, e)}
             variant="outlined"
             sx={{ mb: 3 }}
-            required
+            required={column.IsValid}
             error={isError}
             helperText={errorMessage}
           />
@@ -746,6 +806,34 @@ const FormPage = ({ isPreview = false }) => {
           message={successMessage}
         />
         <CustomDialog open={open} handleClose={handleClose} />
+
+        {/* Payment Dialog */}
+        <Dialog
+          open={showPaymentDialog}
+          onClose={() => setShowPaymentDialog(false)} // Allow closing, but payment might still be pending
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Complete Your Payment</DialogTitle>
+          <DialogContent>
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              Your form has been submitted. Please complete the payment to finalize.
+            </Typography>
+            <PaymentButton
+              amount={paymentAmount}
+              description={paymentDescription}
+              userId={userId}
+              formId={formId}
+              formValues={formValues}
+              onPaymentSuccess={handlePaymentSuccess}
+              onPaymentFailure={handlePaymentFailure}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShowPaymentDialog(false)}>Close</Button>
+          </DialogActions>
+        </Dialog>
+
         <Dialog
           open={registerDialogOpen}
           onClose={handleCloseRegisterDialog}

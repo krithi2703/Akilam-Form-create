@@ -31,7 +31,7 @@ import {
   FormControl,
   InputLabel
 } from '@mui/material';
-import { Add as AddIcon, Close as CloseIcon } from '@mui/icons-material';
+import { Add as AddIcon, Close as CloseIcon, Rule as RuleIcon } from '@mui/icons-material';
 import api from '../axiosConfig';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -204,7 +204,6 @@ const FormDetailsCreator = () => {
   };
 
   const handleCloseValidationDialog = () => {
-    // If user cancels, deselect the column
     if (selectedColForValidation) {
       const newSelected = tempSelectedColumns.filter(id => id !== selectedColForValidation.ColumnId);
       setTempSelectedColumns(newSelected);
@@ -232,9 +231,6 @@ const FormDetailsCreator = () => {
       const dataType = column.DataType?.toLowerCase();
       if (dataType === 'select' || dataType === 'radio' || dataType === 'checkbox') {
         handleOpenOptionsDialog(column);
-      } else {
-        // Open validation dialog for other types
-        handleOpenValidationDialog(column);
       }
     } else {
       newSelected.splice(currentIndex, 1);
@@ -274,6 +270,15 @@ const FormDetailsCreator = () => {
         return newErrors;
       });
     }
+  };
+
+  const handleClearValidationRule = (colId) => {
+    setColumnValidations(prev => {
+      const newValidations = { ...prev };
+      delete newValidations[colId];
+      return newValidations;
+    });
+    toast.info('Validation rule cleared.');
   };
 
   const handleSubmit = async (event) => {
@@ -380,10 +385,10 @@ const FormDetailsCreator = () => {
             <Typography variant="h5" gutterBottom>Add Columns to Form</Typography>
            
             <Grid container spacing={3}>
-              <Grid xs={12}>
+              <Grid item xs={12}>
                 <TextField fullWidth label="Form Name" value={formName} InputProps={{ readOnly: true }} variant="filled" />
               </Grid>
-              <Grid xs={12}>
+              <Grid item xs={12}>
                 <Button
                   variant="outlined"
                   startIcon={<AddIcon />}
@@ -395,7 +400,7 @@ const FormDetailsCreator = () => {
               </Grid>
 
               {submitStatus && (
-                <Grid xs={12}>
+                <Grid item xs={12}>
                   <Alert severity={submitStatus.type}>{submitStatus.message}</Alert>
                 </Grid>
               )}
@@ -508,19 +513,41 @@ const FormDetailsCreator = () => {
                     primary={col.ColumnName} 
                     secondary={`ID: ${col.ColumnId}, Type: ${col.DataType}${isExisting ? ' (Already in form)' : ''}`} 
                   />
-                  {(col.DataType?.toLowerCase() === 'select' ||
+
+                  {!(col.DataType?.toLowerCase() === 'select' ||
                     col.DataType?.toLowerCase() === 'radio' ||
-                    col.DataType?.toLowerCase() === 'checkbox') && !isExisting && (
-                    <IconButton
-                      edge="end"
-                      aria-label="manage options"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenOptionsDialog(col);
-                      }}
-                    >
-                      <AddIcon hidden/>
-                    </IconButton>
+                    col.DataType?.toLowerCase() === 'checkbox') && 
+                   !isExisting && 
+                   tempSelectedColumns.includes(col.ColumnId) && (
+                    <>
+                      {columnValidations[col.ColumnId] ? ( // If validation is set
+                        <Button
+                          variant="outlined"
+                          color="error" // Use error color for clear/cancel
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleClearValidationRule(col.ColumnId);
+                          }}
+                          sx={{ ml: 2, textTransform: 'none' }}
+                        >
+                          Clear Validation
+                        </Button>
+                      ) : ( // If no validation is set
+                        <Button
+                          variant="outlined"
+                          color="success"
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenValidationDialog(col);
+                          }}
+                          sx={{ ml: 2, textTransform: 'none' }}
+                        >
+                          Is Require
+                        </Button>
+                      )}
+                    </>
                   )}
                 </ListItem>
               );

@@ -35,6 +35,7 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import api from "../axiosConfig";
 import { toast } from 'react-toastify';
+import { Switch } from "@mui/material"; // New import
 
 const CreateColumnTable = () => {
   const navigate = useNavigate();
@@ -59,6 +60,17 @@ const CreateColumnTable = () => {
 
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleIsValidChange = async (formDetailId, currentIsValid) => {
+    try {
+      await api.put(`/formdetails/update-isvalid/${formDetailId}`, { isValid: !currentIsValid });
+      toast.success("Required status updated successfully!");
+      // Refresh the columns to reflect the change
+      fetchFormColumns(selectedForm.id, selectedForm.no);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update required status.");
+    }
+  };
 
   const dataTypes = [
     { value: "varchar", label: "Text" },
@@ -183,8 +195,9 @@ const CreateColumnTable = () => {
       const response = await api.get(
         `/formdetails/user/form-columns?formId=${formId}&formNo=${formNo}`
       );
-      setFormColumns(response.data);
-      console.log(`Fetched columns for FormId: ${formId}, FormNo: ${formNo}:`, response.data);
+      const sortedColumns = response.data.sort((a, b) => a.SequenceNo - b.SequenceNo);
+      setFormColumns(sortedColumns);
+      console.log(`Fetched columns for FormId: ${formId}, FormNo: ${formNo}:`, sortedColumns);
     } catch (err) {
       console.error("Error fetching form columns:", err);
       setError(err.response?.data?.message || "Failed to fetch form columns");
@@ -395,27 +408,44 @@ const CreateColumnTable = () => {
                     <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Column Name</TableCell>
                     <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Data Type</TableCell>
                     <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Sequence No</TableCell>
+                    <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Is Required</TableCell> {/* New Header */}
                     <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }} hidden>User Name</TableCell>
                     <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }} align="center">Actions</TableCell>
                   </TableRow>
                 </TableHead>
 
                 <TableBody>
-                  {formColumns.length > 0 ? formColumns.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((col, index) => (
-                    <TableRow key={col.Id} sx={{ "&:hover": { backgroundColor: "action.hover" } }}>
-                      <TableCell>{page * rowsPerPage + index + 1}</TableCell>
-                      <TableCell>{col.ColumnName}</TableCell>
-                      <TableCell><Chip label={col.DataType} size="small" variant="outlined" color="primary" /></TableCell>
-                      <TableCell>{col.SequenceNo}</TableCell>
-                      <TableCell hidden>{col.UserName}</TableCell>
-                      <TableCell align="center">
-                        <IconButton color="primary" onClick={() => handleEditClick(col)}><EditIcon /></IconButton>
-                        {/* <IconButton color="error" onClick={() => handleDeleteClick(col.Id)}><DeleteIcon /></IconButton> */}
-                      </TableCell>
-                    </TableRow>
-                  )) : (
+                  {formColumns.length > 0 ? formColumns.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((col, index) => {
+                    const isSpecialType = ['radio', 'select', 'checkbox'].includes(col.DataType?.toLowerCase());
+                    // The switch should appear if it's not a special type.
+                    const canShowSwitch = !isSpecialType;
+
+                    return (
+                      <TableRow key={col.Id} sx={{ "&:hover": { backgroundColor: "action.hover" } }}>
+                        <TableCell>{page * rowsPerPage + index + 1}</TableCell>
+                        <TableCell>{col.ColumnName}</TableCell>
+                        <TableCell><Chip label={col.DataType} size="small" variant="outlined" color="primary" /></TableCell>
+                        <TableCell>{col.SequenceNo}</TableCell>
+                        <TableCell>
+                          {canShowSwitch && (
+                            <Switch
+                              checked={col.IsValid || false} // Ensure it's a boolean
+                              onChange={() => handleIsValidChange(col.Id, col.IsValid)}
+                              color="primary"
+                              inputProps={{ 'aria-label': 'toggle required status' }}
+                            />
+                          )}
+                        </TableCell>
+                        <TableCell hidden>{col.UserName}</TableCell>
+                        <TableCell align="center">
+                          <IconButton color="primary" onClick={() => handleEditClick(col)}><EditIcon /></IconButton>
+                          {/* <IconButton color="error" onClick={() => handleDeleteClick(col.Id)}><DeleteIcon /></IconButton> */}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }) : (
                     <TableRow>
-                      <TableCell colSpan={5} align="center">
+                      <TableCell colSpan={7} align="center"> {/* colSpan increased by 2 for new column and hidden column */}
                         <Typography variant="subtitle1" sx={{ p: 3 }}>No columns found for the selected form.</Typography>
                       </TableCell>
                     </TableRow>
