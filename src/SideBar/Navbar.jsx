@@ -18,7 +18,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
-export default function Navbar({
+export default function NavBar({
   toggleDarkMode,
   darkMode,
   handleLogout,

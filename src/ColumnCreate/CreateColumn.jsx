@@ -195,7 +195,7 @@ export default function CreateColumn() {
                 <TableContainer component={Paper} elevation={6} sx={{ borderRadius: 2 }}>
                   <Table stickyHeader>
                     <TableHead>
-                      <TableRow sx={{ height: 40 }}> {/* Reduced header height */}
+                      <TableRow sx={{ height: 40 }}>
                         <TableCell sx={{ py: 1 }}>Column Name</TableCell>
                         <TableCell sx={{ py: 1 }}>Type</TableCell>
                         <TableCell align="right" sx={{ py: 1 }}>

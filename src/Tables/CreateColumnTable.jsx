@@ -94,7 +94,7 @@ const CreateColumnTable = () => {
 
   useEffect(() => {
     const { state } = location;
-    console.log("location.state in CreateColumnTable:", state);
+    //console.log("location.state in CreateColumnTable:", state);
 
     if (state && state.formId) {
       let { formId, formNo, formName } = state;
@@ -106,7 +106,7 @@ const CreateColumnTable = () => {
           const foundForm = forms.find(f => f.FormId === formId);
           if (foundForm) {
             formNo = foundForm.FormNo;
-            console.log("Found formNo from local state:", formNo);
+           // console.log("Found formNo from local state:", formNo);
           }
         } else {
           // Forms not loaded yet, defer processing until forms are available.
@@ -181,7 +181,7 @@ const CreateColumnTable = () => {
       const uniqueForms = Array.from(formsMap.values()).sort((a, b) => new Date(b.EndDate) - new Date(a.EndDate));
       
       setForms(uniqueForms);
-      console.log("Fetched and Sorted Unique Forms (latest version by FormId):", uniqueForms);
+     // console.log("Fetched and Sorted Unique Forms (latest version by FormId):", uniqueForms);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to fetch forms");
     } finally {
@@ -197,7 +197,7 @@ const CreateColumnTable = () => {
       );
       const sortedColumns = response.data.sort((a, b) => a.SequenceNo - b.SequenceNo);
       setFormColumns(sortedColumns);
-      console.log(`Fetched columns for FormId: ${formId}, FormNo: ${formNo}:`, sortedColumns);
+      //console.log(`Fetched columns for FormId: ${formId}, FormNo: ${formNo}:`, sortedColumns);
     } catch (err) {
       console.error("Error fetching form columns:", err);
       setError(err.response?.data?.message || "Failed to fetch form columns");
@@ -332,6 +332,14 @@ const CreateColumnTable = () => {
             Form Details
           </Typography>
           <Box sx={{ display: "flex", gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => navigate("/formdetails", { state: { formId: selectedForm.id, formNo: selectedForm.no } })}
+              disabled={!selectedForm.id}
+            >
+              Add Column
+            </Button>
 
             <Button
               variant="contained"
@@ -408,7 +416,7 @@ const CreateColumnTable = () => {
                     <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Column Name</TableCell>
                     <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Data Type</TableCell>
                     <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Sequence No</TableCell>
-                    <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Is Required</TableCell> {/* New Header */}
+                    <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Is Required</TableCell>
                     <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }} hidden>User Name</TableCell>
                     <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }} align="center">Actions</TableCell>
                   </TableRow>

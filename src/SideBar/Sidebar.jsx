@@ -21,7 +21,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-export default function Sidebar({ sidebarOpen, toggleSidebar, darkMode, userRole }) {
+export default function SideBar({ sidebarOpen, toggleSidebar, darkMode, userRole }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();

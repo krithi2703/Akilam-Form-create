@@ -3,8 +3,8 @@ import axios from 'axios';
 const api = axios.create({
   // Ensure your backend server is running on this port (e.g., 5000)
   //baseURL: 'http://136.185.14.8:8500/api',
-  //baseURL: 'http://localhost:5000/api', // Set your API base URL
-  baseURL:'http://103.185.75.196:8500/api',
+  baseURL: 'http://localhost:5000/api', // Set your API base URL
+  //baseURL:'http://103.185.75.196:8500/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -13,12 +13,12 @@ const api = axios.create({
 // Request interceptor to add the JWT token to headers
 api.interceptors.request.use(
   (config) => {
-    console.log('Interceptor triggered for URL:', config.url);
+    //console.log('Interceptor triggered for URL:', config.url);
     const token = sessionStorage.getItem('token');
-    console.log('Token from sessionStorage:', token);
+    //console.log('Token from sessionStorage:', token);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('Authorization header set:', config.headers.Authorization);
+      //console.log('Authorization header set:', config.headers.Authorization);
     }
     const userId = sessionStorage.getItem('userId');
     if (userId && config.headers.userid !== 'preview') {

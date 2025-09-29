@@ -78,7 +78,7 @@ const ValidationRuleDialog = ({ open, onClose, onSave, validationOptions, initia
   );
 };
 
-const FormDetailsCreator = () => {
+const FormDetails = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { formId, formNo } = location.state || {};
@@ -150,7 +150,7 @@ const FormDetailsCreator = () => {
 
         // --- Fetch available validation types ---
         const validationTypesResponse = await api.get('/validation/types');
-        console.log('Validation Types API Response:', validationTypesResponse.data);
+        //console.log('Validation Types API Response:', validationTypesResponse.data);
         setAvailableValidations(validationTypesResponse.data);
 
       } catch (err) {
@@ -587,4 +587,4 @@ const FormDetailsCreator = () => {
   );
 };
 
-export default FormDetailsCreator;
+export default FormDetails;
