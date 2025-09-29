@@ -14,8 +14,8 @@ import CreateColumnTable from './Tables/CreateColumnTable';
 import FormDetails from './ColumnCreate/Formdetails';
 import MasterPage from './ColumnCreate/MasterPage';
 import Home from './Home/Home';
-import Navbar from './SideBar/NavBar';
-import Sidebar from './SideBar/Sidebar';
+import NavBar from './SideBar/Navbar';
+import SideBar from './SideBar/Sidebar';
 import ViewSubmissions from './ColumnCreate/ViewSubmissions';
 import UserList from './Registration/UserList'; // Import the new UserList component
 import axios from "axios";
