@@ -536,7 +536,7 @@ export default function Dashboard() {
         }}
       >
         <Typography variant="body2" color="textSecondary" align="center">
-          © 2023 Company Name. All rights reserved.
+          © 2025 Akilam Technology. All rights reserved.
         </Typography>
       </Box>
 
