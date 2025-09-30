@@ -106,6 +106,50 @@ const StatCard = ({ title, value, change, icon, color }) => {
 // ------------------- Recent Activity -------------------
 // Recent Activity component removed.
 
+// ------------------- Form Details Table -------------------
+const FormDetailsTable = () => {
+  const [forms, setForms] = useState([]);
+
+  useEffect(() => {
+    const fetchForms = async () => {
+      try {
+        const response = await axios.get('/form-names');
+        setForms(response.data);
+      } catch (error) {
+        console.error('Error fetching forms:', error);
+      }
+    };
+
+    fetchForms();
+  }, []);
+
+  return (
+    <Paper sx={{ p: 2, boxShadow: 3, borderRadius: 2 }}>
+      <Typography variant="h6" gutterBottom>
+        Forms
+      </Typography>
+      <TableContainer>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Form ID</TableCell>
+              <TableCell>Form Name</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {forms.map((form) => (
+              <TableRow key={form.formId}>
+                <TableCell>{form.formId}</TableCell>
+                <TableCell>{form.formName}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Paper>
+  );
+};
+
 // ------------------- Payment Details Table -------------------
 const PaymentDetailsTable = () => {
   const [submissions, setSubmissions] = useState([]);
