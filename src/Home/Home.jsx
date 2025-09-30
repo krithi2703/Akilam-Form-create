@@ -11,10 +11,6 @@ import {
   Fab,
   alpha,
   useTheme,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
   IconButton,
   Table,
   TableBody,
@@ -27,17 +23,16 @@ import {
   Select,
   MenuItem,
 } from '@mui/material';
+import { BarChart } from '@mui/x-charts/BarChart';
 import {
   People as PeopleIcon,
   Description as DescriptionIcon,
   ViewColumn as ViewColumnIcon,
   Send as SendIcon,
   Add as AddIcon,
-  TrendingUp as TrendingUpIcon,
   Notifications as NotificationsIcon,
   Email as EmailIcon,
   AccountCircle as AccountCircleIcon,
-  MoreVert as MoreVertIcon,
   KeyboardArrowUp as KeyboardArrowUpIcon,
   KeyboardArrowDown as KeyboardArrowDownIcon,
 } from '@mui/icons-material';
@@ -103,53 +98,6 @@ const StatCard = ({ title, value, change, icon, color }) => {
   );
 };
 
-// ------------------- Recent Activity -------------------
-// Recent Activity component removed.
-
-// ------------------- Form Details Table -------------------
-const FormDetailsTable = () => {
-  const [forms, setForms] = useState([]);
-
-  useEffect(() => {
-    const fetchForms = async () => {
-      try {
-        const response = await axios.get('/form-names');
-        setForms(response.data);
-      } catch (error) {
-        console.error('Error fetching forms:', error);
-      }
-    };
-
-    fetchForms();
-  }, []);
-
-  return (
-    <Paper sx={{ p: 2, boxShadow: 3, borderRadius: 2 }}>
-      <Typography variant="h6" gutterBottom>
-        Forms
-      </Typography>
-      <TableContainer>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Form ID</TableCell>
-              <TableCell>Form Name</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {forms.map((form) => (
-              <TableRow key={form.formId}>
-                <TableCell>{form.formId}</TableCell>
-                <TableCell>{form.formName}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Paper>
-  );
-};
-
 // ------------------- Payment Details Table -------------------
 const PaymentDetailsTable = () => {
   const [submissions, setSubmissions] = useState([]);
@@ -178,76 +126,223 @@ const PaymentDetailsTable = () => {
 
   return (
     <Box>
-        <Grid container spacing={3}>
-            <Grid item xs={12}>
-                <Paper sx={{ p: 2, boxShadow: 3, borderRadius: 2 }}>
-                    <Typography variant="h6" gutterBottom>
-                        Select User to View Payment Details
-                    </Typography>
-                    <FormControl fullWidth>
-                        <InputLabel>Select by Email/Mobile</InputLabel>
-                        <Select
-                        value={selectedEmail}
-                        label="Select by Email/Mobile"
-                        onChange={handleEmailChange}
-                        >
-                        {uniqueEmails.map((email) => (
-                            <MenuItem key={email} value={email}>
-                            {email}
-                            </MenuItem>
-                        ))}
-                        </Select>
-                    </FormControl>
-                </Paper>
-            </Grid>
+      <Grid container spacing={3}>
+        <Grid item xs={12}>
+          <Paper sx={{ p: 3, boxShadow: 3, borderRadius: 2 }}>
+            <Typography variant="h5" gutterBottom fontWeight="bold" color="primary">
+              Payment Details
+            </Typography>
+            <Typography variant="body2" color="textSecondary" gutterBottom sx={{ mb: 3 }}>
+              Select a user to view their payment history and transaction details
+            </Typography>
             
-            <Grid item xs={12}>
-                <Paper sx={{ p: 2, boxShadow: 3, borderRadius: 2, minHeight: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {selectedEmail ? (
-                        <Box sx={{ width: '100%' }}>
-                            <Typography variant="h6" gutterBottom>
-                                Payment Details for: {selectedEmail}
-                            </Typography>
-                            <TableContainer>
-                                <Table>
-                                    <TableHead>
-                                    <TableRow>
-                                        <TableCell>Submission ID</TableCell>
-                                        <TableCell>Payment ID</TableCell>
-                                        <TableCell>Amount</TableCell>
-                                        <TableCell>Status</TableCell>
-                                        <TableCell>Payment Date</TableCell>
-                                    </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                    {filteredSubmissions.map((submission) => (
-                                        <TableRow key={submission.SubmissionId}>
-                                        <TableCell>{submission.SubmissionId}</TableCell>
-                                        <TableCell>{submission.RazorpayPaymentId}</TableCell>
-                                        <TableCell>{submission.Amount}</TableCell>
-                                        <TableCell>
-                                            <Chip
-                                            label={submission.Status}
-                                            color={submission.Status === 'captured' ? 'success' : 'error'}
-                                            size="small"
-                                            />
-                                        </TableCell>
-                                        <TableCell>{new Date(submission.PaymentDate).toLocaleDateString()}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
-                        </Box>
-                    ) : (
-                        <Typography variant="h6" color="text.secondary">
-                            Please select a user to view payment details.
-                        </Typography>
-                    )}
-                </Paper>
-            </Grid>
+            <FormControl fullWidth sx={{ mb: 3 }}>
+              <InputLabel>Select by Email/Mobile</InputLabel>
+              <Select
+                value={selectedEmail}
+                label="Select by Email/Mobile"
+                onChange={handleEmailChange}
+              >
+                {uniqueEmails.map((email) => (
+                  <MenuItem key={email} value={email}>
+                    {email}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {selectedEmail ? (
+              <Box sx={{ width: '100%' }}>
+                <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+                  Payment Details for: <Chip label={selectedEmail} color="primary" variant="outlined" />
+                </Typography>
+                <TableContainer>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell><strong>Submission ID</strong></TableCell>
+                        <TableCell><strong>Payment ID</strong></TableCell>
+                        <TableCell><strong>Amount</strong></TableCell>
+                        <TableCell><strong>Status</strong></TableCell>
+                        <TableCell><strong>Payment Date</strong></TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {filteredSubmissions.map((submission) => (
+                        <TableRow key={submission.SubmissionId} hover>
+                          <TableCell>{submission.SubmissionId}</TableCell>
+                          <TableCell>{submission.RazorpayPaymentId}</TableCell>
+                          <TableCell>₹{submission.Amount}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={submission.Status}
+                              color={submission.Status === 'captured' ? 'success' : 'error'}
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>{new Date(submission.PaymentDate).toLocaleDateString()}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            ) : (
+              <Paper 
+                sx={{ 
+                  p: 6, 
+                  textAlign: 'center', 
+                  bgcolor: 'background.default',
+                  border: '2px dashed',
+                  borderColor: 'divider'
+                }}
+              >
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  No User Selected
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Please select a user from the dropdown above to view their payment details
+                </Typography>
+              </Paper>
+            )}
+          </Paper>
         </Grid>
+      </Grid>
     </Box>
+  );
+};
+
+// ------------------- Form Submission Chart -------------------
+const FormSubmissionChart = () => {
+  const [chartData, setChartData] = useState([]);
+  const [allForms, setAllForms] = useState([]);
+  const [selectedFormId, setSelectedFormId] = useState('');
+  const theme = useTheme();
+
+  useEffect(() => {
+    const fetchAllForms = async () => {
+      try {
+        const response = await axios.get('/form-names');
+        console.log('Forms API response:', response.data); // Added console.log
+        setAllForms(response.data);
+        if (response.data.length > 0) {
+          setSelectedFormId(response.data[0].formId); // Select the first form by default
+        }
+      } catch (error) {
+        console.error('Error fetching all forms:', error);
+      }
+    };
+    fetchAllForms();
+  }, []);
+
+  useEffect(() => {
+    const fetchAndFilterChartData = async () => {
+      try {
+        const response = await axios.get('/submissions/count-by-form');
+        let data = response.data;
+
+        if (selectedFormId) {
+          data = data.filter(item => item.FormId === selectedFormId);
+        }
+        setChartData(data);
+      } catch (error) {
+        console.error('Error fetching chart data:', error);
+      }
+    };
+
+    fetchAndFilterChartData();
+  }, [selectedFormId]);
+
+  const handleFormChange = (event) => {
+    setSelectedFormId(event.target.value);
+  };
+
+  if (chartData.length === 0 && !selectedFormId) {
+    return (
+      <Paper sx={{ 
+        p: 2, 
+        boxShadow: 3, 
+        borderRadius: 2, 
+        height: 400, 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+      }}>
+        <Typography variant="h6" color="text.secondary">
+          No submission data available for chart.
+        </Typography>
+      </Paper>
+    );
+  }
+
+  const chartSetting = {
+    yAxis: [{
+      label: 'Submission Count',
+    }],
+    width: 500,
+    height: 350,
+    sx: {
+      [`.MuiBarElement-root`]: {
+        fill: theme.palette.primary.main,
+      },
+    },
+  };
+
+  return (
+    <Paper sx={{ 
+      p: 3, 
+      boxShadow: 3, 
+      borderRadius: 2, 
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+      <Typography variant="h5" gutterBottom fontWeight="bold" color="primary">
+        Form Submissions Overview
+      </Typography>
+      <Typography variant="body2" color="textSecondary" gutterBottom sx={{ mb: 3 }}>
+        Distribution of submissions across different forms
+      </Typography>
+      <FormControl fullWidth sx={{ mb: 2 }}>
+        <InputLabel>Select Form</InputLabel>
+        <Select
+          value={selectedFormId}
+          label="Select Form"
+          onChange={handleFormChange}
+        >
+          {allForms.map((form) => (
+            <MenuItem key={form.formId} value={form.formId}>
+              {form.formName}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+      {chartData.length > 0 ? (
+        <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <BarChart
+            dataset={chartData}
+            xAxis={[{ 
+              scaleType: 'band', 
+              dataKey: 'FormName', 
+              tickPlacement: 'middle', 
+              tickLabelPlacement: 'middle' 
+            }]}
+            series={[{ 
+              dataKey: 'SubmissionCount', 
+              label: 'Submissions',
+              color: theme.palette.primary.main
+            }]}
+            {...chartSetting}
+          />
+        </Box>
+      ) : (
+        <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Typography variant="h6" color="text.secondary">
+            No submission data for the selected form.
+          </Typography>
+        </Box>
+      )}
+    </Paper>
   );
 };
 
@@ -326,7 +421,8 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <Box component="main" sx={{ flexGrow: 1, p: 3, mt: 8 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        {/* Welcome Section */}
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
           <Box>
             <Typography variant="h4" fontWeight="bold" gutterBottom>
               Dashboard
@@ -335,11 +431,6 @@ export default function Dashboard() {
               Welcome back! Here's what's happening with your business today.
             </Typography>
           </Box>
-          {/* <Chip 
-            label="Today: Oct 12, 2023" 
-            variant="outlined" 
-            sx={{ borderRadius: 2, py: 1.5 }}
-          /> */}
         </Box>
 
         {/* Stat Cards */}
@@ -382,8 +473,15 @@ export default function Dashboard() {
           </Grid>
         </Grid>
 
+        {/* Chart and Payment Details Section */}
         <Grid container spacing={3}>
-          <Grid item xs={12}>
+          {/* Form Submission Chart */}
+          <Grid item xs={12} lg={6}>
+            <FormSubmissionChart />
+          </Grid>
+          
+          {/* Payment Details Table */}
+          <Grid item xs={12} lg={6}>
             <PaymentDetailsTable />
           </Grid>
         </Grid>
@@ -397,6 +495,7 @@ export default function Dashboard() {
           bgcolor: 'background.paper',
           borderTop: 1,
           borderColor: 'divider',
+          mt: 3
         }}
       >
         <Typography variant="body2" color="textSecondary" align="center">
