@@ -246,7 +246,7 @@ const PaymentDetailsTable = () => {
         >
           {uniqueUsers.map((user) => (
             <MenuItem key={user.Emailormobileno} value={user.Emailormobileno}>
-              {user.UserName} ({user.Emailormobileno})
+              {user.UserName}
             </MenuItem>
           ))}
         </Select>
