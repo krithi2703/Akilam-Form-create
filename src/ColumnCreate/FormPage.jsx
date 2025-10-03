@@ -751,7 +751,7 @@ const FormPage = ({ isPreview = false }) => {
                   <Button
                     variant="contained"
                     color="primary"
-                    type="submit"
+                    onClick={handleSubmit}
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? (
