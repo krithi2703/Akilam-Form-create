@@ -29,7 +29,8 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel
+  InputLabel,
+  Stack
 } from '@mui/material';
 import { Add as AddIcon, Close as CloseIcon, Rule as RuleIcon } from '@mui/icons-material';
 import api from '../axiosConfig';
@@ -83,6 +84,8 @@ const FormDetails = () => {
   const navigate = useNavigate();
   const { formId, formNo } = location.state || {};
   const [formName, setFormName] = useState('');
+  const [bannerImageFile, setBannerImageFile] = useState(null);
+  const [bannerImagePreviewUrl, setBannerImagePreviewUrl] = useState("");
   const [currentForm, setCurrentForm] = useState(null);
   const [availableColumns, setAvailableColumns] = useState([]);
   const [existingColumns, setExistingColumns] = useState([]);
@@ -106,6 +109,38 @@ const FormDetails = () => {
   const [columnValidations, setColumnValidations] = useState({}); // { [colId]: validationId }
 
   const userId = sessionStorage.getItem('userId');
+
+  const handleBannerFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setBannerImageFile(file);
+      setBannerImagePreviewUrl(URL.createObjectURL(file));
+    } else {
+      setBannerImageFile(null);
+      setBannerImagePreviewUrl("");
+    }
+  };
+
+  const handleUploadBannerImage = async () => {
+    if (!bannerImageFile) return null;
+
+    const formData = new FormData();
+    formData.append("image", bannerImageFile);
+
+    try {
+      // Re-using the same upload endpoint as MasterPage
+      const response = await api.post("/formmaster/upload/image", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return response.data.filePath;
+    } catch (err) {
+      console.error("Banner image upload error:", err);
+      toast.error("Failed to upload banner image.");
+      return null;
+    }
+  };
 
   useEffect(() => {
     if (!userId) {
@@ -288,6 +323,12 @@ const FormDetails = () => {
       return;
     }
 
+    if (!bannerImageFile) {
+      toast.error("Please upload a banner image.");
+      setSubmitStatus({ type: 'error', message: 'Banner image is mandatory.' });
+      return;
+    }
+
     // --- Validation logic for sequences (unchanged) ---
     const newErrors = {};
     let hasErrors = false;
@@ -323,6 +364,14 @@ const FormDetails = () => {
     if (hasErrors) return;
     // --- End of validation logic ---
 
+    setSubmitStatus({ type: 'info', message: 'Uploading banner image...' });
+
+    const bannerImagePath = await handleUploadBannerImage();
+    if (!bannerImagePath) {
+        setSubmitStatus({ type: 'error', message: 'Failed to upload banner image. Please try again.' });
+        return;
+    }
+
     setSubmitStatus({ type: 'info', message: 'Submitting columns...' });
 
     const columnRequests = selectedColumns.map(colId => {
@@ -332,6 +381,7 @@ const FormDetails = () => {
         sequenceNo: sequences[colId],
         active: 1,
         formNo: formNo,
+        bannerimage: bannerImagePath,
       });
     });
 
@@ -363,6 +413,8 @@ const FormDetails = () => {
       setSelectedColumns([]);
       setSequences({});
       setColumnValidations({}); // Clear validations
+      setBannerImageFile(null);
+      setBannerImagePreviewUrl("");
       
       setTimeout(() => {
         navigate('/create-column-table', { state: { formId, formNo } });
@@ -382,21 +434,42 @@ const FormDetails = () => {
       <Card>
         <CardContent>
           <Box component="form" onSubmit={handleSubmit} noValidate>
-            <Typography variant="h5" gutterBottom>Add Columns to Form</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+              <Typography variant="h5" component="h1">Add Columns to Form</Typography>
+              <Stack spacing={1} alignItems="center" sx={{ width: { xs: '100%', sm: 300 } }}>
+                  {bannerImagePreviewUrl && (
+                    <Box sx={{ width: 100, height: 100, border: '1px solid #ddd', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                      <img src={bannerImagePreviewUrl} alt="Banner Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    </Box>
+                  )}
+                  <label htmlFor="banner-image-upload">
+                    <Button variant="contained" component="span" size="small">
+                      {bannerImagePreviewUrl ? 'Change Banner' : 'Upload Banner *'}
+                    </Button>
+                  </label>
+                  <input
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    id="banner-image-upload"
+                    type="file"
+                    onChange={handleBannerFileChange}
+                  />
+              </Stack>
+            </Box>
            
             <Grid container spacing={3}>
               <Grid item xs={12}>
-                <TextField fullWidth label="Form Name" value={formName} InputProps={{ readOnly: true }} variant="filled" />
-              </Grid>
-              <Grid item xs={12}>
-                <Button
-                  variant="outlined"
-                  startIcon={<AddIcon />}
-                  onClick={handleOpenDialog}
-                  fullWidth
-                >
-                  Select Columns
-                </Button>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <TextField fullWidth label="Form Name" value={formName} InputProps={{ readOnly: true }} variant="filled" />
+                  <Button
+                    variant="outlined"
+                    startIcon={<AddIcon />}
+                    onClick={handleOpenDialog}
+                    sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                  >
+                    Select Columns
+                  </Button>
+                </Stack>
               </Grid>
 
               {submitStatus && (

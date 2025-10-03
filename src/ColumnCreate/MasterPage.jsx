@@ -27,11 +27,25 @@ export default function MasterPage() {
   const [createdDate, setCreatedDate] = useState("");
   const [enddate, setEnddate] = useState("");
   const [fee, setFee] = useState("");
+  const [imageorlogo, setImageorlogo] = useState(""); // Stores the URL/path from backend
+  const [selectedFile, setSelectedFile] = useState(null); // Stores the file object for upload
+  const [imagePreviewUrl, setImagePreviewUrl] = useState(""); // Stores URL for image preview
   const [activeStatus, setActiveStatus] = useState(1);
   const [loading, setLoading] = useState(false);
   const [formNameError, setFormNameError] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const isSubmitting = useRef(false);
+  const isMounted = useRef(true); // Ref to track mount status
+
+  // Cleanup function for image preview URL
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
+      isMounted.current = false; // Set to false on unmount
+    };
+  }, [imagePreviewUrl]);
 
   // ✅ Read user details from sessionStorage
   const userName = sessionStorage.getItem("userName");
@@ -56,6 +70,8 @@ export default function MasterPage() {
       const today = new Date().toISOString().split("T")[0];
       setCreatedDate(today);
     }
+
+    return () => { isMounted.current = false; }; // Cleanup on unmount
   }, [location.search, navigate]);
 
   // ---------------- Fetch form details for editing ----------------
@@ -64,25 +80,64 @@ export default function MasterPage() {
       setLoading(true);
       const res = await api.get(`/formmaster/${id}`);
 
-      if (res.status === 200) {
+      if (isMounted.current && res.status === 200) {
         const form = res.data;
         setFormName(form.FormName);
         setCreatedDate(form.CreatedDate);
         setEnddate(form.Enddate || "");
         setFee(form.Fee || "");
+        setImageorlogo(form.ImageOrLogo || ""); // Populate with existing URL
+        setImagePreviewUrl(form.ImageOrLogo ? `${api.defaults.baseURL.replace('/api', '')}${form.ImageOrLogo}` : ""); // Set preview if URL exists
         setActiveStatus(form.Active);
       }
     } catch (err) {
       console.error("Fetch form error:", err);
-      if (err.response?.status === 401) {
-        toast.error("Session expired. Please log in again.");
-        sessionStorage.clear();
-        navigate("/login");
-      } else {
-        toast.error(err.response?.data?.error || "Failed to fetch form for editing");
+      if (isMounted.current) {
+        if (err.response?.status === 401) {
+          toast.error("Session expired. Please log in again.");
+          sessionStorage.clear();
+          navigate("/login");
+        } else {
+          toast.error(err.response?.data?.error || "Failed to fetch form for editing");
+        }
       }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
+    }
+  };
+
+  // ---------------- Handle file selection ----------------
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      setImagePreviewUrl(URL.createObjectURL(file)); // Create a URL for preview
+    } else {
+      setSelectedFile(null);
+      setImagePreviewUrl("");
+    }
+  };
+
+  // ---------------- Handle image upload to backend ----------------
+  const handleUploadImage = async () => {
+    if (!selectedFile) return null; // No file to upload
+
+    const formData = new FormData();
+    formData.append("image", selectedFile);
+
+    try {
+      const response = await api.post("/formmaster/upload/image", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return response.data.filePath; // Return the path from the backend
+    } catch (err) {
+      console.error("Image upload error:", err);
+      toast.error("Failed to upload image.");
+      return null;
     }
   };
 
@@ -118,12 +173,26 @@ export default function MasterPage() {
     isSubmitting.current = true;
     setLoading(true);
 
+    let uploadedImagePath = imageorlogo; // Start with existing image path
+
+    if (selectedFile) {
+      // If a new file is selected, upload it first
+      uploadedImagePath = await handleUploadImage();
+      if (!uploadedImagePath) {
+        // If upload failed, stop submission
+        setLoading(false);
+        isSubmitting.current = false;
+        return;
+      }
+    }
+
     try {
       const formData = {
         formName: formName.trim(),
         createdDate,
         enddate: enddate || null,
         fee: fee ? parseFloat(fee) : null,
+        imageorlogo: uploadedImagePath, // Use the uploaded path or existing one
         // ⚠️ No need to send UserId here — backend reads from token
       };
 
@@ -257,6 +326,25 @@ export default function MasterPage() {
               inputProps={{ min: 0, step: 0.01 }}
               disabled={activeStatus === 0 || loading}
             />
+
+            <input
+              accept="image/*"
+              style={{ display: 'none' }}
+              id="raised-button-file"
+              multiple
+              type="file"
+              onChange={handleFileChange}
+            />
+            <label htmlFor="raised-button-file">
+              <Button variant="outlined" component="span" fullWidth disabled={activeStatus === 0 || loading}>
+                {selectedFile ? selectedFile.name : "Upload Image/Logo"}
+              </Button>
+            </label>
+            {imagePreviewUrl && (
+              <Box sx={{ mt: 2, textAlign: 'center' }}>
+                <img src={imagePreviewUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain' }} />
+              </Box>
+            )}
 
             <Button
               variant="contained"

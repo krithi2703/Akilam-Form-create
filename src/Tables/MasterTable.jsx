@@ -13,8 +13,9 @@ import {
   Button,
   Typography,
   Stack,
-  
+  IconButton,
 } from "@mui/material";
+import EditIcon from '@mui/icons-material/Edit';
 import api from "../axiosConfig";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -211,7 +212,15 @@ export default function MasterTable() {
                         Registration Ended !!
                       </Typography>
                     ) : (
-                      <Stack direction="row" spacing={1}>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <IconButton
+                          aria-label="edit"
+                          color="info"
+                          size="small"
+                          onClick={() => navigate(`/masterpage?editId=${row.FormId}`)}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
                         <Button
                           variant="outlined"
                           color="primary"

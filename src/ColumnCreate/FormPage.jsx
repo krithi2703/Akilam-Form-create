@@ -11,6 +11,7 @@ import {
   CircularProgress,
   Alert,
   Card,
+  CardMedia,
   CardContent,
   TextField,
   Button,
@@ -175,6 +176,7 @@ const FormPage = ({ isPreview = false }) => {
           endDate: sortedColumns[0].Enddate,
           startDate: sortedColumns[0].Startdate,
           fee: sortedColumns[0].Fee,
+          imageOrLogo: sortedColumns[0].ImageOrLogo,
         });
         // Calculate if registration has ended
         const endDate = sortedColumns[0].Enddate;
@@ -655,15 +657,30 @@ const FormPage = ({ isPreview = false }) => {
               <Alert severity="error">{error}</Alert>
             ) : (
               <Box component="form" noValidate autoComplete="off">
-                {formDetails?.formName && (
-                  <Typography
-                    variant="h4"
-                    gutterBottom
-                    sx={{ textAlign: "center", mb: 4 }}
-                  >
-                    {formDetails.formName}
-                  </Typography>
-                )}
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+                  {/* Left: Logo */}
+                  {formDetails?.imageOrLogo ? (
+                    <Box sx={{ width: 80, height: 80, flexShrink: 0, border: '1px solid', borderColor: 'grey.300', borderRadius: 1, p: 0.5 }}>
+                      <img 
+                        src={`${api.defaults.baseURL.replace('/api', '')}${formDetails.imageOrLogo}`} 
+                        alt="Form Logo" 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                      />
+                    </Box>
+                  ) : (
+                    <Box sx={{ width: 80, flexShrink: 0 }} /> // Spacer if no logo
+                  )}
+
+                  {/* Center: Form Name */}
+                  {formDetails?.formName && (
+                    <Typography variant="h4" component="h1" sx={{ flexGrow: 1, textAlign: 'center' }}>
+                      {formDetails.formName}
+                    </Typography>
+                  )}
+
+                  {/* Right: Spacer to balance the logo */}
+                  <Box sx={{ width: 80, flexShrink: 0 }} />
+                </Box>
 
                 {isFormOnlyUser && (userId || userName) && (
                   <Box sx={{ textAlign: 'center', mb: 3, p: 2, backgroundColor: 'grey.100', borderRadius: 1 }}>

@@ -25,6 +25,7 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(!!sessionStorage.getItem('userId'));
   const [isFormOnlyUser, setIsFormOnlyUser] = useState(sessionStorage.getItem('isFormOnlyUser') === 'true');
+  const token = sessionStorage.getItem("token");
   const location = useLocation();
 
   // Removed the useEffect as useState initialization is sufficient for initial load

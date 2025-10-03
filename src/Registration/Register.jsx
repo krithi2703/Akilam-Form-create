@@ -165,7 +165,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
   };
 
   const handleSendOtp = async (identifier) => {
-    console.log("Sending OTP to:", identifier);
+    //console.log("Sending OTP to:", identifier);
     setOtpLoading(true);
     setOtpError("");
     
@@ -185,7 +185,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
 
       const phoneNumber = identifier.startsWith('+91') ? identifier : `+91${identifier}`;
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-      //const otpCode = "123456";
+      // const otpCode = "123456";
       
 
       console.log("Generated OTP:", otpCode);
