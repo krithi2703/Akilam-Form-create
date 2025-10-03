@@ -23,6 +23,8 @@ import {
   Select,
   MenuItem,
   Container,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
 import { BarChart } from '@mui/x-charts/BarChart';
 import {
@@ -42,21 +44,21 @@ import {
 import axios from '../axiosConfig'; // custom axios instance
 
 // ------------------- Stat Card -------------------
-const StatCard = ({ title, value, icon, color, description }) => {
+const StatCard = ({ title, value, icon, color, description, loading }) => {
   const theme = useTheme();
   
   return (
     <Card
       elevation={0}
       sx={{
-        background: `linear-gradient(135deg, ${alpha(theme.palette[color].main, 0.1)} 0%, ${alpha(theme.palette[color].main, 0.05)} 100%)`,
+        background: `linear-gradient(135deg, ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.05)} 100%)`,
         borderRadius: 3,
         height: '100%',
-        border: `1px solid ${alpha(theme.palette[color].main, 0.2)}`,
+        border: `1px solid ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.2)}`,
         transition: 'all 0.3s ease',
         '&:hover': {
           transform: 'translateY(-4px)',
-          boxShadow: `0 12px 30px ${alpha(theme.palette[color].main, 0.15)}`,
+          boxShadow: `0 12px 30px ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.15)}`,
         },
         display: 'flex',
         flexDirection: 'column',
@@ -68,9 +70,18 @@ const StatCard = ({ title, value, icon, color, description }) => {
             <Typography color="textSecondary" variant="body2" gutterBottom>
               {title}
             </Typography>
-            <Typography variant="h4" component="div" fontWeight="bold">
-              {value}
-            </Typography>
+            {loading ? (
+              <Box display="flex" alignItems="center" gap={1}>
+                <CircularProgress size={20} />
+                <Typography variant="h6" component="div" fontWeight="bold">
+                  Loading...
+                </Typography>
+              </Box>
+            ) : (
+              <Typography variant="h4" component="div" fontWeight="bold">
+                {value}
+              </Typography>
+            )}
             {description && (
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                 {description}
@@ -79,8 +90,8 @@ const StatCard = ({ title, value, icon, color, description }) => {
           </Box>
           <Avatar 
             sx={{ 
-              bgcolor: alpha(theme.palette[color].main, 0.1), 
-              color: theme.palette[color].main,
+              bgcolor: alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.1), 
+              color: theme.palette[color]?.main || theme.palette.primary.main,
               width: 48,
               height: 48
             }}
@@ -94,7 +105,7 @@ const StatCard = ({ title, value, icon, color, description }) => {
 };
 
 // ------------------- Chart Card -------------------
-const ChartCard = ({ children, title, subtitle, icon }) => {
+const ChartCard = ({ children, title, subtitle, icon, loading }) => {
   const theme = useTheme();
 
   return (
@@ -141,7 +152,13 @@ const ChartCard = ({ children, title, subtitle, icon }) => {
         
         {/* Card Content */}
         <Box sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-          {children}
+          {loading ? (
+            <Box display="flex" justifyContent="center" alignItems="center" sx={{ height: '100%' }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            children
+          )}
         </Box>
       </CardContent>
     </Card>
@@ -153,14 +170,35 @@ const PaymentDetailsTable = () => {
   const theme = useTheme();
   const [submissions, setSubmissions] = useState([]);
   const [selectedEmail, setSelectedEmail] = useState('');
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchSubmissions = async () => {
       try {
+        setLoading(true);
         const response = await axios.get('/submissions');
-        setSubmissions(response.data);
+        
+        // Handle different response structures
+        const responseData = response.data;
+        let submissionsData = [];
+        
+        if (Array.isArray(responseData)) {
+          submissionsData = responseData;
+        } else if (responseData && Array.isArray(responseData.data)) {
+          submissionsData = responseData.data;
+        } else if (responseData && responseData.submissions) {
+          submissionsData = responseData.submissions;
+        }
+        
+        setSubmissions(submissionsData);
+        setError(null);
       } catch (error) {
         console.error('Error fetching submissions:', error);
+        setError('Failed to load submission data. Please try again later.');
+        setSubmissions([]);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -171,18 +209,18 @@ const PaymentDetailsTable = () => {
     setSelectedEmail(event.target.value);
   };
 
-  const uniqueUsers = submissions.reduce((acc, current) => {
-    if (!acc.find(item => item.Emailormobileno === current.Emailormobileno)) {
+  const uniqueUsers = Array.isArray(submissions) ? submissions.reduce((acc, current) => {
+    if (current && current.Emailormobileno && !acc.find(item => item.Emailormobileno === current.Emailormobileno)) {
       acc.push({
         Emailormobileno: current.Emailormobileno,
-        UserName: current.UserName || current.Emailormobileno
+        UserName: current.UserName || current.Emailormobileno?.split('@')[0] || 'Unknown User'
       });
     }
     return acc;
-  }, []);
-  
+  }, []) : [];
+
   const filteredSubmissions = selectedEmail 
-    ? submissions.filter(s => s.Emailormobileno === selectedEmail)
+    ? submissions.filter(s => s && s.Emailormobileno === selectedEmail)
     : [];
 
   return (
@@ -190,17 +228,25 @@ const PaymentDetailsTable = () => {
       title="Payment Details"
       subtitle="Select a user to view their payment history and transaction details"
       icon={<PaymentIcon />}
+      loading={loading}
     >
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
       <FormControl fullWidth sx={{ mb: 3 }}>
         <InputLabel>Select by User</InputLabel>
         <Select
           value={selectedEmail}
           label="Select by User"
           onChange={handleEmailChange}
+          disabled={loading || uniqueUsers.length === 0}
         >
           {uniqueUsers.map((user) => (
             <MenuItem key={user.Emailormobileno} value={user.Emailormobileno}>
-              {user.UserName}
+              {user.UserName} ({user.Emailormobileno})
             </MenuItem>
           ))}
         </Select>
@@ -220,74 +266,76 @@ const PaymentDetailsTable = () => {
             />
           </Box>
           
-          <TableContainer 
-            sx={{ 
-              flexGrow: 1,
-              borderRadius: 2,
-              border: `1px solid ${theme.palette.divider}`,
-              '& .MuiTableRow-root:hover': {
-                backgroundColor: alpha(theme.palette.primary.main, 0.04),
-              }
-            }}
-          >
-            <Table stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 'bold', bgcolor: 'background.default' }}>
-                    Submission ID
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', bgcolor: 'background.default' }}>
-                    Payment ID
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', bgcolor: 'background.default' }}>
-                    Amount
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', bgcolor: 'background.default' }}>
-                    Status
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 'bold', bgcolor: 'background.default' }}>
-                    Payment Date
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredSubmissions.map((submission) => (
-                  <TableRow 
-                    key={submission.SubmissionId} 
-                    hover
-                    sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                  >
-                    <TableCell sx={{ fontFamily: 'monospace' }}>
-                      {submission.SubmissionId}
+          {filteredSubmissions.length > 0 ? (
+            <TableContainer 
+              sx={{ 
+                flexGrow: 1,
+                borderRadius: 2,
+                border: `1px solid ${theme.palette.divider}`,
+                '& .MuiTableRow-root:hover': {
+                  backgroundColor: alpha(theme.palette.primary.main, 0.04),
+                }
+              }}
+            >
+              <Table stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'background.default' }}>
+                      Submission ID
                     </TableCell>
-                    <TableCell sx={{ fontFamily: 'monospace' }}>
-                      {submission.RazorpayPaymentId}
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'background.default' }}>
+                      Payment ID
                     </TableCell>
-                    <TableCell sx={{ fontWeight: '600' }}>
-                      ₹{submission.Amount}
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'background.default' }}>
+                      Amount
                     </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={submission.Status}
-                        color={submission.Status === 'captured' ? 'success' : 'error'}
-                        size="small"
-                        variant="outlined"
-                      />
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'background.default' }}>
+                      Status
                     </TableCell>
-                    <TableCell>
-                      {new Date(submission.PaymentDate).toLocaleDateString('en-IN', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      })}
+                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'background.default' }}>
+                      Payment Date
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          
-          {filteredSubmissions.length === 0 && (
+                </TableHead>
+                <TableBody>
+                  {filteredSubmissions.map((submission, index) => (
+                    <TableRow 
+                      key={submission.SubmissionId || index} 
+                      hover
+                      sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                    >
+                      <TableCell sx={{ fontFamily: 'monospace' }}>
+                        {submission.SubmissionId || 'N/A'}
+                      </TableCell>
+                      <TableCell sx={{ fontFamily: 'monospace' }}>
+                        {submission.RazorpayPaymentId || 'N/A'}
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: '600' }}>
+                        ₹{submission.Amount || '0'}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={submission.Status || 'unknown'}
+                          color={submission.Status === 'captured' ? 'success' : 'default'}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {submission.PaymentDate ? 
+                          new Date(submission.PaymentDate).toLocaleDateString('en-IN', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          }) : 'N/A'
+                        }
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
             <Box 
               sx={{ 
                 flexGrow: 1, 
@@ -320,10 +368,13 @@ const PaymentDetailsTable = () => {
         >
           <PaymentIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2, opacity: 0.5 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            No User Selected
+            {uniqueUsers.length === 0 ? 'No Users Available' : 'No User Selected'}
           </Typography>
           <Typography variant="body2" color="text.secondary" textAlign="center">
-            Please select a user from the dropdown above to view their payment details
+            {uniqueUsers.length === 0 
+              ? 'No user data available. Please check your API connection.' 
+              : 'Please select a user from the dropdown above to view their payment details'
+            }
           </Typography>
         </Box>
       )}
@@ -337,27 +388,41 @@ const FormSubmissionChart = () => {
   const [chartData, setChartData] = useState([]);
   const [allForms, setAllForms] = useState([]);
   const [selectedFormId, setSelectedFormId] = useState('');
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
   const theme = useTheme();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
         const [formsResponse, countsResponse] = await Promise.all([
           axios.get('/formname'),
           axios.get('/submissions/count-by-form'),
         ]);
 
-        const forms = formsResponse.data;
-        const counts = countsResponse.data;
+        // Handle different response structures
+        const formsData = Array.isArray(formsResponse.data) ? formsResponse.data : 
+                         formsResponse.data?.data || formsResponse.data?.forms || [];
+        
+        const countsData = Array.isArray(countsResponse.data) ? countsResponse.data : 
+                          countsResponse.data?.data || countsResponse.data?.counts || [];
 
-        setAllForms(forms);
-        setAllChartData(counts);
+        setAllForms(formsData);
+        setAllChartData(countsData);
 
-        if (forms.length > 0) {
-          setSelectedFormId(String(forms[0].formId));
+        if (formsData.length > 0) {
+          setSelectedFormId(String(formsData[0].formId));
         }
+        
+        setError(null);
       } catch (error) {
         console.error('Error fetching data for chart:', error);
+        setError('Failed to load chart data. The server may be down or an error occurred.');
+        setAllForms([]);
+        setAllChartData([]);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -365,9 +430,9 @@ const FormSubmissionChart = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedFormId) {
+    if (selectedFormId && allChartData.length > 0) {
       const filteredData = allChartData.filter(
-        (item) => String(item.FormId) === selectedFormId
+        (item) => item && String(item.FormId) === selectedFormId
       );
       setChartData(filteredData);
     } else {
@@ -388,7 +453,7 @@ const FormSubmissionChart = () => {
       width: '100%',
       [`.MuiBarElement-root`]: {
         fill: theme.palette.primary.main,
-        rx: 4, // Rounded corners for bars
+        rx: 4,
       },
       [`.MuiChartsAxis-tickLabel`]: {
         fontSize: '0.75rem',
@@ -404,17 +469,25 @@ const FormSubmissionChart = () => {
       title="Form Submissions Overview"
       subtitle="Distribution of submissions across different forms"
       icon={<BarChartIcon />}
+      loading={loading}
     >
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
       <FormControl fullWidth sx={{ mb: 3 }}>
         <InputLabel>Select Form</InputLabel>
         <Select
           value={selectedFormId}
           label="Select Form"
           onChange={handleFormChange}
+          disabled={loading || allForms.length === 0}
         >
-          {allForms.map((form) => (
+          {Array.isArray(allForms) && allForms.map((form) => (
             <MenuItem key={form.formId} value={String(form.formId)}>
-              {form.formName}
+              {form.formName || `Form ${form.formId}`}
             </MenuItem>
           ))}
         </Select>
@@ -456,12 +529,14 @@ const FormSubmissionChart = () => {
         >
           <BarChartIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2, opacity: 0.5 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            {selectedFormId ? 'No Data Available' : 'Select a Form'}
+            {allForms.length === 0 ? 'No Forms Available' : selectedFormId ? 'No Data Available' : 'Select a Form'}
           </Typography>
           <Typography variant="body2" color="text.secondary" textAlign="center">
-            {selectedFormId 
-              ? 'No submission data available for the selected form.' 
-              : 'Please select a form from the dropdown to view submission data.'
+            {allForms.length === 0 
+              ? 'No form data available. Please check your API connection.' 
+              : selectedFormId 
+                ? 'No submission data available for the selected form.' 
+                : 'Please select a form from the dropdown to view submission data.'
             }
           </Typography>
         </Box>
@@ -474,30 +549,54 @@ const FormSubmissionChart = () => {
 export default function Dashboard() {
   const theme = useTheme();
   const [counts, setCounts] = useState({
-    formCount: '---',
-    columnCount: '---',
-    submissionCount: '---',
-    userCount: '---',
+    formCount: 0,
+    columnCount: 0,
+    submissionCount: 0,
+    userCount: 0,
   });
+  const [countsLoading, setCountsLoading] = useState(true);
+  const [countsError, setCountsError] = useState(null);
 
   useEffect(() => {
     const fetchCounts = async () => {
       try {
+        setCountsLoading(true);
         const response = await axios.get('/columns/counts');
-        setCounts(response.data);
+        
+        // Handle different response structures
+        const responseData = response.data;
+        let countsData = {};
+        
+        if (responseData && typeof responseData === 'object') {
+          const countsData = {
+            formCount: responseData.formCount || responseData.forms || 0,
+            columnCount: responseData.columnCount || responseData.columns || 0,
+            submissionCount: responseData.submissionCount || responseData.submissions || 0,
+            userCount: responseData.userCount || responseData.users || 0,
+          };
+          setCounts(countsData);
+          setCountsError(null);
+        } else {
+          throw new Error('Invalid data structure for counts');
+        }
       } catch (error) {
         console.error('Error fetching counts:', error);
+        setCountsError('Failed to load dashboard statistics');
         setCounts({
           formCount: 'Error',
           columnCount: 'Error',
           submissionCount: 'Error',
           userCount: 'Error',
         });
+      } finally {
+        setCountsLoading(false);
       }
     };
 
     if (sessionStorage.getItem('userId')) {
       fetchCounts();
+    } else {
+      setCountsLoading(false);
     }
   }, []);
 
@@ -530,8 +629,8 @@ export default function Dashboard() {
           CompanyName
         </Typography>
         <Box display="flex" alignItems="center" gap={1}>
-          <IconButton 
-            sx={{ 
+          <IconButton
+            sx={{
               bgcolor: alpha(theme.palette.primary.main, 0.1),
               '&:hover': {
                 bgcolor: alpha(theme.palette.primary.main, 0.2),
@@ -540,8 +639,8 @@ export default function Dashboard() {
           >
             <NotificationsIcon />
           </IconButton>
-          <IconButton 
-            sx={{ 
+          <IconButton
+            sx={{
               bgcolor: alpha(theme.palette.primary.main, 0.1),
               '&:hover': {
                 bgcolor: alpha(theme.palette.primary.main, 0.2),
@@ -572,6 +671,11 @@ export default function Dashboard() {
           <Typography variant="h6" color="textSecondary" sx={{ opacity: 0.8 }}>
             Welcome back! Here's what's happening with your business today.
           </Typography>
+          {countsError && (
+            <Alert severity="warning" sx={{ mt: 2, maxWidth: 400 }}>
+              {countsError}
+            </Alert>
+          )}
         </Box>
 
         {/* Stat Cards */}
@@ -583,6 +687,7 @@ export default function Dashboard() {
               description="Total Registered Users"
               icon={<PeopleIcon />}
               color="primary"
+              loading={countsLoading}
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
@@ -592,6 +697,7 @@ export default function Dashboard() {
               description="Total Forms Created"
               icon={<DescriptionIcon />}
               color="secondary"
+              loading={countsLoading}
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
@@ -601,6 +707,7 @@ export default function Dashboard() {
               description="Total Columns Defined"
               icon={<ViewColumnIcon />}
               color="warning"
+              loading={countsLoading}
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
@@ -610,6 +717,7 @@ export default function Dashboard() {
               description="Total Submissions Received"
               icon={<SendIcon />}
               color="success"
+              loading={countsLoading}
             />
           </Grid>
         </Grid>
