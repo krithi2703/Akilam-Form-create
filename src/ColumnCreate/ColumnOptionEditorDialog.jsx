@@ -136,6 +136,13 @@ const ColumnOptionEditorDialog = ({ open, onClose, onSuccessfulSubmit, colId, da
     setEditingOptionName(option.name);
   };
 
+  const handleEditKeyPress = (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      handleSaveEdit();
+    }
+  };
+
   const handleSaveEdit = async () => {
     if (!editingOptionName.trim()) { setError('Option name cannot be empty'); return; }
     const option = currentOptions.find(opt => opt.id === editingOptionId);
@@ -224,7 +231,7 @@ const ColumnOptionEditorDialog = ({ open, onClose, onSuccessfulSubmit, colId, da
                   )
                 }>
                   {option.id === editingOptionId ? (
-                    <TextField fullWidth value={editingOptionName} onChange={(e) => setEditingOptionName(e.target.value)} />
+                    <TextField fullWidth value={editingOptionName} onChange={(e) => setEditingOptionName(e.target.value)} onKeyDown={handleEditKeyPress} />
                   ) : (
                     <ListItemText primary={`${index + 1}. ${option.name}`} secondary={option.isActive ? 'Active' : 'Inactive'} />
                   )}

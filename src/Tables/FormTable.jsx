@@ -22,6 +22,7 @@ import {
   TextField,
   MenuItem,
   Snackbar,
+  TablePagination,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -47,6 +48,10 @@ export default function FormTable() {
   });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [columnToDelete, setColumnToDelete] = useState(null);
+
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
 
   const navigate = useNavigate();
 
@@ -111,6 +116,11 @@ export default function FormTable() {
     setColumnToDelete(null);
   };
 
+  const handleSaveColumnSubmit = (event) => {
+    event.preventDefault();
+    handleSaveColumn();
+  };
+
   const handleSaveColumn = async () => {
     if (!newColumn.ColumnName.trim()) {
       setError("Column name is required");
@@ -161,6 +171,15 @@ export default function FormTable() {
     setError("");
   };
 
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}>
@@ -185,6 +204,8 @@ export default function FormTable() {
       </Box>
     );
   }
+
+  const paginatedColumns = columns.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   return (
     <Box sx={{ p: { xs: 1, sm: 2, md: 4 } }}>
@@ -245,10 +266,10 @@ export default function FormTable() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {columns.length > 0 ? (
-                columns.map((col, idx) => (
+              {paginatedColumns.length > 0 ? (
+                paginatedColumns.map((col, idx) => (
                   <TableRow key={col.ColumnId || idx} hover>
-                    <TableCell>{idx + 1}</TableCell>
+                    <TableCell>{page * rowsPerPage + idx + 1}</TableCell>
                     <TableCell>
                       <Typography fontWeight="medium">
                         {col.ColumnName}
@@ -314,6 +335,15 @@ export default function FormTable() {
             </TableBody>
           </Table>
         </Box>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
+          component="div"
+          count={columns.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
       </TableContainer>
 
       <Dialog
@@ -333,7 +363,7 @@ export default function FormTable() {
           </IconButton>
         </DialogTitle>
         <DialogContent>
-          <Box sx={{ pt: 2 }}>
+          <Box component="form" id="save-column-form" onSubmit={handleSaveColumnSubmit} sx={{ pt: 2 }}>
             <Typography
               variant="subtitle1"
               gutterBottom
@@ -380,7 +410,8 @@ export default function FormTable() {
             Cancel
           </Button>
           <Button
-            onClick={handleSaveColumn}
+            type="submit"
+            form="save-column-form"
             variant="contained"
             disabled={saving || !newColumn.ColumnName}
           >

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Box,
@@ -19,9 +19,18 @@ import {
   TableRow,
   Paper,
   Container,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  List,
+  ListItem,
+  Checkbox,
+  ListItemText,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import AddIcon from "@mui/icons-material/Add";
 import api from "../axiosConfig";
 import { toast } from "react-toastify";
 
@@ -29,13 +38,14 @@ const dataTypes = [
   { value: "text", label: "Text" },
   { value: "number", label: "Number" },
   { value: "date", label: "Date" },
+  { value: "textarea", label: "Textarea" },
   { value: "select", label: "Dropdown" },
   { value: "checkbox", label: "Checkbox" },
   { value: "radio", label: "Radio" },
   { value: "flg", label: "Flag" },
   { value: "file", label: "File" },
   { value: "photo", label: "Photo" },
-  { value: "textarea", label: "Textarea" },
+ 
 ];
 
 export default function CreateColumn() {
@@ -47,8 +57,31 @@ export default function CreateColumn() {
   const [loading, setLoading] = useState(false);
   const [editingColumnId, setEditingColumnId] = useState(null);
 
+  // New states for default columns dialog
+  const [isDefaultColumnsDialogOpen, setIsDefaultColumnsDialogOpen] = useState(false);
+  const [allDbColumns, setAllDbColumns] = useState([]);
+  const [selectedDefaultColumns, setSelectedDefaultColumns] = useState([]);
+  const [fetchingAllColumns, setFetchingAllColumns] = useState(true);
+
+
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchAllColumns = async () => {
+      try {
+        setFetchingAllColumns(true);
+        const response = await api.get('/columns/default');
+        setAllDbColumns(response.data);
+      } catch (err) {
+        console.error("Error fetching all columns:", err);
+        toast.error("Failed to fetch existing columns.");
+      } finally {
+        setFetchingAllColumns(false);
+      }
+    };
+    fetchAllColumns();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -60,7 +93,7 @@ export default function CreateColumn() {
       setErrorMsg("Column name cannot be empty");
       return;
     }
-    setGridColumns((prev) => [...prev, { ...column, id: Date.now() }]);
+    setGridColumns((prev) => [...prev, { ...column, id: Date.now(), isDefault: false }]);
     setColumn({ name: "", type: "text" });
     setErrorMsg("");
   };
@@ -84,6 +117,17 @@ export default function CreateColumn() {
     );
     setEditingColumnId(null);
     setColumn({ name: "", type: "text" });
+  };
+
+  const handleKeyPress = (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      if (editingColumnId) {
+        handleUpdateRow();
+      } else {
+        handleAddRow();
+      }
+    }
   };
 
   const handleSubmitAll = async () => {
@@ -124,9 +168,18 @@ export default function CreateColumn() {
         <Grid item xs={12} md={3} lg={3}>
           <Card sx={{ width: "100%", p: 2, boxShadow: 6 }}>
             <CardContent>
-              <Typography variant="h5" sx={{ mb: 2 }} gutterBottom>
-                Create New Columns
-              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h5" gutterBottom sx={{ mr: 4 }}>
+                  Create New Columns
+                </Typography>
+                <Button
+                  variant="outlined"
+                  startIcon={<AddIcon />}
+                  onClick={() => setIsDefaultColumnsDialogOpen(true)}
+                >
+                  Default columns
+                </Button>
+              </Box>
               {errorMsg && <Alert severity="error">{errorMsg}</Alert>}
               {successMsg && <Alert severity="success">{successMsg}</Alert>}
 
@@ -138,6 +191,7 @@ export default function CreateColumn() {
                     name="name"
                     value={column.name}
                     onChange={handleChange}
+                    onKeyDown={handleKeyPress}
                   />
                 </Grid>
 
@@ -213,6 +267,7 @@ export default function CreateColumn() {
                               color="primary"
                               onClick={() => handleEditGrid(col)}
                               size="small"
+                              disabled={col.isDefault}
                             >
                               <EditIcon fontSize="small" />
                             </IconButton>
@@ -246,6 +301,51 @@ export default function CreateColumn() {
           )}
         </Grid>
       </Grid>
+
+      <Dialog open={isDefaultColumnsDialogOpen} onClose={() => setIsDefaultColumnsDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Select Default Columns</DialogTitle>
+        <DialogContent>
+          <List>
+            {allDbColumns.map((col) => (
+              <ListItem key={col.ColumnId} dense button onClick={() => {
+                const selectedIndex = selectedDefaultColumns.indexOf(col.ColumnId);
+                let newSelected = [];
+                if (selectedIndex === -1) {
+                  newSelected = newSelected.concat(selectedDefaultColumns, col.ColumnId);
+                } else {
+                  newSelected = selectedDefaultColumns.filter(id => id !== col.ColumnId);
+                }
+                setSelectedDefaultColumns(newSelected);
+              }}>
+                <Checkbox
+                  edge="start"
+                  checked={selectedDefaultColumns.indexOf(col.ColumnId) !== -1}
+                  tabIndex={-1}
+                  disableRipple
+                />
+                <ListItemText primary={col.ColumnName} />
+              </ListItem>
+            ))}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsDefaultColumnsDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => {
+            const columnsToAdd = allDbColumns.filter(col => selectedDefaultColumns.includes(col.ColumnId));
+            const newGridColumns = columnsToAdd.map(col => ({
+              id: `default-${col.ColumnId}-${Date.now()}`,
+              name: col.ColumnName,
+              type: col.Type,
+              isDefault: true,
+            }));
+            setGridColumns(prev => [...prev, ...newGridColumns]);
+            setIsDefaultColumnsDialogOpen(false);
+            setSelectedDefaultColumns([]);
+          }} variant="contained">
+            Add Selected
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 }

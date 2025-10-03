@@ -23,5 +23,3 @@ export const sendWhatsAppMessage = async (mobileNumber, message) => {
         throw new Error("WhatsApp message sending failed.");
     }
 };
-
-

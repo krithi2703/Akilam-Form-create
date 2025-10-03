@@ -266,6 +266,11 @@ const ViewSubmissions = () => {
     }));
   };
 
+  const handleEditSubmit = (event) => {
+    event.preventDefault();
+    handleEditSave();
+  };
+
   const handleEditSave = async () => {
     if (!editSubmission) return;
 
@@ -857,11 +862,13 @@ const ViewSubmissions = () => {
             Edit Submission (ID: #{editSubmission?.SubmissionId})
           </DialogTitle>
           <DialogContent dividers>
-            {editSubmission && columns.map(col => (
-              <Box key={col.ColId}>
-                {renderEditInput(col)}
-              </Box>
-            ))}
+            <Box component="form" id="edit-submission-form" onSubmit={handleEditSubmit}>
+              {editSubmission && columns.map(col => (
+                <Box key={col.ColId}>
+                  {renderEditInput(col)}
+                </Box>
+              ))}
+            </Box>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setEditDialogOpen(false)} disabled={saving}>
@@ -869,7 +876,8 @@ const ViewSubmissions = () => {
             </Button>
             <Button 
               variant="contained" 
-              onClick={handleEditSave}
+              type="submit"
+              form="edit-submission-form"
               disabled={saving}
             >
               {saving ? <CircularProgress size={24} /> : 'Update'}

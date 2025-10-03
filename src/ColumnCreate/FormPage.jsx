@@ -316,6 +316,11 @@ const FormPage = ({ isPreview = false }) => {
     }
   };
 
+  const handleFormSubmit = (event) => {
+    event.preventDefault();
+    handleSubmit();
+  };
+
   const handleSubmit = async () => {
     if (isRegistrationEnded) {
       toast.error("Registration for this form has ended and submissions are no longer accepted.");
@@ -656,7 +661,7 @@ const FormPage = ({ isPreview = false }) => {
             {error ? (
               <Alert severity="error">{error}</Alert>
             ) : (
-              <Box component="form" noValidate autoComplete="off">
+              <Box component="form" noValidate autoComplete="off" onSubmit={handleFormSubmit}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
                   {/* Left: Logo */}
                   {formDetails?.imageOrLogo ? (
@@ -746,7 +751,7 @@ const FormPage = ({ isPreview = false }) => {
                   <Button
                     variant="contained"
                     color="primary"
-                    onClick={handleSubmit}
+                    type="submit"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? (

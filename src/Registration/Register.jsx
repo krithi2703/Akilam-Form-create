@@ -184,13 +184,13 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
       }
 
       const phoneNumber = identifier.startsWith('+91') ? identifier : `+91${identifier}`;
-      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-      // const otpCode = "123456";
+      // const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpCode = "123456";
       
 
-      console.log("Generated OTP:", otpCode);
-       const message = `Your OTP for ${fetchedFormName ? `the ${fetchedFormName} form` : 'the form'} is: ${otpCode}`;
-       await sendWhatsAppMessage(phoneNumber, message);
+      // console.log("Generated OTP:", otpCode);
+      //  const message = `Your OTP for ${fetchedFormName ? `the ${fetchedFormName} form` : 'the form'} is: ${otpCode}`;
+      //  await sendWhatsAppMessage(phoneNumber, message);
 
       sessionStorage.setItem('currentOtp', otpCode); 
 
@@ -355,6 +355,21 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
     }
   };
 
+  const handleOtpKeyPress = (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      handleVerifyOtp();
+    }
+  };
+
+  const handleKeyPress = (event, type) => {
+    if (event.key === 'Enter') {
+      // Prevent default form submission behavior
+      event.preventDefault();
+      handleSubmit(type);
+    }
+  };
+
   const handleFormRegistrationSuccess = (result, identifier) => {
     sessionStorage.setItem("userId", identifier);
     sessionStorage.setItem("userName", identifier);
@@ -444,8 +459,8 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
                   autoComplete="current-password"
                   value={loginData.password}
                   onChange={handleLoginChange}
-                  InputProps={{
-                    endAdornment: (
+                  onKeyDown={(e) => handleKeyPress(e, 'login')}
+                  InputProps={{                    endAdornment: (
                       <InputAdornment position="end">
                         <IconButton
                           onClick={() => setShowPassword(!showPassword)}
@@ -506,8 +521,8 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
                   autoComplete="current-password"
                   value={registerData.password}
                   onChange={handleRegisterChange}
-                  InputProps={{
-                    endAdornment: (
+                  onKeyDown={(e) => handleKeyPress(e, 'register')}
+                  InputProps={{                    endAdornment: (
                       <InputAdornment position="end">
                         <IconButton
                           onClick={() => setShowPassword(!showPassword)}
@@ -552,6 +567,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
                       name="identifier"
                       value={formRegData.identifier}
                       onChange={handleFormRegChange}
+                      onKeyDown={(e) => handleKeyPress(e, 'formregister')}
                       error={!!identifierError}
                       helperText={identifierError || "Please enter your 10-digit WhatsApp number to receive an OTP."}
                     />
@@ -629,7 +645,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
               numInputs={6}
               inputType="tel"
               renderSeparator={<span style={{ width: '8px' }}></span>}
-              renderInput={(props) => <input {...props} />}
+              renderInput={(props) => <input {...props} onKeyDown={handleOtpKeyPress} />}
               shouldAutoFocus={true}
               containerStyle={{ justifyContent: 'center' }}
               inputStyle={{

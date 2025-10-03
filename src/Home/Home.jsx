@@ -157,7 +157,7 @@ const PaymentDetailsTable = () => {
   useEffect(() => {
     const fetchSubmissions = async () => {
       try {
-        const response = await axios.get('/submissions/all');
+        const response = await axios.get('/submissions');
         setSubmissions(response.data);
       } catch (error) {
         console.error('Error fetching submissions:', error);
@@ -171,7 +171,15 @@ const PaymentDetailsTable = () => {
     setSelectedEmail(event.target.value);
   };
 
-  const uniqueEmails = [...new Set(submissions.map(item => item.Emailormobileno))];
+  const uniqueUsers = submissions.reduce((acc, current) => {
+    if (!acc.find(item => item.Emailormobileno === current.Emailormobileno)) {
+      acc.push({
+        Emailormobileno: current.Emailormobileno,
+        UserName: current.UserName || current.Emailormobileno
+      });
+    }
+    return acc;
+  }, []);
   
   const filteredSubmissions = selectedEmail 
     ? submissions.filter(s => s.Emailormobileno === selectedEmail)
@@ -184,15 +192,15 @@ const PaymentDetailsTable = () => {
       icon={<PaymentIcon />}
     >
       <FormControl fullWidth sx={{ mb: 3 }}>
-        <InputLabel>Select by Email/Mobile</InputLabel>
+        <InputLabel>Select by User</InputLabel>
         <Select
           value={selectedEmail}
-          label="Select by Email/Mobile"
+          label="Select by User"
           onChange={handleEmailChange}
         >
-          {uniqueEmails.map((email) => (
-            <MenuItem key={email} value={email}>
-              {email}
+          {uniqueUsers.map((user) => (
+            <MenuItem key={user.Emailormobileno} value={user.Emailormobileno}>
+              {user.UserName}
             </MenuItem>
           ))}
         </Select>
@@ -335,7 +343,7 @@ const FormSubmissionChart = () => {
     const fetchData = async () => {
       try {
         const [formsResponse, countsResponse] = await Promise.all([
-          axios.get('/public/formname'),
+          axios.get('/formname'),
           axios.get('/submissions/count-by-form'),
         ]);
 
