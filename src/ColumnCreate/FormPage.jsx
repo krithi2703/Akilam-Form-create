@@ -176,6 +176,7 @@ const FormPage = ({ isPreview = false }) => {
           endDate: sortedColumns[0].Enddate,
           startDate: sortedColumns[0].Startdate,
           fee: sortedColumns[0].Fee,
+          bannerImage: sortedColumns[0].BannerImage,
           imageOrLogo: sortedColumns[0].ImageOrLogo,
         });
         // Calculate if registration has ended
@@ -656,6 +657,30 @@ const FormPage = ({ isPreview = false }) => {
         maxWidth="md"
         sx={{ mt: isFormOnlyUser ? 0 : 4, mb: 4, pt: isFormOnlyUser ? 4 : 0 }}
       >
+       {formDetails?.bannerImage && (
+  <Card sx={{ mb: 2, borderRadius: 2, overflow: 'hidden' }}>
+    <Box 
+      sx={{ 
+        width: '100%', 
+        overflow: 'hidden',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+    >
+      <img 
+        src={`${api.defaults.baseURL.replace('/api', '')}${formDetails.bannerImage}`} 
+        alt="Banner" 
+        style={{ 
+          width: '100%',
+          height: '150px', // Flexible height
+          maxWidth: '1200px',
+          objectFit: 'fill' // Show full image without cropping
+        }} 
+      />
+    </Box>
+  </Card>
+)}
         <Card elevation={6} sx={{ p: 2 }}>
           <CardContent>
             {error ? (
@@ -663,18 +688,8 @@ const FormPage = ({ isPreview = false }) => {
             ) : (
               <Box component="form" noValidate autoComplete="off" onSubmit={handleFormSubmit}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-                  {/* Left: Logo */}
-                  {formDetails?.imageOrLogo ? (
-                    <Box sx={{ width: 80, height: 80, flexShrink: 0, border: '1px solid', borderColor: 'grey.300', borderRadius: 1, p: 0.5 }}>
-                      <img 
-                        src={`${api.defaults.baseURL.replace('/api', '')}${formDetails.imageOrLogo}`} 
-                        alt="Form Logo" 
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                      />
-                    </Box>
-                  ) : (
-                    <Box sx={{ width: 80, flexShrink: 0 }} /> // Spacer if no logo
-                  )}
+                  {/* Left: Spacer to balance the logo */}
+                  <Box sx={{ width: 80, flexShrink: 0 }} />
 
                   {/* Center: Form Name */}
                   {formDetails?.formName && (
@@ -683,8 +698,18 @@ const FormPage = ({ isPreview = false }) => {
                     </Typography>
                   )}
 
-                  {/* Right: Spacer to balance the logo */}
-                  <Box sx={{ width: 80, flexShrink: 0 }} />
+                  {/* Right: Logo */}
+                  {formDetails?.imageOrLogo ? (
+                    <Box sx={{ width: 80, height: 80, flexShrink: 0, border: '1px solid', borderColor: 'grey.300', borderRadius: 1, p: 0.5 }}>
+                      <img 
+                        src={`${api.defaults.baseURL.replace('/api', '')}${formDetails.imageOrLogo}`} 
+                        alt="Form Logo" 
+                        style={{ width: '100%', height: '100%', objectFit: 'fill' }} 
+                      />
+                    </Box>
+                  ) : (
+                    <Box sx={{ width: 80, flexShrink: 0 }} /> // Spacer if no logo
+                  )}
                 </Box>
 
                 {isFormOnlyUser && (userId || userName) && (
@@ -872,7 +897,6 @@ const FormPage = ({ isPreview = false }) => {
             <Button onClick={() => setShowPaymentDialog(false)}>Close</Button>
           </DialogActions>
         </Dialog>
-
         <Dialog
           open={registerDialogOpen}
           onClose={handleCloseRegisterDialog}

@@ -47,6 +47,7 @@ const CreateColumnTable = () => {
   const [selectedForm, setSelectedForm] = useState({ id: "", no: "" });
   const [formColumns, setFormColumns] = useState([]);
   const [initialFormName, setInitialFormName] = useState(""); // New state for initial form name
+  const [bannerImageUrl, setBannerImageUrl] = useState(""); // State for banner image URL
   
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingColumnId, setDeletingColumnId] = useState(null);
@@ -197,6 +198,13 @@ const CreateColumnTable = () => {
       );
       const sortedColumns = response.data.sort((a, b) => a.SequenceNo - b.SequenceNo);
       setFormColumns(sortedColumns);
+
+      // Set banner image if available in the fetched columns
+      if (sortedColumns.length > 0 && sortedColumns[0].BannerImage) {
+        setBannerImageUrl(`${api.defaults.baseURL.replace('/api', '')}${sortedColumns[0].BannerImage}`);
+      } else {
+        setBannerImageUrl("");
+      }
       //console.log(`Fetched columns for FormId: ${formId}, FormNo: ${formNo}:`, sortedColumns);
     } catch (err) {
       console.error("Error fetching form columns:", err);
@@ -219,12 +227,16 @@ const CreateColumnTable = () => {
         // Should not happen if forms state is correctly populated
         setSelectedForm({ id: "", no: "" });
         setFormColumns([]);
+        setBannerImageUrl("");
       }
     } else {
       setSelectedForm({ id: "", no: "" });
       setFormColumns([]);
+      setBannerImageUrl("");
     }
   };
+
+
 
   const handleEditClick = (column) => {
     setEditingColumn(column);
@@ -399,6 +411,8 @@ const CreateColumnTable = () => {
           )}
         </CardContent>
       </Card>
+
+
 
       {/* Selected Form Columns Table */}
       {loading && <Box sx={{ display: "flex", justifyContent: "center", my: 3 }}><CircularProgress /></Box>}

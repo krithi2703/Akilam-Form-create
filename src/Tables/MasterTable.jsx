@@ -143,7 +143,6 @@ export default function MasterTable() {
         <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
           <Table
             sx={{
-              minWidth: 800,
               tableLayout: "fixed",
               borderCollapse: "collapse",
               border: "1px solid #ccc",
@@ -151,31 +150,24 @@ export default function MasterTable() {
           >
             <TableHead sx={{ backgroundColor: "primary.main" }}>
               <TableRow>
-                <TableCell sx={{ borderRight: "1px solid #ccc" , color: "#fff" }}>
+                <TableCell sx={{ borderRight: "1px solid #ccc" , color: "#fff" ,
+                  width: "80px",
+                }}>
                   S.No.
                 </TableCell>
-                <TableCell sx={{ borderRight: "1px solid #ccc" , color: "#fff" }} hidden>
-                  Form ID
-                </TableCell>
-                <TableCell
-                  sx={{ borderRight: "1px solid #ccc" , color: "#fff" }}
-                  hidden
-                >
-                  Form No ID
-                </TableCell>
-                <TableCell sx={{ borderRight: "1px solid #ccc" , color: "#fff" }}>
+                <TableCell sx={{ borderRight: "1px solid #ccc" , color: "#fff", textAlign:'center'}}>
                   Form Name
                 </TableCell>
                 <TableCell sx={{ borderRight: "1px solid #ccc" , color: "#fff" }} hidden>
                   User Name
                 </TableCell>
-                <TableCell sx={{ borderRight: "1px solid #ccc" , color: "#fff" }}>
+                <TableCell sx={{ borderRight: "1px solid #ccc" , color: "#fff",  width: "200px"}}>
                   Created Date
                 </TableCell>
-                <TableCell sx={{ borderRight: "1px solid #ccc" , color: "#fff" }}>
+                <TableCell sx={{ borderRight: "1px solid #ccc" , color: "#fff", width: "200px" }}>
                   End Date
                 </TableCell>
-                <TableCell sx={{ borderRight: "1px solid #ccc" , color: "#fff" }}>Actions</TableCell>
+                <TableCell sx={{ borderRight: "1px solid #ccc" , color: "#fff" ,textAlign:'center', width:'25%'}}>Actions</TableCell>
               </TableRow>
             </TableHead>
 
@@ -184,15 +176,6 @@ export default function MasterTable() {
                 <TableRow key={row.FormId}>
                   <TableCell sx={{ borderRight: "1px solid #ccc" }}>
                     {index + 1}
-                  </TableCell>
-                  <TableCell sx={{ borderRight: "1px solid #ccc" }} hidden>
-                    {row.FormId}
-                  </TableCell>
-                  <TableCell
-                    sx={{ borderRight: "1px solid #ccc" }}
-                    hidden
-                  >
-                    {row.FNoId}
                   </TableCell>
                   <TableCell sx={{ borderRight: "1px solid #ccc" }}>
                     {row.FormName}
@@ -212,7 +195,7 @@ export default function MasterTable() {
                         Registration Ended !!
                       </Typography>
                     ) : (
-                      <Stack direction="row" spacing={1} alignItems="center">
+                      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
                         <IconButton
                           aria-label="edit"
                           color="info"
@@ -225,19 +208,21 @@ export default function MasterTable() {
                           variant="outlined"
                           color="primary"
                           size="small"
+                          sx={{ flexShrink: 0 }} // Prevent button from shrinking
                           onClick={() => handleCreateNewVersion(row.FormId)}
                         >
-                          Create New Form
+                          CreateForm
                         </Button>
                         <Button
                           variant="outlined"
                           color="success"
                           size="small"
+                          sx={{ flexShrink: 0 }} // Prevent button from shrinking
                           onClick={() => navigate("/create-column-table", { state: { formId: row.FormId, formName: row.FormName } })}
                         >
-                          Column Table
+                          FormTable
                         </Button>
-                      </Stack>
+                      </Box>
                     )}
                   </TableCell>
                 </TableRow>

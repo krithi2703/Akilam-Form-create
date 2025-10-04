@@ -181,6 +181,13 @@ const FormDetails = () => {
           setExistingColumns(existingColumnsResponse.data);
           const existingIds = existingColumnsResponse.data.map(c => c.ColId);
           setExistingColumnIds(existingIds);
+
+          // Fetch existing banner image from FormDetails_dtl
+          if (existingColumnsResponse.data.length > 0 && existingColumnsResponse.data[0].BannerImage) {
+            setBannerImagePreviewUrl(`${api.defaults.baseURL.replace('/api', '')}${existingColumnsResponse.data[0].BannerImage}`);
+          } else {
+            setBannerImagePreviewUrl("");
+          }
         }
 
         // --- Fetch available validation types ---
@@ -323,12 +330,6 @@ const FormDetails = () => {
       return;
     }
 
-    if (!bannerImageFile) {
-      toast.error("Please upload a banner image.");
-      setSubmitStatus({ type: 'error', message: 'Banner image is mandatory.' });
-      return;
-    }
-
     // --- Validation logic for sequences (unchanged) ---
     const newErrors = {};
     let hasErrors = false;
@@ -364,12 +365,14 @@ const FormDetails = () => {
     if (hasErrors) return;
     // --- End of validation logic ---
 
-    setSubmitStatus({ type: 'info', message: 'Uploading banner image...' });
-
-    const bannerImagePath = await handleUploadBannerImage();
-    if (!bannerImagePath) {
-        setSubmitStatus({ type: 'error', message: 'Failed to upload banner image. Please try again.' });
-        return;
+    let bannerImagePath = null;
+    if (bannerImageFile) {
+      setSubmitStatus({ type: 'info', message: 'Uploading banner image...' });
+      bannerImagePath = await handleUploadBannerImage();
+      if (!bannerImagePath) {
+          setSubmitStatus({ type: 'error', message: 'Failed to upload banner image. Please try again.' });
+          return;
+      }
     }
 
     setSubmitStatus({ type: 'info', message: 'Submitting columns...' });
@@ -431,20 +434,23 @@ const FormDetails = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4 }}>
-      <Card>
-        <CardContent>
-          <Box component="form" onSubmit={handleSubmit} noValidate>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-              <Typography variant="h5" component="h1">Add Columns to Form</Typography>
-              <Stack spacing={1} alignItems="center" sx={{ width: { xs: '100%', sm: 300 } }}>
-                  {bannerImagePreviewUrl && (
-                    <Box sx={{ width: 100, height: 100, border: '1px solid #ddd', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                      <img src={bannerImagePreviewUrl} alt="Banner Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+      <Grid container spacing={4}> {/* Added Grid container with spacing */}
+        <Grid item xs={12} md={6}> {/* Banner Card takes half width on medium screens and up */}
+          <Card> {/* Removed mb: 4 from here, spacing is handled by Grid */}
+            <CardContent>
+              <Stack spacing={1} alignItems="center" sx={{ width: '100%' }}> {/* Full width for the banner card */}
+                  {bannerImagePreviewUrl ? (
+                    <Box sx={{ width: '100%', height: 150, border: '1px solid #ddd', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                      <img src={bannerImagePreviewUrl} alt="Banner Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </Box>
+                  ) : (
+                    <Box sx={{ width: '100%', height: 150, border: '1px solid #ddd', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'grey.200' }}>
+                      <Typography variant="caption" color="text.secondary">No Banner Image</Typography>
                     </Box>
                   )}
                   <label htmlFor="banner-image-upload">
                     <Button variant="contained" component="span" size="small">
-                      {bannerImagePreviewUrl ? 'Change Banner' : 'Upload Banner *'}
+                      {bannerImagePreviewUrl ? 'Change Banner' : 'Upload Banner'}
                     </Button>
                   </label>
                   <input
@@ -455,119 +461,131 @@ const FormDetails = () => {
                     onChange={handleBannerFileChange}
                   />
               </Stack>
-            </Box>
-           
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <TextField fullWidth label="Form Name" value={formName} InputProps={{ readOnly: true }} variant="filled" />
-                  <Button
-                    variant="outlined"
-                    startIcon={<AddIcon />}
-                    onClick={handleOpenDialog}
-                    sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
-                  >
-                    Select Columns
-                  </Button>
-                </Stack>
-              </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={6}> {/* Main Form Card takes half width on medium screens and up */}
+          <Card>
+            <CardContent>
+              <Box component="form" onSubmit={handleSubmit} noValidate>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                  <Typography variant="h5" component="h1">Add Columns to Form</Typography>
+                  {/* Banner image section moved to a separate Card */}
+                </Box>
+               
+                <Grid container spacing={3}>
+                  <Grid item xs={12}>
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <TextField fullWidth label="Form Name" value={formName} InputProps={{ readOnly: true }} variant="filled" />
+                      <Button
+                        variant="outlined"
+                        startIcon={<AddIcon />}
+                        onClick={handleOpenDialog}
+                        sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+                      >
+                        Select Columns
+                      </Button>
+                    </Stack>
+                  </Grid>
 
-              {submitStatus && (
-                <Grid item xs={12}>
-                  <Alert severity={submitStatus.type}>{submitStatus.message}</Alert>
+                  {submitStatus && (
+                    <Grid item xs={12}>
+                      <Alert severity={submitStatus.type}>{submitStatus.message}</Alert>
+                    </Grid>
+                  )}
                 </Grid>
-              )}
-            </Grid>
 
-            {selectedColumns.length > 0 && (
-              <Card sx={{ mt: 4 }}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>Selected Columns & Sequence Numbers</Typography>
-                  <TableContainer component={Paper}>
-                    <Table>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Column Name</TableCell>
-                          <TableCell>Data Type</TableCell>
-                          <TableCell>Validation Rule</TableCell>
-                          <TableCell>Sequence Number</TableCell>
-                          <TableCell>Action</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {selectedColumns.map(colId => {
-                          const column = allColumns.find(c => c.ColumnId === colId);
-                          const validationId = columnValidations[colId];
-                          const validation = availableValidations.find(v => v.Id === validationId);
-                          return (
-                            <TableRow key={colId}>
-                              <TableCell>{column?.ColumnName}</TableCell>
-                              <TableCell>{column?.DataType}</TableCell>
-                              <TableCell>{validation ? validation.ValidationList : 'None'}</TableCell>
-                              <TableCell>
-                                <TextField
-                                  type="number"
-                                  value={sequences[colId] || ''}
-                                  onChange={(e) => handleSequenceChange(colId, e.target.value)}
-                                  required
-                                  fullWidth
-                                  error={!!sequenceErrors[colId]}
-                                  helperText={sequenceErrors[colId]}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <IconButton onClick={() => handleRemoveColumn(colId)}>
-                                  <CloseIcon />
-                                </IconButton>
-                              </TableCell>
+                {selectedColumns.length > 0 && (
+                  <Card sx={{ mt: 4 }}>
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom>Selected Columns & Sequence Numbers</Typography>
+                      <TableContainer component={Paper}>
+                        <Table>
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>Column Name</TableCell>
+                              <TableCell>Data Type</TableCell>
+                              <TableCell>Validation Rule</TableCell>
+                              <TableCell>Sequence Number</TableCell>
+                              <TableCell>Action</TableCell>
                             </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
+                          </TableHead>
+                          <TableBody>
+                            {selectedColumns.map(colId => {
+                              const column = allColumns.find(c => c.ColumnId === colId);
+                              const validationId = columnValidations[colId];
+                              const validation = availableValidations.find(v => v.Id === validationId);
+                              return (
+                                <TableRow key={colId}>
+                                  <TableCell>{column?.ColumnName}</TableCell>
+                                  <TableCell>{column?.DataType}</TableCell>
+                                  <TableCell>{validation ? validation.ValidationList : 'None'}</TableCell>
+                                  <TableCell>
+                                    <TextField
+                                      type="number"
+                                      value={sequences[colId] || ''}
+                                      onChange={(e) => handleSequenceChange(colId, e.target.value)}
+                                      required
+                                      fullWidth
+                                      error={!!sequenceErrors[colId]}
+                                      helperText={sequenceErrors[colId]}
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <IconButton onClick={() => handleRemoveColumn(colId)}>
+                                      <CloseIcon />
+                                    </IconButton>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
 
-                  <Box sx={{ mt: 2 }}>
-                    <Button type="submit" variant="contained" color="primary" fullWidth>
-                      Add Selected Columns
-                    </Button>
-                  </Box>
-                </CardContent>
-              </Card>
-            )}
+                      <Box sx={{ mt: 2 }}>
+                        <Button type="submit" variant="contained" color="primary" fullWidth>
+                          Add Selected Columns
+                        </Button>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                )}
 
-            {existingColumns.length > 0 && (
-              <Card sx={{ mt: 4 }}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>Existing Columns in Form</Typography>
-                  <TableContainer component={Paper}>
-                    <Table>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Column ID</TableCell>
-                          <TableCell>Column Name</TableCell>
-                          <TableCell>Data Type</TableCell>
-                          <TableCell>Sequence</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {existingColumns.map((col) => (
-                          <TableRow key={col.ColId}>
-                            <TableCell>{col.ColId}</TableCell>
-                            <TableCell>{col.ColumnName}</TableCell>
-                            <TableCell>{col.DataType}</TableCell>
-                            <TableCell>{col.SequenceNo}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </CardContent>
-              </Card>
-            )}
-          </Box>
-        </CardContent>
-      </Card>
+                {existingColumns.length > 0 && (
+                  <Card sx={{ mt: 4 }}>
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom>Existing Columns in Form</Typography>
+                      <TableContainer component={Paper}>
+                        <Table>
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>Column ID</TableCell>
+                              <TableCell>Column Name</TableCell>
+                              <TableCell>Data Type</TableCell>
+                              <TableCell>Sequence</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {existingColumns.map((col) => (
+                              <TableRow key={col.ColId}>
+                                <TableCell>{col.ColId}</TableCell>
+                                <TableCell>{col.ColumnName}</TableCell>
+                                <TableCell>{col.DataType}</TableCell>
+                                <TableCell>{col.SequenceNo}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </CardContent>
+                  </Card>
+                )}
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>Select Columns</DialogTitle>
