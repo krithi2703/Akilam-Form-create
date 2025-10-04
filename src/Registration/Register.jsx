@@ -105,10 +105,9 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
 
   useEffect(() => {
     if (formId) {
-      const fetchFormName = async () => {
-        try {
-          const response = await api.get(`/public/formname/${formId}`);
-          if (response.data.FormName) {
+                const fetchFormName = async () => {
+                  try {
+                    const response = await api.get(`/formname/${formId}`);          if (response.data.FormName) {
             setFormName(response.data.FormName);
           }
         } catch (error) {
@@ -173,7 +172,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
       let fetchedFormName = formName;
       if (!fetchedFormName && formId) {
         try {
-          const response = await api.get(`/public/formname/${formId}`);
+          const response = await api.get(`/formname/${formId}`);
           if (response.data.FormName) {
             fetchedFormName = response.data.FormName;
             setFormName(response.data.FormName);

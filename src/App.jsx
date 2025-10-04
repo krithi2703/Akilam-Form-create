@@ -130,7 +130,7 @@ function App() {
                 <Route path="/users" element={<UserList />} /> {/* New route for UserList */}
 
                 <Route
-                  path="/:formId"
+                  path="/form/register/:formId"
                   element={
                     <Register
                       setIsLoggedIn={setIsLoggedIn}
@@ -150,8 +150,9 @@ function App() {
             path="/"
             element={<Register setIsLoggedIn={setIsLoggedIn} setIsFormOnlyUser={setIsFormOnlyUser} />} 
           />
+          <Route path="/home" element={<Navigate to="/" replace />} />
           <Route
-            path="/:formId"
+            path="/form/register/:formId"
             element={<Register setIsLoggedIn={setIsLoggedIn} setIsFormOnlyUser={setIsFormOnlyUser} />} 
           />
           <Route path="*" element={<Navigate to="/" replace />} />
