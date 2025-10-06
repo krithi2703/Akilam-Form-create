@@ -205,7 +205,10 @@ const ViewSubmissions = () => {
   };
 
   const handleViewPhotoClick = (imagePath) => {
-    setSelectedPhotoUrl(`${getBaseUrl()}${imagePath}`);
+    const imageUrl = imagePath.startsWith('http://') || imagePath.startsWith('https://')
+      ? imagePath
+      : `${getBaseUrl()}${imagePath}`;
+    setSelectedPhotoUrl(imageUrl);
     setPhotoDialogOpen(true);
   };
 
@@ -522,6 +525,7 @@ const ViewSubmissions = () => {
           </>
         );
       case 'photo':
+        const photoSrc = value && (value.startsWith('http://') || value.startsWith('https://')) ? value : `${getBaseUrl()}${value}`;
         return (
           <>
             <Typography variant="body2" gutterBottom>{ColumnName}</Typography>
@@ -545,7 +549,7 @@ const ViewSubmissions = () => {
               error={isError}
               helperText={errorMessage || 'Max 2MB'}
             />
-            {value && <img src={`${getBaseUrl()}${value}`} alt="preview" style={{ width: '100px', marginTop: '10px' }}/>}
+            {value && <img src={photoSrc} alt="preview" style={{ width: '100px', marginTop: '10px' }}/>}
           </>
         );
       default: // text
@@ -606,7 +610,10 @@ const ViewSubmissions = () => {
         </Button>
       );
     } else if (col.DataType.toLowerCase() === 'file') {
-      return <a href={`${getBaseUrl()}${value}`} target="_blank" rel="noopener noreferrer">View File</a>;
+      const fileHref = value.startsWith('http://') || value.startsWith('https://')
+        ? value
+        : `${getBaseUrl()}${value}`;
+      return <a href={fileHref} target="_blank" rel="noopener noreferrer">View File</a>;
     }
 
     return value;
