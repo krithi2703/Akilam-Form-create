@@ -152,39 +152,49 @@ const CreateColumnTable = () => {
   const fetchForms = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/formdetails/show");
-      
-      // Process forms to get unique FormId with the latest FormNo
-      const formsMap = new Map(); // Map to store the latest version of each form by FormId
+      const masterPromise = api.get("/formmaster");
+      const detailsPromise = api.get("/formdetails/show");
 
-      response.data.forEach(formGroup => {
-        formGroup.columns.forEach(column => {
-          const currentForm = {
-            FormId: formGroup.FormId,
-            FormName: formGroup.FormName,
-            FormNo: column.FormNo,
-            EndDate: formGroup.EndDate,
-          };
+      const [masterResponse, detailsResponse] = await Promise.all([masterPromise, detailsPromise]);
 
-          if (!formsMap.has(currentForm.FormId)) {
-            formsMap.set(currentForm.FormId, currentForm);
-          } else {
-            // If a form with this FormId already exists, compare EndDate and keep the latest
-            const existingForm = formsMap.get(currentForm.FormId);
-            if (new Date(currentForm.EndDate) > new Date(existingForm.EndDate)) {
-              formsMap.set(currentForm.FormId, currentForm);
-            }
+      const detailsMap = new Map();
+      if (detailsResponse.data && Array.isArray(detailsResponse.data)) {
+        detailsResponse.data.forEach(formGroup => {
+          const columns = Array.isArray(formGroup.columns) ? formGroup.columns : [];
+          const latestColumn = columns.reduce((latest, current) => {
+            return (latest && latest.FormNo > current.FormNo) ? latest : current;
+          }, null);
+
+          const formNo = latestColumn ? latestColumn.FormNo : null;
+
+          if (formNo) {
+             const existing = detailsMap.get(formGroup.FormId);
+             if (!existing || new Date(formGroup.EndDate) > new Date(existing.EndDate)) {
+                detailsMap.set(formGroup.FormId, { FormNo: formNo, EndDate: formGroup.EndDate });
+             }
           }
         });
+      }
+
+      const combinedForms = masterResponse.data.map(masterForm => {
+        const details = detailsMap.get(masterForm.FormId);
+        return {
+          FormId: masterForm.FormId,
+          FormName: masterForm.FormName,
+          EndDate: masterForm.Enddate, // Note the property name difference
+          FormNo: details ? details.FormNo : 1, // Default to 1 if no details
+        };
       });
-      
-      // Convert map values to an array and sort by EndDate in descending order
-      const uniqueForms = Array.from(formsMap.values()).sort((a, b) => new Date(b.EndDate) - new Date(a.EndDate));
+
+      const uniqueForms = Array.from(combinedForms.values()).sort((a, b) => new Date(b.EndDate) - new Date(a.EndDate));
       
       setForms(uniqueForms);
-     // console.log("Fetched and Sorted Unique Forms (latest version by FormId):", uniqueForms);
+
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to fetch forms");
+      console.error("Error fetching or processing forms:", err);
+      const errorMessage = err.response?.data?.message || err.message || "An unexpected error occurred while fetching forms.";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
