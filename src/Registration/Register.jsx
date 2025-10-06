@@ -184,6 +184,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
 
       const phoneNumber = identifier.startsWith('+91') ? identifier : `+91${identifier}`;
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      
       // const otpCode = "123456";
       
 
@@ -374,9 +375,14 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
     sessionStorage.setItem("userName", identifier);
     sessionStorage.setItem("isFormOnlyUser", "true");
     sessionStorage.setItem("token", result.token);
+    sessionStorage.setItem("formId", formId); // Store formId for form-only users
 
-    setIsLoggedIn(true);
-    if (setIsFormOnlyUser) setIsFormOnlyUser(true);
+    if (setIsLoggedIn) {
+      setIsLoggedIn(true);
+    }
+    if (setIsFormOnlyUser) {
+      setIsFormOnlyUser(true);
+    }
 
     toast.success(`Welcome, ${identifier}`);
     setFormRegData({ identifier: "" });

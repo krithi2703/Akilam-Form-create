@@ -25,11 +25,8 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(!!sessionStorage.getItem('userId'));
   const [isFormOnlyUser, setIsFormOnlyUser] = useState(sessionStorage.getItem('isFormOnlyUser') === 'true');
-  const token = sessionStorage.getItem("token");
+  const formOnlyUserFormId = sessionStorage.getItem('formId'); // Get formId for form-only user
   const location = useLocation();
-
-  // Removed the useEffect as useState initialization is sufficient for initial load
-  // and setIsLoggedIn prop handles subsequent updates.
 
   const handleLogout = () => {
     sessionStorage.clear();
@@ -48,35 +45,9 @@ function App() {
     },
   });
 
-  // For "form only" users, certain routes should hide the main layout.
-  const isFormViewRoute = isFormOnlyUser && location.pathname.startsWith('/form/view/');
-  const isFormPreviewRoute = isFormOnlyUser && location.pathname.startsWith('/form/preview/');
-  const isViewSubmissionsRoute = isFormOnlyUser && location.pathname.startsWith('/form/submissions/');
-
-  // The register route for a "form only" user is any path that isn't a main app page.
-  const isFormRegisterRoute =
-    isFormOnlyUser &&
-    /^\/[^/]+$/.test(location.pathname) &&
-    ![
-      '/home',
-      '/create-column',
-      '/mastertable',
-      '/masterpage',
-      '/formtable',
-      '/create-column-table',
-      '/formdetails',
-      '/view-submissions',
-      '/users', // Add new route to the list
-    ].includes(location.pathname);
-
-  // The main layout should be shown for all logged-in users,
-  // except for "form only" users on the specific routes defined above.
-  const shouldShowLayout =
-    isLoggedIn &&
-    !isFormViewRoute &&
-    !isFormPreviewRoute &&
-    !isViewSubmissionsRoute &&
-    !isFormRegisterRoute;
+  // For "form only" users, the main layout (NavBar and SideBar) is never shown.
+  // They have their own layout within the FormPage component.
+  const shouldShowLayout = isLoggedIn && !isFormOnlyUser;
 
   return (
     <ThemeProvider theme={theme}>
@@ -105,7 +76,7 @@ function App() {
               component="main"
               sx={{
                 flexGrow: 1,
-                p: 3,
+                p: shouldShowLayout ? 3 : 0, // No padding for form-only views
                 mt: shouldShowLayout ? 8 : 0,
                 transition: 'margin-left 0.3s, width 0.3s',
                 width:
@@ -117,29 +88,30 @@ function App() {
               }}
             >
               <Routes>
-                <Route path="/home" element={<Home />} />
-                <Route path="/create-column" element={<CreateColumn />} />
-                <Route path="/mastertable" element={<MasterTable />} />
-                <Route path="/masterpage" element={<MasterPage />} />
-                <Route path="/formtable" element={<FormTable />} />
-                <Route path="/create-column-table" element={<CreateColumnTable />} />
-                <Route path="/formdetails" element={<FormDetails />} />
-                <Route path="/form/preview/:formId" element={<FormPage isPreview={true} />} />
-                <Route path="/form/view/:formId" element={<FormPage isPreview={false} />} />
-                <Route path="/form/submissions/:formId" element={<ViewSubmissions />} />
-                <Route path="/users" element={<UserList />} /> {/* New route for UserList */}
-
-                <Route
-                  path="/form/register/:formId"
-                  element={
-                    <Register
-                      setIsLoggedIn={setIsLoggedIn}
-                      setIsFormOnlyUser={setIsFormOnlyUser}
-                    />
-                  }
-                />
-
-                <Route path="*" element={<Navigate to="/home" replace />} />
+                {isFormOnlyUser ? (
+                  <>
+                    <Route path="/form/view/:formId" element={<FormPage isPreview={false} />} />
+                    <Route path="/form/submissions/:formId" element={<ViewSubmissions />} />
+                    {/* Redirect any other path for form-only user to their form */}
+                    <Route path="*" element={formOnlyUserFormId ? <Navigate to={`/form/view/${formOnlyUserFormId}`} replace /> : <Navigate to={`/`} replace />} />
+                  </>
+                ) : (
+                  <>
+                    {/* Routes for regular logged-in users */}
+                    <Route path="/home" element={<Home />} />
+                    <Route path="/create-column" element={<CreateColumn />} />
+                    <Route path="/mastertable" element={<MasterTable />} />
+                    <Route path="/masterpage" element={<MasterPage />} />
+                    <Route path="/formtable" element={<FormTable />} />
+                    <Route path="/create-column-table" element={<CreateColumnTable />} />
+                    <Route path="/formdetails" element={<FormDetails />} />
+                    <Route path="/form/preview/:formId" element={<FormPage isPreview={true} />} />
+                    <Route path="/form/view/:formId" element={<FormPage isPreview={false} />} />
+                    <Route path="/form/submissions/:formId" element={<ViewSubmissions />} />
+                    <Route path="/users" element={<UserList />} />
+                    <Route path="*" element={<Navigate to="/home" replace />} />
+                  </>
+                )}
               </Routes>
             </Box>
           </Box>
@@ -147,13 +119,17 @@ function App() {
       ) : (
         <Routes>
           <Route
-            path="/"
-            element={<Register setIsLoggedIn={setIsLoggedIn} setIsFormOnlyUser={setIsFormOnlyUser} />} 
+            path="/login"
+            element={<Register setIsLoggedIn={setIsLoggedIn} setIsFormOnlyUser={setIsFormOnlyUser} />}
+          />
+          <Route
+            path="/:formId"
+            element={<Register setIsLoggedIn={setIsLoggedIn} setIsFormOnlyUser={setIsFormOnlyUser} />}
           />
           <Route path="/home" element={<Navigate to="/" replace />} />
           <Route
             path="/form/register/:formId"
-            element={<Register setIsLoggedIn={setIsLoggedIn} setIsFormOnlyUser={setIsFormOnlyUser} />} 
+            element={<Register setIsLoggedIn={setIsLoggedIn} setIsFormOnlyUser={setIsFormOnlyUser} />}
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

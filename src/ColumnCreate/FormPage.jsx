@@ -132,8 +132,7 @@ const FormPage = ({ isPreview = false }) => {
     }
 
     if (!isPreview && !isFormOnlyUser && !token) {
-      setError("You must be logged in to view this page.");
-      setLoading(false);
+      navigate(`/${formId}`);
       return;
     }
 
