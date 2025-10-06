@@ -669,7 +669,9 @@ const FormPage = ({ isPreview = false }) => {
       }}
     >
       <img 
-        src={`${api.defaults.baseURL.replace('/api', '')}${formDetails.bannerImage}`} 
+        src={formDetails.bannerImage.startsWith('http://') || formDetails.bannerImage.startsWith('https://') 
+          ? formDetails.bannerImage 
+          : `${api.defaults.baseURL.replace('/api', '')}${formDetails.bannerImage}`}
         alt="Banner" 
         style={{ 
           width: '100%',
@@ -702,7 +704,9 @@ const FormPage = ({ isPreview = false }) => {
                   {formDetails?.imageOrLogo ? (
                     <Box sx={{ width: 80, height: 80, flexShrink: 0, border: '1px solid', borderColor: 'grey.300', borderRadius: 1, p: 0.5 }}>
                       <img 
-                        src={`${api.defaults.baseURL.replace('/api', '')}${formDetails.imageOrLogo}`} 
+                        src={formDetails.imageOrLogo.startsWith('http://') || formDetails.imageOrLogo.startsWith('https://') 
+                          ? formDetails.imageOrLogo 
+                          : `${api.defaults.baseURL.replace('/api', '')}${formDetails.imageOrLogo}`}
                         alt="Form Logo" 
                         style={{ width: '100%', height: '100%', objectFit: 'fill' }} 
                       />

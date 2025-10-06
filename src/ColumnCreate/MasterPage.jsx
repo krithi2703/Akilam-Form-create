@@ -87,7 +87,7 @@ export default function MasterPage() {
         setEnddate(form.Enddate || "");
         setFee(form.Fee || "");
         setImageorlogo(form.ImageOrLogo || ""); // Populate with existing URL
-        setImagePreviewUrl(form.ImageOrLogo ? `${api.defaults.baseURL.replace('/api', '')}${form.ImageOrLogo}` : ""); // Set preview if URL exists
+        setImagePreviewUrl(form.ImageOrLogo ? (form.ImageOrLogo.startsWith('http://') || form.ImageOrLogo.startsWith('https://') ? form.ImageOrLogo : `${api.defaults.baseURL.replace('/api', '')}${form.ImageOrLogo}`) : ""); // Set preview if URL exists
         setActiveStatus(form.Active);
       }
     } catch (err) {

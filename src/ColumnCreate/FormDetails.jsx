@@ -184,7 +184,10 @@ const FormDetails = () => {
 
           // Fetch existing banner image from FormDetails_dtl
           if (existingColumnsResponse.data.length > 0 && existingColumnsResponse.data[0].BannerImage) {
-            setBannerImagePreviewUrl(`${api.defaults.baseURL.replace('/api', '')}${existingColumnsResponse.data[0].BannerImage}`);
+            const bannerImageUrl = existingColumnsResponse.data[0].BannerImage;
+            setBannerImagePreviewUrl(bannerImageUrl.startsWith('http://') || bannerImageUrl.startsWith('https://') 
+              ? bannerImageUrl 
+              : `${api.defaults.baseURL.replace('/api', '')}${bannerImageUrl}`);
           } else {
             setBannerImagePreviewUrl("");
           }
