@@ -14,17 +14,33 @@ import {
   Typography,
   Stack,
   IconButton,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import EditIcon from '@mui/icons-material/Edit';
 import api from "../axiosConfig";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
+const renderCellContent = (value) => {
+  if (!value) {
+    return (
+      <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+        Not Provided
+      </Typography>
+    );
+  }
+  return value;
+};
+
 export default function MasterTable() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMediumScreen = useMediaQuery(theme.breakpoints.down('md'));
 
   useEffect(() => {
     fetchForms();
@@ -42,17 +58,7 @@ export default function MasterTable() {
 
       const res = await api.get("/formmaster");
 
-      const formattedData = res.data.map((item) => ({
-        ...item,
-        CreatedDate: item.CreatedDate
-          ? new Date(item.CreatedDate).toISOString().split("T")[0]
-          : "",
-        Enddate: item.Enddate
-          ? new Date(item.Enddate).toISOString().split("T")[0]
-          : "",
-      }));
-
-      setData(formattedData);
+      setData(res.data);
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch form records");
@@ -111,7 +117,11 @@ export default function MasterTable() {
   };
 
   return (
-    <Box sx={{ p: { xs: 1, sm: 2, md: 4 } }}>
+    <Box sx={{ 
+      p: { xs: 1, sm: 2, md: 4 },
+      width: '100%',
+      overflow: 'hidden'
+    }}>
       {/* Header with title and create button */}
       <Box
         display="flex"
@@ -119,20 +129,41 @@ export default function MasterTable() {
         alignItems="center"
         mb={3}
         flexDirection={{ xs: 'column', sm: 'row' }}
+        gap={2}
       >
-        <Typography variant={{ xs: 'h6', sm: 'h5' }} sx={{ mb: { xs: 2, sm: 0 }, fontWeight: 'bold', color: 'primary.main' }}>
+        <Typography 
+          variant={{ xs: 'h6', sm: 'h5' }} 
+          sx={{ 
+            mb: { xs: 1, sm: 0 }, 
+            fontWeight: 'bold', 
+            color: 'primary.main',
+            textAlign: { xs: 'center', sm: 'left' },
+            fontSize: { xs: '1.25rem', sm: '1.5rem' }
+          }}
+        >
           Form Master Table
         </Typography>
         <Button
           variant="contained"
           color="primary"
           onClick={handleCreateNewForm}
+          size={isSmallScreen ? "small" : "medium"}
+          fullWidth={isSmallScreen}
+          sx={{ 
+            maxWidth: { xs: '100%', sm: '200px' },
+            minWidth: { xs: 'auto', sm: '140px' }
+          }}
         >
           Create New Form
         </Button>
       </Box>
 
-      {loading && <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}><CircularProgress /></Box>}
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
+          <CircularProgress size={isSmallScreen ? 24 : 40} />
+        </Box>
+      )}
+      
       {error && (
         <Alert severity="error" sx={{ my: 2 }}>
           {error}
@@ -140,87 +171,208 @@ export default function MasterTable() {
       )}
 
       {!loading && !error && (
-        <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
+        <TableContainer 
+          component={Paper} 
+          sx={{ 
+            maxWidth: '100%',
+            overflowX: 'auto',
+            '& .MuiTable-root': {
+              minWidth: isSmallScreen ? '600px' : 'auto'
+            }
+          }}
+        >
           <Table
             sx={{
-              tableLayout: "fixed",
+              tableLayout: isSmallScreen ? "auto" : "fixed",
               borderCollapse: "collapse",
               border: "1px solid #ccc",
+              width: '100%'
             }}
+            size={isSmallScreen ? "small" : "medium"}
           >
             <TableHead sx={{ backgroundColor: "primary.main" }}>
               <TableRow>
-                <TableCell sx={{ borderRight: "1px solid #ccc" , color: "#fff" ,
-                  width: "80px",
-                }}>
+                <TableCell 
+                  sx={{ 
+                    borderRight: "1px solid #ccc", 
+                    color: "#fff",
+                    width: isSmallScreen ? "60px" : "80px",
+                    px: { xs: 1, sm: 2 },
+                    py: { xs: 1, sm: 2 }
+                  }}
+                >
                   S.No.
                 </TableCell>
-                <TableCell sx={{ borderRight: "1px solid #ccc" , color: "#fff", textAlign:'center'}}>
+                <TableCell 
+                  sx={{ 
+                    borderRight: "1px solid #ccc", 
+                    color: "#fff", 
+                    textAlign: 'center',
+                    px: { xs: 1, sm: 2 },
+                    py: { xs: 1, sm: 2 }
+                  }}
+                >
                   Form Name
                 </TableCell>
-                <TableCell sx={{ borderRight: "1px solid #ccc" , color: "#fff" }} hidden>
+                <TableCell 
+                  sx={{ 
+                    borderRight: "1px solid #ccc", 
+                    color: "#fff" 
+                  }} 
+                  hidden
+                >
                   User Name
                 </TableCell>
-                <TableCell sx={{ borderRight: "1px solid #ccc" , color: "#fff",  width: "200px"}}>
+                <TableCell 
+                  sx={{ 
+                    borderRight: "1px solid #ccc", 
+                    color: "#fff",  
+                    width: isSmallScreen ? "120px" : "200px",
+                    px: { xs: 1, sm: 2 },
+                    py: { xs: 1, sm: 2 }
+                  }}
+                >
                   Created Date
                 </TableCell>
-                <TableCell sx={{ borderRight: "1px solid #ccc" , color: "#fff", width: "200px" }}>
+                <TableCell 
+                  sx={{ 
+                    borderRight: "1px solid #ccc", 
+                    color: "#fff", 
+                    width: isSmallScreen ? "120px" : "200px",
+                    px: { xs: 1, sm: 2 },
+                    py: { xs: 1, sm: 2 }
+                  }}
+                >
                   End Date
                 </TableCell>
-                <TableCell sx={{ borderRight: "1px solid #ccc" , color: "#fff" ,textAlign:'center', width:'25%'}}>Actions</TableCell>
+                <TableCell 
+                  sx={{ 
+                    borderRight: "1px solid #ccc", 
+                    color: "#fff",
+                    textAlign: 'center', 
+                    width: isSmallScreen ? '30%' : '25%',
+                    px: { xs: 1, sm: 2 },
+                    py: { xs: 1, sm: 2 }
+                  }}
+                >
+                  Actions
+                </TableCell>
               </TableRow>
             </TableHead>
 
             <TableBody>
               {data.map((row, index) => (
                 <TableRow key={row.FormId}>
-                  <TableCell sx={{ borderRight: "1px solid #ccc" }}>
+                  <TableCell 
+                    sx={{ 
+                      borderRight: "1px solid #ccc",
+                      px: { xs: 1, sm: 2 },
+                      py: { xs: 1, sm: 2 },
+                      textAlign:'center'
+                    }}
+                  >
                     {index + 1}
                   </TableCell>
-                  <TableCell sx={{ borderRight: "1px solid #ccc" }}>
-                    {row.FormName}
+                  <TableCell 
+                    sx={{ 
+                      borderRight: "1px solid #ccc",
+                      px: { xs: 1, sm: 2 },
+                      py: { xs: 1, sm: 2 },
+                      wordBreak: 'break-word'
+                    }}
+                  >
+                    {renderCellContent(row.FormName)}
                   </TableCell>
-                  <TableCell sx={{ borderRight: "1px solid #ccc" }} hidden>
-                    {row.UserName}
+                  <TableCell 
+                    sx={{ 
+                      borderRight: "1px solid #ccc" 
+                    }} 
+                    hidden
+                  >
+                    {renderCellContent(row.UserName)}
                   </TableCell>
-                  <TableCell sx={{ borderRight: "1px solid #ccc" }}>
-                    {row.CreatedDate}
+                  <TableCell 
+                    sx={{ 
+                      borderRight: "1px solid #ccc",
+                      px: { xs: 1, sm: 2 },
+                      py: { xs: 1, sm: 2 }
+                    }}
+                  >
+                    {renderCellContent(row.CreatedDate)}
                   </TableCell>
-                  <TableCell sx={{ borderRight: "1px solid #ccc" }}>
-                    {row.Enddate}
+                  <TableCell 
+                    sx={{ 
+                      borderRight: "1px solid #ccc",
+                      px: { xs: 1, sm: 2 },
+                      py: { xs: 1, sm: 2 }
+                    }}
+                  >
+                    {renderCellContent(row.Enddate)}
                   </TableCell>
-                  <TableCell>
+                  <TableCell
+                    sx={{
+                      px: { xs: 1, sm: 2 },
+                      py: { xs: 1, sm: 2 }
+                    }}
+                  >
                     {row.Active === 0 ? (
-                      <Typography variant="body2" color="error" sx={{ fontWeight: 'bold' }}>
+                      <Typography 
+                        variant="body2" 
+                        color="error" 
+                        sx={{ 
+                          fontWeight: 'bold',
+                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                          textAlign: 'center'
+                        }}
+                      >
                         Registration Ended !!
                       </Typography>
                     ) : (
-                      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
-                        <IconButton
-                          aria-label="edit"
+                      <Box 
+                        sx={{ 
+                          display: 'flex', 
+                          flexDirection: { xs: 'column', sm: 'row' }, 
+                          gap: 1, 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          flexWrap: 'wrap'
+                        }}
+                      >
+                        <Button
+                          variant="contained"
                           color="info"
-                          size="small"
+                          size={isSmallScreen ? "small" : "medium"}
                           onClick={() => navigate(`/masterpage?editId=${row.FormId}`)}
                         >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        <Button
-                          variant="outlined"
-                          color="primary"
-                          size="small"
-                          sx={{ flexShrink: 0 }} // Prevent button from shrinking
-                          onClick={() => handleCreateNewVersion(row.FormId)}
-                        >
-                          CreateForm
+                          Edit
                         </Button>
                         <Button
-                          variant="outlined"
+                          variant="contained"
+                          color="primary"
+                          size={isSmallScreen ? "small" : "medium"}
+                          sx={{ 
+                            flexShrink: 0,
+                            fontSize: { xs: '0.7rem', sm: '0.875rem' },
+                            minWidth: { xs: '80px', sm: 'auto' },
+                            px: { xs: 1, sm: 2 }
+                          }}
+                          onClick={() => handleCreateNewVersion(row.FormId)}
+                        >
+                          {isSmallScreen ? 'Create' : 'Create Form'}
+                        </Button>
+                        <Button
+                          variant="contained"
                           color="success"
-                          size="small"
-                          sx={{ flexShrink: 0 }} // Prevent button from shrinking
+                          size={isSmallScreen ? "small" : "medium"}
+                          sx={{ 
+                            flexShrink: 0,
+                            fontSize: { xs: '0.7rem', sm: '0.875rem' },
+                            minWidth: { xs: '80px', sm: 'auto' },
+                            px: { xs: 1, sm: 2 }
+                          }}
                           onClick={() => navigate("/create-column-table", { state: { formId: row.FormId, formName: row.FormName } })}
                         >
-                          FormTable
+                          {isSmallScreen ? 'Table' : 'Form Table'}
                         </Button>
                       </Box>
                     )}

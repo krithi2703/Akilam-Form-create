@@ -62,8 +62,13 @@ import { validateField } from "../utils/validationUtils";
 
 // Helper to construct base URL for assets
 const getBaseUrl = () => {
-  const fullUrl = api.defaults.baseURL;
-  return fullUrl.replace('/api', '');
+  const baseUrl = api.defaults.baseURL;
+  // If the baseURL is a relative path (starts with '/'), use the window's origin.
+  if (baseUrl.startsWith('/')) {
+    return `${window.location.origin}`;
+  }
+  // Otherwise, assume it's a full URL and remove the '/api' suffix.
+  return baseUrl.replace('/api', '');
 };
 
 const ViewSubmissions = () => {

@@ -23,6 +23,8 @@ import {
   MenuItem,
   Snackbar,
   TablePagination,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -51,9 +53,12 @@ export default function FormTable() {
 
   // Pagination state
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMediumScreen = useMediaQuery(theme.breakpoints.down('md'));
 
   useEffect(() => {
     const token = sessionStorage.getItem('token');
@@ -208,25 +213,44 @@ export default function FormTable() {
   const paginatedColumns = columns.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   return (
-    <Box sx={{ p: { xs: 1, sm: 2, md: 4 } }}>
+    <Box sx={{ 
+      p: { xs: 1, sm: 2, md: 4 },
+      width: '100%',
+      overflow: 'hidden'
+    }}>
+      {/* Header Section */}
       <Box
         display="flex"
         justifyContent="space-between"
         alignItems="center"
         mb={3}
         flexDirection={{ xs: 'column', sm: 'row' }}
+        gap={2}
       >
         <Typography
           variant={{ xs: 'h5', sm: 'h4' }}
-          sx={{ fontWeight: 'bold', color: 'primary.main', mb: { xs: 2, sm: 0 } }}
+          sx={{ 
+            fontWeight: 'bold', 
+            color: 'primary.main', 
+            mb: { xs: 2, sm: 0 },
+            textAlign: { xs: 'center', sm: 'left' },
+            fontSize: { xs: '1.5rem', sm: '2rem' }
+          }}
         >
           All Columns
         </Typography>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+        <Stack 
+          direction={{ xs: 'column', sm: 'row' }} 
+          spacing={1}
+          width={{ xs: '100%', sm: 'auto' }}
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+        >
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={handleAddColumn}
+            size={isSmallScreen ? "small" : "medium"}
+            fullWidth={isSmallScreen}
           >
             Add Column
           </Button>
@@ -234,107 +258,229 @@ export default function FormTable() {
             variant="contained"
             color="success"
             onClick={() => navigate('/masterpage')}
+            size={isSmallScreen ? "small" : "medium"}
+            fullWidth={isSmallScreen}
           >
             FormName
           </Button>
         </Stack>
       </Box>
 
-      <TableContainer component={Paper} elevation={2} sx={{ borderRadius: 2 }}>
-        <Box sx={{ overflowX: 'auto' }}>
-          <Table sx={{ minWidth: 650 }}>
-            <TableHead sx={{ backgroundColor: 'primary.light' }}>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700, color: 'white' }}>
-                  S.No
-                </TableCell>
-                <TableCell sx={{ fontWeight: 700, color: 'white' }}>
-                  Column Name
-                </TableCell>
-                <TableCell sx={{ fontWeight: 700, color: 'white' }}>
-                  Data Type
-                </TableCell>
-                <TableCell sx={{ fontWeight: 700, color: 'white' }} hidden>
-                  Created By
-                </TableCell>
-                <TableCell sx={{ fontWeight: 700, color: 'white' }}>
-                  Status
-                </TableCell>
-                <TableCell sx={{ fontWeight: 700, color: 'white' }}>
-                  Actions
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {paginatedColumns.length > 0 ? (
-                paginatedColumns.map((col, idx) => (
-                  <TableRow key={col.ColumnId || idx} hover>
-                    <TableCell>{page * rowsPerPage + idx + 1}</TableCell>
-                    <TableCell>
-                      <Typography fontWeight="medium">
-                        {col.ColumnName}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={col.DataType}
-                        size="small"
-                        color="primary"
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell hidden>{col.UserName}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={col.IsActive ? 'Active' : 'Inactive'}
-                        size="small"
-                        color={col.IsActive ? 'success' : 'error'}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={1}>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleEditColumn(col)}
-                          color="primary"
-                        >
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDeleteColumn(col.ColumnId)}
-                          color="error"
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      gutterBottom
+      {/* Table Section */}
+      <TableContainer 
+        component={Paper} 
+        elevation={2} 
+        sx={{ 
+          borderRadius: 2,
+          maxWidth: '100%',
+          overflowX: 'auto'
+        }}
+      >
+        <Table 
+          sx={{ 
+            minWidth: isSmallScreen ? '650px' : 'auto',
+            tableLayout: isSmallScreen ? 'auto' : 'fixed'
+          }}
+          size={isSmallScreen ? "small" : "medium"}
+        >
+          <TableHead sx={{ backgroundColor: 'primary.main' }}>
+            <TableRow>
+              <TableCell 
+                sx={{ 
+                  fontWeight: 700, 
+                  color: 'white',
+                  width: { xs: '60px', sm: '80px', md: '100px' },
+                  textAlign: 'center',
+                  px: { xs: 1, sm: 2 },
+                  py: { xs: 1.5, sm: 2 }
+                }}
+              >
+                S.No
+              </TableCell>
+              <TableCell 
+                sx={{ 
+                  fontWeight: 700, 
+                  color: 'white',
+                  width: { xs: '150px', sm: '200px', md: '250px' },
+                  px: { xs: 1, sm: 2 },
+                  py: { xs: 1.5, sm: 2 }
+                }}
+              >
+                Column Name
+              </TableCell>
+              <TableCell 
+                sx={{ 
+                  fontWeight: 700, 
+                  color: 'white',
+                  width: { xs: '120px', sm: '150px', md: '200px' },
+                  px: { xs: 1, sm: 2 },
+                  py: { xs: 1.5, sm: 2 }
+                }}
+              >
+                Data Type
+              </TableCell>
+              <TableCell 
+                sx={{ 
+                  fontWeight: 700, 
+                  color: 'white',
+                  width: { xs: '100px', sm: '120px', md: '150px' },
+                  px: { xs: 1, sm: 2 },
+                  py: { xs: 1.5, sm: 2 }
+                }}
+              >
+                Status
+              </TableCell>
+              <TableCell 
+                sx={{ 
+                  fontWeight: 700, 
+                  color: 'white',
+                  width: { xs: '120px', sm: '150px', md: '180px' },
+                  textAlign: 'center',
+                  px: { xs: 1, sm: 2 },
+                  py: { xs: 1.5, sm: 2 }
+                }}
+              >
+                Actions
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {paginatedColumns.length > 0 ? (
+              paginatedColumns.map((col, idx) => (
+                <TableRow 
+                  key={col.ColumnId || idx} 
+                  hover
+                  sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                >
+                  <TableCell 
+                    sx={{ 
+                      textAlign: 'center',
+                      px: { xs: 1, sm: 2 },
+                      py: { xs: 1.5, sm: 2 }
+                    }}
+                  >
+                    {page * rowsPerPage + idx + 1}
+                  </TableCell>
+                  <TableCell 
+                    sx={{ 
+                      px: { xs: 1, sm: 2 },
+                      py: { xs: 1.5, sm: 2 },
+                      wordBreak: 'break-word'
+                    }}
+                  >
+                    <Typography 
+                      fontWeight="medium" 
+                      sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
                     >
-                      No columns found.
+                      {col.ColumnName}
                     </Typography>
-                    <Button
-                      variant="contained"
-                      startIcon={<AddIcon />}
-                      onClick={handleAddColumn}
-                      sx={{ mt: 1 }}
+                  </TableCell>
+                  <TableCell 
+                    sx={{ 
+                      px: { xs: 1, sm: 2 },
+                      py: { xs: 1.5, sm: 2 }
+                    }}
+                  >
+                    <Chip
+                      label={col.DataType}
+                      size={isSmallScreen ? "small" : "medium"}
+                      color="primary"
+                      variant="outlined"
+                      sx={{ 
+                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                        minWidth: '70px'
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell 
+                    sx={{ 
+                      px: { xs: 1, sm: 2 },
+                      py: { xs: 1.5, sm: 2 }
+                    }}
+                  >
+                    <Chip
+                      label={col.IsActive ? 'Active' : 'Inactive'}
+                      size={isSmallScreen ? "small" : "medium"}
+                      color={col.IsActive ? 'success' : 'error'}
+                      sx={{ 
+                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                        minWidth: '70px'
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell 
+                    sx={{ 
+                      textAlign: 'center',
+                      px: { xs: 1, sm: 2 },
+                      py: { xs: 1.5, sm: 2 }
+                    }}
+                  >
+                    <Stack 
+                      direction="row" 
+                      spacing={1} 
+                      justifyContent="center"
+                      flexWrap="wrap"
                     >
-                      Add your first column
-                    </Button>
+                      <IconButton
+                        size={isSmallScreen ? "small" : "medium"}
+                        onClick={() => handleEditColumn(col)}
+                        color="primary"
+                        sx={{ 
+                          '& .MuiSvgIcon-root': {
+                            fontSize: { xs: '1rem', sm: '1.25rem' }
+                          }
+                        }}
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        size={isSmallScreen ? "small" : "medium"}
+                        onClick={() => handleDeleteColumn(col.ColumnId)}
+                        color="error"
+                        sx={{ 
+                          '& .MuiSvgIcon-root': {
+                            fontSize: { xs: '1rem', sm: '1.25rem' }
+                          }
+                        }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Stack>
                   </TableCell>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </Box>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell 
+                  colSpan={5} 
+                  align="center" 
+                  sx={{ 
+                    py: 4,
+                    px: { xs: 1, sm: 2 }
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    gutterBottom
+                    sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                  >
+                    No columns found.
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={handleAddColumn}
+                    sx={{ mt: 1 }}
+                    size={isSmallScreen ? "small" : "medium"}
+                  >
+                    Add your first column
+                  </Button>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
@@ -343,31 +489,55 @@ export default function FormTable() {
           page={page}
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
+          sx={{
+            '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+              fontSize: { xs: '0.75rem', sm: '0.875rem' }
+            }
+          }}
         />
       </TableContainer>
 
+      {/* Add/Edit Column Dialog */}
       <Dialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         maxWidth="sm"
         fullWidth
+        fullScreen={isSmallScreen}
       >
-        <DialogTitle>
+        <DialogTitle sx={{ 
+          pb: 1,
+          pr: 6
+        }}>
           {editingColumn ? 'Edit Column' : 'Add New Column'}
           <IconButton
             aria-label="close"
             onClick={() => setDialogOpen(false)}
-            sx={{ position: 'absolute', right: 8, top: 8 }}
+            sx={{ 
+              position: 'absolute', 
+              right: 8, 
+              top: 8,
+              color: (theme) => theme.palette.grey[500],
+            }}
           >
             <CloseIcon />
           </IconButton>
         </DialogTitle>
         <DialogContent>
-          <Box component="form" id="save-column-form" onSubmit={handleSaveColumnSubmit} sx={{ pt: 2 }}>
+          <Box 
+            component="form" 
+            id="save-column-form" 
+            onSubmit={handleSaveColumnSubmit} 
+            sx={{ pt: 1 }}
+          >
             <Typography
               variant="subtitle1"
               gutterBottom
-              sx={{ fontWeight: 'bold', color: 'primary.main' }}
+              sx={{ 
+                fontWeight: 'bold', 
+                color: 'primary.main',
+                fontSize: { xs: '0.875rem', sm: '1rem' }
+              }}
             >
               Column Details
             </Typography>
@@ -381,6 +551,7 @@ export default function FormTable() {
               margin="normal"
               required
               placeholder="Enter column name"
+              size={isSmallScreen ? "small" : "medium"}
             />
             <TextField
               label="Data Type"
@@ -391,6 +562,7 @@ export default function FormTable() {
                 setNewColumn({ ...newColumn, DataType: e.target.value })
               }
               margin="normal"
+              size={isSmallScreen ? "small" : "medium"}
             >
               <MenuItem value="text">Text</MenuItem>
               <MenuItem value="number">Number</MenuItem>
@@ -405,8 +577,18 @@ export default function FormTable() {
             </TextField>
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialogOpen(false)} variant="outlined">
+        <DialogActions sx={{ 
+          px: 3, 
+          pb: 2,
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: 1
+        }}>
+          <Button 
+            onClick={() => setDialogOpen(false)} 
+            variant="outlined"
+            fullWidth={isSmallScreen}
+            size={isSmallScreen ? "small" : "medium"}
+          >
             Cancel
           </Button>
           <Button
@@ -414,6 +596,8 @@ export default function FormTable() {
             form="save-column-form"
             variant="contained"
             disabled={saving || !newColumn.ColumnName}
+            fullWidth={isSmallScreen}
+            size={isSmallScreen ? "small" : "medium"}
           >
             {saving ? (
               <CircularProgress size={20} color="inherit" />
@@ -422,37 +606,54 @@ export default function FormTable() {
             ) : (
               'Create'
             )}
-            {' '
-            }
-            Column
+            {' '}Column
           </Button>
         </DialogActions>
       </Dialog>
 
+      {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
         maxWidth="xs"
         fullWidth
+        fullScreen={isSmallScreen}
       >
-        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogTitle sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+          Confirm Delete
+        </DialogTitle>
         <DialogContent>
-          <Typography>Are you sure you want to delete this column?</Typography>
+          <Typography sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+            Are you sure you want to delete this column?
+          </Typography>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} variant="outlined">
+        <DialogActions sx={{ 
+          px: 3, 
+          pb: 2,
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: 1
+        }}>
+          <Button 
+            onClick={() => setDeleteDialogOpen(false)} 
+            variant="outlined"
+            fullWidth={isSmallScreen}
+            size={isSmallScreen ? "small" : "medium"}
+          >
             Cancel
           </Button>
           <Button
             onClick={confirmDeleteColumn}
             variant="contained"
             color="error"
+            fullWidth={isSmallScreen}
+            size={isSmallScreen ? "small" : "medium"}
           >
             Delete
           </Button>
         </DialogActions>
       </Dialog>
 
+      {/* Snackbars for notifications */}
       <Snackbar
         open={!!success}
         autoHideDuration={4000}

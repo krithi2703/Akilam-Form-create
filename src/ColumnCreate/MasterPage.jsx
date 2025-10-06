@@ -83,8 +83,8 @@ export default function MasterPage() {
       if (isMounted.current && res.status === 200) {
         const form = res.data;
         setFormName(form.FormName);
-        setCreatedDate(form.CreatedDate);
-        setEnddate(form.Enddate || "");
+        setCreatedDate(form.CreatedDate ? new Date(form.CreatedDate).toISOString().split('T')[0] : '');
+        setEnddate(form.Enddate ? new Date(form.Enddate).toISOString().split('T')[0] : '');
         setFee(form.Fee || "");
         setImageorlogo(form.ImageOrLogo || ""); // Populate with existing URL
         setImagePreviewUrl(form.ImageOrLogo ? (form.ImageOrLogo.startsWith('http://') || form.ImageOrLogo.startsWith('https://') ? form.ImageOrLogo : `${api.defaults.baseURL.replace('/api', '')}${form.ImageOrLogo}`) : ""); // Set preview if URL exists
