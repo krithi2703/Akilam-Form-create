@@ -119,6 +119,10 @@ function App() {
       ) : (
         <Routes>
           <Route
+            path="/"
+            element={<Register setIsLoggedIn={setIsLoggedIn} setIsFormOnlyUser={setIsFormOnlyUser} />}
+          />
+          <Route
             path="/login"
             element={<Register setIsLoggedIn={setIsLoggedIn} setIsFormOnlyUser={setIsFormOnlyUser} />}
           />
