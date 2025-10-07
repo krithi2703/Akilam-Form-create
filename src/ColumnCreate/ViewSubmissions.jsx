@@ -117,7 +117,7 @@ const ViewSubmissions = () => {
 
   const handleLogout = () => {
     sessionStorage.clear();
-    navigate(`/${formId}`, { replace: true });
+    window.location.href = `/${formId}`;
   };
 
   const fetchData = async () => {

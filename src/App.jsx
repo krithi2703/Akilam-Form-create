@@ -90,7 +90,7 @@ function App() {
               <Routes>
                 {isFormOnlyUser ? (
                   <>
-                    <Route path="/form/view/:formId" element={<FormPage isPreview={false} />} />
+                    <Route path="/form/view/:formId" element={<FormPage isPreview={false} setIsLoggedIn={setIsLoggedIn} setIsFormOnlyUser={setIsFormOnlyUser} />} />
                     <Route path="/form/submissions/:formId" element={<ViewSubmissions />} />
                     {/* Redirect any other path for form-only user to their form */}
                     <Route path="*" element={formOnlyUserFormId ? <Navigate to={`/form/view/${formOnlyUserFormId}`} replace /> : <Navigate to={`/`} replace />} />
@@ -106,7 +106,7 @@ function App() {
                     <Route path="/create-column-table" element={<CreateColumnTable />} />
                     <Route path="/formdetails" element={<FormDetails />} />
                     <Route path="/form/preview/:formId" element={<FormPage isPreview={true} />} />
-                    <Route path="/form/view/:formId" element={<FormPage isPreview={false} />} />
+                    <Route path="/form/view/:formId" element={<FormPage isPreview={false} setIsLoggedIn={setIsLoggedIn} setIsFormOnlyUser={setIsFormOnlyUser} />} />
                     <Route path="/form/submissions/:formId" element={<ViewSubmissions />} />
                     <Route path="/users" element={<UserList />} />
                     <Route path="*" element={<Navigate to="/home" replace />} />
@@ -124,6 +124,10 @@ function App() {
           />
           <Route
             path="/login"
+            element={<Register setIsLoggedIn={setIsLoggedIn} setIsFormOnlyUser={setIsFormOnlyUser} />}
+          />
+          <Route
+            path="/form-login/:formId"
             element={<Register setIsLoggedIn={setIsLoggedIn} setIsFormOnlyUser={setIsFormOnlyUser} />}
           />
           <Route

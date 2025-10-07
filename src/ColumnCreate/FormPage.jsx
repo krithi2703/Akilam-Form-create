@@ -51,7 +51,7 @@ function useQuery() {
   return new URLSearchParams(useLocation().search);
 }
 
-const FormPage = ({ isPreview = false }) => {
+const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
   const navigate = useNavigate();
   const { formId } = useParams();
   const query = useQuery();
@@ -79,16 +79,23 @@ const FormPage = ({ isPreview = false }) => {
 
   const userId = sessionStorage.getItem("userId");
   const userName = sessionStorage.getItem("userName");
-  const isFormOnlyUser = sessionStorage.getItem("isFormOnlyUser") === "true";
+  const isFormOnlyUserSession = sessionStorage.getItem("isFormOnlyUser") === "true"; // Renamed to avoid conflict
   const token = sessionStorage.getItem("token");
 
   const { open, handleOpen, handleClose } = useDialog();
-    const handleLogout = () => {
+
+  const handleLogout = () => {
+    console.log("Logout clicked - formId:", formId);
     sessionStorage.clear();
-    navigate(`/${formId}`, { replace: true });
+    if (setIsLoggedIn) {
+      setIsLoggedIn(false);
+    }
+    if (setIsFormOnlyUser) {
+      setIsFormOnlyUser(false);
+    }
+    window.location.href = `/${formId}`;
   };
 
-  // const handleOpenRegisterDialog = () => setRegisterDialogOpen(true);
   const handleCloseRegisterDialog = () => setRegisterDialogOpen(false);
   const handleRegistrationSuccess = () => {
     handleCloseRegisterDialog();
@@ -102,7 +109,7 @@ const FormPage = ({ isPreview = false }) => {
     handleOpen(); // Open the success dialog
 
     if (userId && formDetails && formDetails.formName) {
-      const message = `Your form \"${formDetails.formName}\" has been submitted successfully.`;
+      const message = `Your form "${formDetails.formName}" has been submitted successfully.`;
       try {
         await sendWhatsAppMessage(userId, message);
         toast.success("WhatsApp notification sent.");
@@ -131,7 +138,7 @@ const FormPage = ({ isPreview = false }) => {
       return;
     }
 
-    if (!isPreview && !isFormOnlyUser && !token) {
+    if (!isPreview && !isFormOnlyUserSession && !token) {
       navigate(`/${formId}`);
       return;
     }
@@ -219,7 +226,7 @@ const FormPage = ({ isPreview = false }) => {
     } finally {
       setLoading(false);
     }
-  }, [formId, formNo, isPreview, isFormOnlyUser, token]);
+  }, [formId, formNo, isPreview, isFormOnlyUserSession, token]);
 
   useEffect(() => {
     fetchFormAndOptions();
@@ -484,7 +491,7 @@ const FormPage = ({ isPreview = false }) => {
                       const newValues = e.target.checked
                         ? [...currentValues, option]
                         : currentValues.filter((val) => val !== option);
-                      setFormValues((prev) => ({ ...prev, [colId]: newValues }));
+                      setFormValues((prev) => ({ ...prev, [ColId]: newValues }));
                     }}
                   />
                 }
@@ -635,7 +642,7 @@ const FormPage = ({ isPreview = false }) => {
 
   return (
     <>
-      {isFormOnlyUser && (
+      {isFormOnlyUserSession && (
         <AppBar position="static">
           <Toolbar>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
@@ -646,7 +653,11 @@ const FormPage = ({ isPreview = false }) => {
                     End Date: {new Date(formDetails.endDate).toLocaleDateString()}
                 </Typography>
             )}
-            <IconButton color="inherit" onClick={handleLogout}>
+            <IconButton 
+              color="inherit" 
+              onClick={handleLogout}
+              aria-label="logout"
+            >
               <LogoutIcon />
             </IconButton>
           </Toolbar>
@@ -654,7 +665,7 @@ const FormPage = ({ isPreview = false }) => {
       )}
       <Container
         maxWidth="md"
-        sx={{ mt: isFormOnlyUser ? 0 : 4, mb: 4, pt: isFormOnlyUser ? 4 : 0 }}
+        sx={{ mt: isFormOnlyUserSession ? 0 : 4, mb: 4, pt: isFormOnlyUserSession ? 4 : 0 }}
       >
        {formDetails?.bannerImage && (
   <Card sx={{ mb: 2, borderRadius: 2, overflow: 'hidden' }}>
@@ -715,7 +726,7 @@ const FormPage = ({ isPreview = false }) => {
                   )}
                 </Box>
 
-                {isFormOnlyUser && (userId || userName) && (
+                {isFormOnlyUserSession && (userId || userName) && (
                   <Box sx={{ textAlign: 'center', mb: 3, p: 2, backgroundColor: 'grey.100', borderRadius: 1 }}>
                     <Typography variant="body1" color="text.secondary">
                       You are submitting as:

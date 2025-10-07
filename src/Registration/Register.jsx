@@ -183,14 +183,14 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
       }
 
       const phoneNumber = identifier.startsWith('+91') ? identifier : `+91${identifier}`;
-      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      //const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
       
-      // const otpCode = "123456";
+       const otpCode = "123456";
       
 
       // console.log("Generated OTP:", otpCode);
-       const message = `Your OTP for ${fetchedFormName ? `the ${fetchedFormName} form` : 'the form'} is: ${otpCode}`;
-       await sendWhatsAppMessage(phoneNumber, message);
+      //  const message = `Your OTP for ${fetchedFormName ? `the ${fetchedFormName} form` : 'the form'} is: ${otpCode}`;
+      //  await sendWhatsAppMessage(phoneNumber, message);
 
       sessionStorage.setItem('currentOtp', otpCode); 
 
@@ -235,7 +235,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
           otp: otp,
         });
         
-        handleFormRegistrationSuccess({ token: provisionalToken }, formRegData.identifier);
+        handleFormRegistrationSuccess({ token: provisionalToken }, formRegData.identifier, isExistingFormUser);
         setShowOtpDialog(false);
         sessionStorage.removeItem('currentOtp');
         setOtpTimer(0);
@@ -370,7 +370,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
     }
   };
 
-  const handleFormRegistrationSuccess = (result, identifier) => {
+  const handleFormRegistrationSuccess = (result, identifier, wasExistingUser = false) => {
     sessionStorage.setItem("userId", identifier);
     sessionStorage.setItem("userName", identifier);
     sessionStorage.setItem("isFormOnlyUser", "true");
@@ -388,7 +388,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
     setFormRegData({ identifier: "" });
     setShowDistributeMessage(true);
     setTimeout(() => {
-      if (isExistingFormUser) {
+      if (wasExistingUser) {
         navigate(`/form/submissions/${formId}`, { state: { formNo: formNo || 1 } });
       } else {
         navigate(`/form/view/${formId}?formNo=${formNo || 1}`, { replace: true });
@@ -407,6 +407,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
         minHeight: "100vh",
       }}
     >
+      {/* <h1>Test</h1> */}
       <Box
         sx={{
           display: "flex",
