@@ -56,10 +56,12 @@ export default function ContentDetails({ isFormOnlyUser }) {
             }
         };
 
-        if (formId) {
+        if (!isFormOnlyUser) {
+            fetchContentDetails();
+        } else if (formId) {
             fetchContentDetails();
         }
-    }, [formId, isFormOnlyUser]);
+    }, [formId, isFormOnlyUser, navigate]);
 
     useEffect(() => {
         const fetchFormDetails = async () => {

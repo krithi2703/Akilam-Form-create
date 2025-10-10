@@ -45,7 +45,7 @@ const ContentTable = () => {
       try {
         const response = await axios.get('/content-dtl/');
         const filteredContent = Object.entries(response.data).reduce((acc, [formName, data]) => {
-          if (data.front.length > 0 && data.back.length > 0) {
+          if (data.front.length > 0 || data.back.length > 0) {
             acc[formName] = data;
           }
           return acc;
