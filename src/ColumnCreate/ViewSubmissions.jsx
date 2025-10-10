@@ -302,6 +302,7 @@ const ViewSubmissions = () => {
     }
 
     setSaving(true);
+    console.log("Client sending values for update:", editSubmission.values);
     try {
       const submissionId = editSubmission.SubmissionId.toString().replace(':', '/');
       const formData = new FormData();
@@ -385,6 +386,9 @@ const ViewSubmissions = () => {
             required={col.IsValid}
             error={isError}
             helperText={errorMessage}
+            InputProps={{
+              readOnly: col.IsReadOnly,
+            }}
           />
         );
       
@@ -406,6 +410,7 @@ const ViewSubmissions = () => {
                         : currentValues.filter((val) => val !== option);
                       handleEditChange(ColId, newValues);
                     }}
+                    disabled={col.IsReadOnly}
                   />
                 }
                 label={option}
@@ -424,6 +429,7 @@ const ViewSubmissions = () => {
               label={ColumnName}
               onChange={(e) => handleEditChange(ColId, e.target.value)}
               required={col.IsValid}
+              disabled={col.IsReadOnly}
             >
               {options.map((option) => (
                 <MenuItem key={option} value={option}>
@@ -444,6 +450,7 @@ const ViewSubmissions = () => {
               name={ColId}
               value={value}
               onChange={(e) => handleEditChange(ColId, e.target.value)}
+              disabled={col.IsReadOnly}
             >
               {options.map((option) => (
                 <FormControlLabel
@@ -473,6 +480,9 @@ const ViewSubmissions = () => {
             required={col.IsValid}
             error={isError}
             helperText={errorMessage}
+            InputProps={{
+              readOnly: col.IsReadOnly,
+            }}
           />
         );
       
@@ -491,6 +501,9 @@ const ViewSubmissions = () => {
             required={col.IsValid}
             error={isError}
             helperText={errorMessage}
+            InputProps={{
+              readOnly: col.IsReadOnly,
+            }}
           />
         );
       
@@ -507,6 +520,9 @@ const ViewSubmissions = () => {
             required={col.IsValid}
             error={isError}
             helperText={errorMessage}
+            InputProps={{
+              readOnly: col.IsReadOnly,
+            }}
           />
         );
       case 'file':
@@ -525,6 +541,9 @@ const ViewSubmissions = () => {
               required={col.IsValid}
               error={isError}
               helperText={errorMessage || 'Only 2-3 page PDFs allowed'}
+              InputProps={{
+                readOnly: col.IsReadOnly,
+              }}
             />
             {value && <Typography variant="caption">Current file: {value}</Typography>}
           </>
@@ -553,6 +572,9 @@ const ViewSubmissions = () => {
               required={col.IsValid}
               error={isError}
               helperText={errorMessage || 'Max 2MB'}
+              InputProps={{
+                readOnly: col.IsReadOnly,
+              }}
             />
             {value && <img src={photoSrc} alt="preview" style={{ width: '100px', marginTop: '10px' }}/>}
           </>
@@ -568,6 +590,9 @@ const ViewSubmissions = () => {
             required={col.IsValid}
             error={isError}
             helperText={errorMessage}
+            InputProps={{
+              readOnly: col.IsReadOnly,
+            }}
           />
         );
     }
@@ -791,7 +816,6 @@ const ViewSubmissions = () => {
                               </TableCell>
                             ))}
                             <TableCell align="center">
-                              {!isFormOnlyUser && (
                                 <Tooltip title="View details">
                                   <IconButton 
                                     size="small" 
@@ -801,18 +825,15 @@ const ViewSubmissions = () => {
                                     <Visibility fontSize="small" />
                                   </IconButton>
                                 </Tooltip>
-                              )}
-                              {isFormOnlyUser && (
-                                <Tooltip title="Edit submission">
-                                  <IconButton 
-                                    size="small" 
-                                    onClick={() => handleEditClick(submission)}
-                                    sx={{ color: 'secondary.main' }}
-                                  >
-                                    <Edit fontSize="small"/>
-                                  </IconButton>
-                                </Tooltip>
-                              )}
+                              <Tooltip title="Edit submission">
+                                <IconButton 
+                                  size="small" 
+                                  onClick={() => handleEditClick(submission)}
+                                  sx={{ color: 'secondary.main' }}
+                                >
+                                  <Edit fontSize="small"/>
+                                </IconButton>
+                              </Tooltip>
                             </TableCell>
                           </TableRow>
                         ))
@@ -840,9 +861,8 @@ const ViewSubmissions = () => {
           </CardContent>
         </Card>
 
-        {/* View Dialog - Only show for non-form-only users */}
-        {!isFormOnlyUser && (
-          <Dialog open={dialogOpen} onClose={handleDialogClose} maxWidth="md">
+        {/* View Dialog */}
+        <Dialog open={dialogOpen} onClose={handleDialogClose} maxWidth="md">
             <DialogTitle>
               Submission Details (ID: #{selectedSubmission?.SubmissionId})
             </DialogTitle>
@@ -866,7 +886,6 @@ const ViewSubmissions = () => {
               <Button onClick={handleDialogClose}>Close</Button>
             </DialogActions>
           </Dialog>
-        )}
 
         {/* Edit Dialog */}
         <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm">

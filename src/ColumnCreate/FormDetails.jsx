@@ -23,6 +23,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Switch,
+  FormControlLabel,
   List,
   ListItem,
   IconButton,
@@ -30,15 +32,31 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  Stack
+  Stack,
+  Chip,
+  Divider,
+  CardHeader,
+  Tooltip,
+  Fade,
+  Zoom
 } from '@mui/material';
-import { Add as AddIcon, Close as CloseIcon, Rule as RuleIcon } from '@mui/icons-material';
+import { 
+  Add as AddIcon, 
+  Close as CloseIcon, 
+  Rule as RuleIcon,
+  Image as ImageIcon,
+  Delete as DeleteIcon,
+  CheckCircle as CheckCircleIcon,
+  Warning as WarningIcon,
+  Info as InfoIcon
+} from '@mui/icons-material';
+import { alpha } from '@mui/material/styles';
 import api from '../axiosConfig';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import ColumnOptionEditorDialog from './ColumnOptionEditorDialog';
 
-// New Dialog for Validation Rules
+// Enhanced ValidationRuleDialog with better styling
 const ValidationRuleDialog = ({ open, onClose, onSave, validationOptions, initialValue }) => {
   const [selectedValue, setSelectedValue] = useState(initialValue || '');
 
@@ -51,18 +69,49 @@ const ValidationRuleDialog = ({ open, onClose, onSave, validationOptions, initia
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>Set Validation Rule</DialogTitle>
-      <DialogContent>
+    <Dialog 
+      open={open} 
+      onClose={onClose} 
+      maxWidth="sm" 
+      fullWidth
+      TransitionComponent={Fade}
+      PaperProps={{
+        sx: {
+          borderRadius: 2,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
+        }
+      }}
+    >
+      <DialogTitle sx={{ 
+        bgcolor: 'primary.main', 
+        color: 'white',
+        py: 2
+      }}>
+        <Box display="flex" alignItems="center">
+          <RuleIcon sx={{ mr: 1 }} />
+          Set Validation Rule
+        </Box>
+      </DialogTitle>
+      <DialogContent sx={{ p: 3 }}>
         <FormControl fullWidth sx={{ mt: 2 }}>
-          <InputLabel id="validation-select-label">Validation</InputLabel>
+          <InputLabel id="validation-select-label">Select Validation Rule</InputLabel>
           <Select
             labelId="validation-select-label"
             value={selectedValue}
-            label="Validation"
+            label="Select Validation Rule"
             onChange={(e) => setSelectedValue(e.target.value)}
+            sx={{
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'grey.300',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'primary.main',
+              },
+            }}
           >
-            <MenuItem value=""></MenuItem>
+            <MenuItem value="">
+              <em>No Validation</em>
+            </MenuItem>
             {validationOptions.map((option) => (
               <MenuItem key={option.Id} value={option.Id}>
                 {option.ValidationList}
@@ -71,9 +120,28 @@ const ValidationRuleDialog = ({ open, onClose, onSave, validationOptions, initia
           </Select>
         </FormControl>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSave} variant="contained">Save</Button>
+      <DialogActions sx={{ p: 3, pt: 0 }}>
+        <Button 
+          onClick={onClose} 
+          variant="outlined"
+          sx={{ 
+            borderRadius: 2,
+            px: 3
+          }}
+        >
+          Cancel
+        </Button>
+        <Button 
+          onClick={handleSave} 
+          variant="contained"
+          startIcon={<CheckCircleIcon />}
+          sx={{ 
+            borderRadius: 2,
+            px: 3
+          }}
+        >
+          Save Rule
+        </Button>
       </DialogActions>
     </Dialog>
   );
@@ -107,6 +175,11 @@ const FormDetails = () => {
   const [selectedColForValidation, setSelectedColForValidation] = useState(null);
   const [availableValidations, setAvailableValidations] = useState([]);
   const [columnValidations, setColumnValidations] = useState({}); // { [colId]: validationId }
+
+  // --- New State for Info Dialog ---
+  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
+  const [isValidFormFront, setIsValidFormFront] = useState(false);
+  const [isValidFormBack, setIsValidFormBack] = useState(false);
 
   const userId = sessionStorage.getItem('userId');
 
@@ -195,7 +268,6 @@ const FormDetails = () => {
 
         // --- Fetch available validation types ---
         const validationTypesResponse = await api.get('/validation/types');
-        //console.log('Validation Types API Response:', validationTypesResponse.data);
         setAvailableValidations(validationTypesResponse.data);
 
       } catch (err) {
@@ -433,84 +505,332 @@ const FormDetails = () => {
     }
   };
 
-  if (loading) return <CircularProgress />;
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <CircularProgress size={60} thickness={4} />
+      </Box>
+    );
+  }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
-      <Grid container spacing={4}> {/* Added Grid container with spacing */}
-        <Grid item xs={12} md={6}> {/* Banner Card takes half width on medium screens and up */}
-          <Card> {/* Removed mb: 4 from here, spacing is handled by Grid */}
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 6 }}>
+      <Grid container spacing={4}>
+        {/* Banner Card */}
+        <Grid item xs={12} md={4}>
+          <Card 
+            sx={{ 
+              borderRadius: 3,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              overflow: 'visible'
+            }}
+          >
+            <CardHeader
+              title={
+                <Box display="flex" alignItems="center">
+                  <ImageIcon sx={{ mr: 1, color: 'primary.main' }} />
+                  Banner Image
+                </Box>
+              }
+              titleTypographyProps={{ 
+                variant: 'h6',
+                fontWeight: 600 
+              }}
+              sx={{ 
+                pb: 1,
+                background: 'linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%)'
+              }}
+            />
             <CardContent>
-              <Stack spacing={1} alignItems="center" sx={{ width: '100%' }}> {/* Full width for the banner card */}
-                  {bannerImagePreviewUrl ? (
-                    <Box sx={{ width: '100%', height: 150, border: '1px solid #ddd', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                      <img src={bannerImagePreviewUrl} alt="Banner Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    </Box>
-                  ) : (
-                    <Box sx={{ width: '100%', height: 150, border: '1px solid #ddd', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'grey.200' }}>
-                      <Typography variant="caption" color="text.secondary">No Banner Image</Typography>
-                    </Box>
-                  )}
-                  <label htmlFor="banner-image-upload">
-                    <Button variant="contained" component="span" size="small">
-                      {bannerImagePreviewUrl ? 'Change Banner' : 'Upload Banner'}
-                    </Button>
-                  </label>
-                  <input
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    id="banner-image-upload"
-                    type="file"
-                    onChange={handleBannerFileChange}
-                  />
+              <Stack spacing={2} alignItems="center">
+                {bannerImagePreviewUrl ? (
+                  <Box 
+                    sx={{ 
+                      width: '100%', 
+                      height: 180, 
+                      border: '2px dashed',
+                      borderColor: 'primary.light',
+                      borderRadius: 2, 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      overflow: 'hidden',
+                      bgcolor: 'grey.50',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        borderColor: 'primary.main',
+                        boxShadow: '0 4px 12px rgba(25, 118, 210, 0.2)'
+                      }
+                    }}
+                  >
+                    <img 
+                      src={bannerImagePreviewUrl} 
+                      alt="Banner Preview" 
+                      style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: 'cover' 
+                      }} 
+                    />
+                  </Box>
+                ) : (
+                  <Box 
+                    sx={{ 
+                      width: '100%', 
+                      height: 180, 
+                      border: '2px dashed',
+                      borderColor: 'grey.400',
+                      borderRadius: 2, 
+                      display: 'flex', 
+                      flexDirection: 'column',
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      backgroundColor: 'grey.50',
+                      color: 'grey.500',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        borderColor: 'primary.main',
+                        backgroundColor: 'grey.100'
+                      }
+                    }}
+                  >
+                    <ImageIcon sx={{ fontSize: 48, mb: 1, opacity: 0.5 }} />
+                    <Typography variant="body2" color="text.secondary">
+                      No Banner Image
+                    </Typography>
+                  </Box>
+                )}
+                
+                <label htmlFor="banner-image-upload" style={{ width: '100%' }}>
+                  <Button 
+                    variant={bannerImagePreviewUrl ? "outlined" : "contained"} 
+                    component="span" 
+                    fullWidth
+                    startIcon={bannerImagePreviewUrl ? <ImageIcon /> : <AddIcon />}
+                    sx={{ 
+                      borderRadius: 2,
+                      py: 1,
+                      textTransform: 'none',
+                      fontWeight: 600
+                    }}
+                  >
+                    {bannerImagePreviewUrl ? 'Change Banner Image' : 'Upload Banner Image'}
+                  </Button>
+                </label>
+                <input
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  id="banner-image-upload"
+                  type="file"
+                  onChange={handleBannerFileChange}
+                />
+                
+                {bannerImagePreviewUrl && (
+                  <Button 
+                    variant="text" 
+                    color="error" 
+                    size="small"
+                    startIcon={<DeleteIcon />}
+                    onClick={() => {
+                      setBannerImageFile(null);
+                      setBannerImagePreviewUrl("");
+                    }}
+                    sx={{ textTransform: 'none' }}
+                  >
+                    Remove Image
+                  </Button>
+                )}
               </Stack>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={6}> {/* Main Form Card takes half width on medium screens and up */}
-          <Card>
-            <CardContent>
+
+        {/* Main Form Card */}
+        <Grid item xs={12} md={12}>
+          <Card 
+            sx={{ 
+              borderRadius: 3,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              overflow: 'visible'
+            }}
+          >
+            <CardContent sx={{ p: 4 }}>
               <Box component="form" onSubmit={handleSubmit} noValidate>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                  <Typography variant="h5" component="h1">Add Columns to Form</Typography>
-                  {/* Banner image section moved to a separate Card */}
+                {/* Header Section */}
+                <Box 
+                  sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    mb: 4,
+                    pb: 2,
+                    borderBottom: '1px solid',
+                    borderColor: 'divider'
+                  }}
+                >
+                  <Box>
+                    <Typography 
+                      variant="h4" 
+                      component="h1" 
+                      fontWeight="700"
+                      color="primary.main"
+                      gutterBottom
+                    >
+                      Form Configuration
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary">
+                      Add and configure columns for your form
+                    </Typography>
+                  </Box>
+                  <Tooltip title="Add form information" arrow>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<AddIcon />}
+                      onClick={() => setInfoDialogOpen(true)}
+                      sx={{
+                        borderRadius: 2,
+                        px: 3,
+                        py: 1,
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        ml: 10
+                      }}
+                    >
+                      Add Form Info
+                    </Button>
+                  </Tooltip>
                 </Box>
                
                 <Grid container spacing={3}>
+                  {/* Form Name and Select Columns */}
                   <Grid item xs={12}>
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <TextField fullWidth label="Form Name" value={formName} InputProps={{ readOnly: true }} variant="filled" />
-                      <Button
-                        variant="outlined"
-                        startIcon={<AddIcon />}
-                        onClick={handleOpenDialog}
-                        sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
-                      >
-                        Select Columns
-                      </Button>
-                    </Stack>
+                    <Card 
+                      variant="outlined"
+                      sx={{ 
+                        borderRadius: 2,
+                        borderColor: 'grey.200',
+                        bgcolor: 'grey.50'
+                      }}
+                    >
+                      <CardContent sx={{ p: 3 }}>
+                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" sx={{ width: '100%' }}>
+                          <Box sx={{ flexGrow: 1 }}>
+                            <TextField 
+                              label="Form Name" 
+                              value={formName} 
+                              InputProps={{ 
+                                readOnly: true,
+                                sx: { 
+                                  bgcolor: 'white',
+                                  borderRadius: 1,
+                                  overflow: 'visible'
+                                }
+                              }} 
+                              variant="outlined"
+                              sx={{
+                                '& .MuiOutlinedInput-root': {
+                                  '&.Mui-focused fieldset': {
+                                    borderColor: 'primary.main',
+                                  },
+                                }
+                              }}
+                            hidden />
+                          </Box>
+                          <Tooltip title="Select columns to add to your form" arrow>
+                            <Button
+                              variant="contained"
+                              color="secondary"
+                              startIcon={<AddIcon />}
+                              onClick={handleOpenDialog}
+                              fullWidth
+                              sx={{ 
+                                whiteSpace: 'nowrap',
+                                borderRadius: 2,
+                                px: 4,
+                                py: 1.5,
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                width: { xs: '100%', sm: '100%' }
+                              }}
+                            >
+                              Select Columns
+                            </Button>
+                          </Tooltip>
+                        </Stack>
+                      </CardContent>
+                    </Card>
                   </Grid>
 
+                  {/* Status Alert */}
                   {submitStatus && (
                     <Grid item xs={12}>
-                      <Alert severity={submitStatus.type}>{submitStatus.message}</Alert>
+                      <Alert 
+                        severity={submitStatus.type}
+                        sx={{
+                          borderRadius: 2,
+                          alignItems: 'center',
+                          '& .MuiAlert-message': {
+                            width: '100%'
+                          }
+                        }}
+                        action={
+                          submitStatus.type === 'success' && (
+                            <CheckCircleIcon color="success" />
+                          )
+                        }
+                      >
+                        <Typography fontWeight="500">
+                          {submitStatus.message}
+                        </Typography>
+                      </Alert>
                     </Grid>
                   )}
                 </Grid>
 
+                {/* Selected Columns Section */}
                 {selectedColumns.length > 0 && (
-                  <Card sx={{ mt: 4 }}>
+                  <Card 
+                    sx={{ 
+                      mt: 4,
+                      borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: 'primary.light',
+                      bgcolor: alpha('#1976d2', 0.02)
+                    }}
+                  >
+                    <CardHeader
+                      title={
+                        <Box display="flex" alignItems="center">
+                          <CheckCircleIcon sx={{ mr: 1, color: 'success.main' }} />
+                          Selected Columns & Sequence Configuration
+                        </Box>
+                      }
+                      subheader={`${selectedColumns.length} column(s) selected`}
+                      titleTypographyProps={{ 
+                        variant: 'h6',
+                        fontWeight: 600,
+                        color: 'primary.dark'
+                      }}
+                      subheaderTypographyProps={{
+                        color: 'text.secondary'
+                      }}
+                      sx={{ pb: 1 }}
+                    />
                     <CardContent>
-                      <Typography variant="h6" gutterBottom>Selected Columns & Sequence Numbers</Typography>
-                      <TableContainer component={Paper}>
+                      <TableContainer 
+                        component={Paper}
+                        variant="outlined"
+                        sx={{ borderRadius: 2 }}
+                      >
                         <Table>
                           <TableHead>
-                            <TableRow>
-                              <TableCell>Column Name</TableCell>
-                              <TableCell>Data Type</TableCell>
-                              <TableCell>Validation Rule</TableCell>
-                              <TableCell>Sequence Number</TableCell>
-                              <TableCell>Action</TableCell>
+                            <TableRow sx={{ bgcolor: 'grey.50' }}>
+                              <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>Column Name</TableCell>
+                              <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>Data Type</TableCell>
+                              <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>Validation Rule</TableCell>
+                              <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>Sequence Number</TableCell>
+                              <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>Actions</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
@@ -519,25 +839,69 @@ const FormDetails = () => {
                               const validationId = columnValidations[colId];
                               const validation = availableValidations.find(v => v.Id === validationId);
                               return (
-                                <TableRow key={colId}>
-                                  <TableCell>{column?.ColumnName}</TableCell>
-                                  <TableCell>{column?.DataType}</TableCell>
-                                  <TableCell>{validation ? validation.ValidationList : 'None'}</TableCell>
+                                <TableRow 
+                                  key={colId}
+                                  sx={{ 
+                                    '&:last-child td, &:last-child th': { border: 0 },
+                                    '&:hover': { bgcolor: 'action.hover' }
+                                  }}
+                                >
                                   <TableCell>
+                                    <Typography fontWeight="500">
+                                      {column?.ColumnName}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Chip 
+                                      label={column?.DataType} 
+                                      size="small"
+                                      color="primary"
+                                      variant="outlined"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    {validation ? (
+                                      <Chip 
+                                        label={validation.ValidationList} 
+                                        size="small"
+                                        color="success"
+                                        variant="filled"
+                                        onDelete={() => handleClearValidationRule(colId)}
+                                        deleteIcon={<CloseIcon />}
+                                      />
+                                    ) : (
+                                      <Typography variant="body2" color="text.secondary" fontStyle="italic">
+                                        No validation
+                                      </Typography>
+                                    )}
+                                  </TableCell>
+                                  <TableCell sx={{ width: 150 }}>
                                     <TextField
                                       type="number"
                                       value={sequences[colId] || ''}
                                       onChange={(e) => handleSequenceChange(colId, e.target.value)}
                                       required
                                       fullWidth
+                                      size="small"
                                       error={!!sequenceErrors[colId]}
                                       helperText={sequenceErrors[colId]}
+                                      sx={{
+                                        '& .MuiOutlinedInput-root': {
+                                          borderRadius: 1
+                                        }
+                                      }}
                                     />
                                   </TableCell>
                                   <TableCell>
-                                    <IconButton onClick={() => handleRemoveColumn(colId)}>
-                                      <CloseIcon />
-                                    </IconButton>
+                                    <Tooltip title="Remove column" arrow>
+                                      <IconButton 
+                                        onClick={() => handleRemoveColumn(colId)}
+                                        color="error"
+                                        size="small"
+                                      >
+                                        <CloseIcon />
+                                      </IconButton>
+                                    </Tooltip>
                                   </TableCell>
                                 </TableRow>
                               );
@@ -546,36 +910,109 @@ const FormDetails = () => {
                         </Table>
                       </TableContainer>
 
-                      <Box sx={{ mt: 2 }}>
-                        <Button type="submit" variant="contained" color="primary" fullWidth>
-                          Add Selected Columns
+                      <Box sx={{ mt: 3 }}>
+                        <Button 
+                          type="submit" 
+                          variant="contained" 
+                          color="primary" 
+                          fullWidth 
+                          name="addFormInfo" 
+                          startIcon={<CheckCircleIcon />}
+                          sx={{ 
+                            borderRadius: 2,
+                            py: 1.5,
+                            textTransform: 'none',
+                            fontWeight: 600,
+                            fontSize: '1.1rem',
+                            boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
+                            '&:hover': {
+                              boxShadow: '0 6px 16px rgba(25, 118, 210, 0.4)'
+                            }
+                          }}
+                        >
+                          Save Form Configuration
                         </Button>
                       </Box>
                     </CardContent>
                   </Card>
                 )}
 
+                {/* Existing Columns Section */}
                 {existingColumns.length > 0 && (
-                  <Card sx={{ mt: 4 }}>
+                  <Card 
+                    sx={{ 
+                      mt: 4,
+                      borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: 'grey.200'
+                    }}
+                  >
+                    <CardHeader
+                      title={
+                        <Box display="flex" alignItems="center">
+                          <InfoIcon sx={{ mr: 1, color: 'info.main' }} />
+                          Existing Columns in Form
+                        </Box>
+                      }
+                      subheader={`${existingColumns.length} column(s) already configured`}
+                      titleTypographyProps={{ 
+                        variant: 'h6',
+                        fontWeight: 600
+                      }}
+                      sx={{ pb: 1 }}
+                    />
                     <CardContent>
-                      <Typography variant="h6" gutterBottom>Existing Columns in Form</Typography>
-                      <TableContainer component={Paper}>
+                      <TableContainer 
+                        component={Paper}
+                        variant="outlined"
+                        sx={{ borderRadius: 2 }}
+                      >
                         <Table>
                           <TableHead>
-                            <TableRow>
-                              <TableCell>Column ID</TableCell>
-                              <TableCell>Column Name</TableCell>
-                              <TableCell>Data Type</TableCell>
-                              <TableCell>Sequence</TableCell>
+                            <TableRow sx={{ bgcolor: 'grey.50' }}>
+                              <TableCell sx={{ fontWeight: 600 }}>Column ID</TableCell>
+                              <TableCell sx={{ fontWeight: 600 }}>Column Name</TableCell>
+                              <TableCell sx={{ fontWeight: 600 }}>Data Type</TableCell>
+                              <TableCell sx={{ fontWeight: 600 }}>Sequence</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
                             {existingColumns.map((col) => (
-                              <TableRow key={col.ColId}>
-                                <TableCell>{col.ColId}</TableCell>
-                                <TableCell>{col.ColumnName}</TableCell>
-                                <TableCell>{col.DataType}</TableCell>
-                                <TableCell>{col.SequenceNo}</TableCell>
+                              <TableRow 
+                                key={col.ColId}
+                                sx={{ 
+                                  '&:last-child td, &:last-child th': { border: 0 },
+                                  '&:hover': { bgcolor: 'action.hover' }
+                                }}
+                              >
+                                <TableCell>
+                                  <Chip 
+                                    label={col.ColId} 
+                                    size="small"
+                                    color="default"
+                                    variant="outlined"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Typography fontWeight="500">
+                                    {col.ColumnName}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell>
+                                  <Chip 
+                                    label={col.DataType} 
+                                    size="small"
+                                    color="primary"
+                                    variant="outlined"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Chip 
+                                    label={col.SequenceNo} 
+                                    size="small"
+                                    color="secondary"
+                                  />
+                                </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -590,56 +1027,135 @@ const FormDetails = () => {
         </Grid>
       </Grid>
 
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle>Select Columns</DialogTitle>
-        <DialogContent>
-          <List>
+      {/* Column Selection Dialog */}
+      <Dialog 
+        open={dialogOpen} 
+        onClose={handleCloseDialog} 
+        maxWidth="md" 
+        fullWidth
+        TransitionComponent={Zoom}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: '0 12px 48px rgba(0,0,0,0.15)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          bgcolor: 'primary.main', 
+          color: 'white',
+          py: 3
+        }}>
+          <Box display="flex" alignItems="center">
+            <AddIcon sx={{ mr: 2 }} />
+            <Typography variant="h6" fontWeight="600">
+              Select Columns for Form
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ p: 0 }}>
+          <List sx={{ py: 1 }}>
             {availableColumns.map((col) => {
               const isExisting = existingColumnIds.includes(col.ColumnId);
+              const isSelected = tempSelectedColumns.includes(col.ColumnId);
               return (
-                <ListItem key={col.ColumnId} button="true" disabled={isExisting}>
+                <ListItem 
+                  key={col.ColumnId} 
+                  button="true" 
+                  disabled={isExisting}
+                  sx={{
+                    py: 2,
+                    px: 3,
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                    '&:hover': {
+                      bgcolor: isExisting ? 'transparent' : 'action.hover'
+                    },
+                    '&.Mui-disabled': {
+                      opacity: 0.6
+                    }
+                  }}
+                >
                   <Checkbox
-                    checked={isExisting || tempSelectedColumns.indexOf(col.ColumnId) !== -1}
+                    checked={isExisting || isSelected}
                     disabled={isExisting}
                     onChange={() => handleToggleColumn(col)}
+                    color="primary"
+                    sx={{ mr: 2 }}
                   />
                   <ListItemText 
-                    primary={col.ColumnName} 
-                    secondary={`ID: ${col.ColumnId}, Type: ${col.DataType}${isExisting ? ' (Already in form)' : ''}`} 
+                    primary={
+                      <Box display="flex" alignItems="center">
+                        <Typography 
+                          variant="body1" 
+                          fontWeight={500}
+                          color={isExisting ? 'text.secondary' : 'text.primary'}
+                        >
+                          {col.ColumnName}
+                        </Typography>
+                        {isExisting && (
+                          <Chip 
+                            label="Already in form" 
+                            size="small" 
+                            color="default"
+                            sx={{ ml: 2 }}
+                          />
+                        )}
+                      </Box>
+                    } 
+                    secondary={
+                      <Typography variant="body2" color="text.secondary">
+                        ID: {col.ColumnId} • Type: {col.DataType}
+                      </Typography>
+                    } 
                   />
 
                   {!(col.DataType?.toLowerCase() === 'select' ||
                     col.DataType?.toLowerCase() === 'radio' ||
                     col.DataType?.toLowerCase() === 'checkbox') && 
                    !isExisting && 
-                   tempSelectedColumns.includes(col.ColumnId) && (
+                   isSelected && (
                     <>
-                      {columnValidations[col.ColumnId] ? ( // If validation is set
-                        <Button
-                          variant="outlined"
-                          color="error" // Use error color for clear/cancel
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleClearValidationRule(col.ColumnId);
-                          }}
-                          sx={{ ml: 2, textTransform: 'none' }}
-                        >
-                          Clear Validation
-                        </Button>
-                      ) : ( // If no validation is set
-                        <Button
-                          variant="outlined"
-                          color="success"
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenValidationDialog(col);
-                          }}
-                          sx={{ ml: 2, textTransform: 'none' }}
-                        >
-                          Is Require
-                        </Button>
+                      {columnValidations[col.ColumnId] ? (
+                        <Tooltip title="Clear validation rule" arrow>
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleClearValidationRule(col.ColumnId);
+                            }}
+                            sx={{ 
+                              ml: 2, 
+                              textTransform: 'none',
+                              borderRadius: 1
+                            }}
+                            startIcon={<CloseIcon />}
+                          >
+                            Clear
+                          </Button>
+                        </Tooltip>
+                      ) : (
+                        <Tooltip title="Set validation rule" arrow>
+                          <Button
+                            variant="outlined"
+                            color="success"
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenValidationDialog(col);
+                            }}
+                            sx={{ 
+                              ml: 2, 
+                              textTransform: 'none',
+                              borderRadius: 1
+                            }}
+                            startIcon={<RuleIcon />}
+                          >
+                            Set Required
+                          </Button>
+                        </Tooltip>
                       )}
                     </>
                   )}
@@ -648,12 +1164,35 @@ const FormDetails = () => {
             })}
           </List>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleConfirmDialog} variant="contained">Confirm</Button>
+        <DialogActions sx={{ p: 3 }}>
+          <Button 
+            onClick={handleCloseDialog} 
+            variant="outlined"
+            sx={{ 
+              borderRadius: 2,
+              px: 4,
+              textTransform: 'none'
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleConfirmDialog} 
+            variant="contained"
+            startIcon={<CheckCircleIcon />}
+            sx={{ 
+              borderRadius: 2,
+              px: 4,
+              textTransform: 'none',
+              fontWeight: 600
+            }}
+          >
+            Confirm Selection
+          </Button>
         </DialogActions>
       </Dialog>
 
+      {/* Options Dialog */}
       {optionsDialogOpen && selectedColForOptions && (
         <ColumnOptionEditorDialog
           open={optionsDialogOpen}
@@ -666,7 +1205,7 @@ const FormDetails = () => {
         />
       )}
 
-      {/* --- Validation Rule Dialog --- */}
+      {/* Validation Rule Dialog */}
       {validationDialogOpen && selectedColForValidation && (
         <ValidationRuleDialog
           open={validationDialogOpen}
@@ -677,6 +1216,84 @@ const FormDetails = () => {
         />
       )}
 
+      {/* Info Dialog */}
+      <Dialog
+        open={infoDialogOpen}
+        onClose={() => setInfoDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        TransitionComponent={Fade}
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
+          }
+        }}
+      >
+        <DialogTitle sx={{
+          bgcolor: 'primary.main',
+          color: 'white',
+          py: 2
+        }}>
+          <Box display="flex" alignItems="center">
+            <InfoIcon sx={{ mr: 1 }} />
+            Form Info Options
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ p: 3 }}>
+          <Stack spacing={2}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={isValidFormFront}
+                  onChange={(e) => setIsValidFormFront(e.target.checked)}
+                  color="primary"
+                />
+              }
+              label="Show info Before"
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={isValidFormBack}
+                  onChange={(e) => setIsValidFormBack(e.target.checked)}
+                  color="primary"
+                />
+              }
+              label="Show info Back"
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button
+            onClick={() => {
+              setInfoDialogOpen(false);
+              setIsValidFormFront(false);
+              setIsValidFormBack(false);
+            }}
+            variant="outlined"
+            sx={{
+              borderRadius: 2,
+              px: 3
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              navigate('/content', { state: { formId, formName, isValidFormFront, isValidFormBack } });
+            }}
+            variant="contained"
+            startIcon={<CheckCircleIcon />}
+            sx={{
+              borderRadius: 2,
+              px: 3
+            }}
+          >
+            Continue
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

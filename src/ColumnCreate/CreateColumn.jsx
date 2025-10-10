@@ -307,7 +307,7 @@ export default function CreateColumn() {
         <DialogContent>
           <List>
             {allDbColumns.map((col) => (
-              <ListItem key={col.ColumnId} dense button onClick={() => {
+              <ListItem key={col.ColumnId} dense button="true" onClick={() => {
                 const selectedIndex = selectedDefaultColumns.indexOf(col.ColumnId);
                 let newSelected = [];
                 if (selectedIndex === -1) {

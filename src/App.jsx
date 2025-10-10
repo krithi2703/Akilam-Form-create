@@ -14,10 +14,13 @@ import CreateColumnTable from './Tables/CreateColumnTable';
 import FormDetails from './ColumnCreate/FormDetails'
 import MasterPage from './ColumnCreate/MasterPage';
 import Home from './Home/Home';
+import Content from './ColumnCreate/Content'; // Import Content component
 import NavBar from './SideBar/Navbar';
 import SideBar from './SideBar/Sidebar';
 import ViewSubmissions from './ColumnCreate/ViewSubmissions';
 import UserList from './Registration/UserList'; // Import the new UserList component
+import ContentDetails from './ColumnCreate/ContentDetails'; // Import ContentDetails component --- IGNORE ---
+import ContentTable from './Tables/ContentTable'; // Import ContentTable component --- IGNORE ---
 import axios from "axios";
 
 function App() {
@@ -92,8 +95,9 @@ function App() {
                   <>
                     <Route path="/form/view/:formId" element={<FormPage isPreview={false} setIsLoggedIn={setIsLoggedIn} setIsFormOnlyUser={setIsFormOnlyUser} />} />
                     <Route path="/form/submissions/:formId" element={<ViewSubmissions />} />
+                    <Route path="/content-details/:formId/:side" element={<ContentDetails isFormOnlyUser={true} />} />
                     {/* Redirect any other path for form-only user to their form */}
-                    <Route path="*" element={formOnlyUserFormId ? <Navigate to={`/form/view/${formOnlyUserFormId}`} replace /> : <Navigate to={`/`} replace />} />
+                    <Route path="*" element={formOnlyUserFormId ? <Navigate to={`/content-details/${formOnlyUserFormId}/front`} replace /> : <Navigate to={`/`} replace />} />
                   </>
                 ) : (
                   <>
@@ -105,6 +109,10 @@ function App() {
                     <Route path="/formtable" element={<FormTable />} />
                     <Route path="/create-column-table" element={<CreateColumnTable />} />
                     <Route path="/formdetails" element={<FormDetails />} />
+                    <Route path="/content" element={<Content />} /> {/* New route for Content component */}
+                    <Route path="/content-table" element={<ContentTable />} /> {/* New route for ContentTable component --- IGNORE --- */}
+                    <Route path="/content-details/:formName/:side" element={<ContentDetails isFormOnlyUser={false} handleLogout={handleLogout}/>} />
+                    <Route path="/content-details" element={<ContentDetails isFormOnlyUser={false} handleLogout={handleLogout}/>} /> {/* New route for ContentDetails component --- IGNORE --- */}
                     <Route path="/form/preview/:formId" element={<FormPage isPreview={true} />} />
                     <Route path="/form/view/:formId" element={<FormPage isPreview={false} setIsLoggedIn={setIsLoggedIn} setIsFormOnlyUser={setIsFormOnlyUser} />} />
                     <Route path="/form/submissions/:formId" element={<ViewSubmissions />} />

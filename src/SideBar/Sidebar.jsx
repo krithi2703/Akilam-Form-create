@@ -31,8 +31,9 @@ export default function SideBar({ sidebarOpen, toggleSidebar, darkMode, userRole
     { text: 'Home', icon: <HomeIcon />, path: '/home' },
     { text: 'Create Column', icon: <CreateIcon />, path: '/create-column' },
     { text: 'Column Table', icon: <TableIcon />, path: '/formtable' },
+    { text: 'Content Table', icon: <TableIcon />, path: '/content-table' },
     { text: 'Master Table', icon: <TableIcon />, path: '/mastertable' },
-    // { text: 'User List', icon: <PeopleIcon />, path: '/users' }, // New menu item
+    // { text: 'User List', icon: <PeopleIcon />, path: '/users' }, 
     // { text: 'Form Table', icon: <TableIcon />, path: '/create-column-table' },
   ];
 

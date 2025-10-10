@@ -28,14 +28,15 @@ import {
   Select,
   Chip,
   useTheme,
-  TablePagination
+  TablePagination,
+  Switch
 } from "@mui/material";
 
 // import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import api from "../axiosConfig";
 import { toast } from 'react-toastify';
-import { Switch } from "@mui/material"; // New import
+
 
 const CreateColumnTable = () => {
   const navigate = useNavigate();
@@ -60,7 +61,7 @@ const CreateColumnTable = () => {
   const [cannotDeleteDialogMessage, setCannotDeleteDialogMessage] = useState("");
 
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
 
   const handleIsValidChange = async (formDetailId, currentIsValid) => {
     try {
@@ -70,6 +71,17 @@ const CreateColumnTable = () => {
       fetchFormColumns(selectedForm.id, selectedForm.no);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to update required status.");
+    }
+  };
+
+  const handleIsReadOnlyChange = async (formDetailId, currentIsReadOnly) => {
+    try {
+      await api.put(`/formdetails/update-isreadonly/${formDetailId}`, { isReadOnly: !currentIsReadOnly });
+      toast.success("Readonly status updated successfully!");
+      // Refresh the columns to reflect the change
+      fetchFormColumns(selectedForm.id, selectedForm.no);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update readonly status.");
     }
   };
 
@@ -441,6 +453,7 @@ const CreateColumnTable = () => {
                     <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Data Type</TableCell>
                     <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Sequence No</TableCell>
                     <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Is Required</TableCell>
+                    <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Readonly</TableCell>
                     <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }} hidden>User Name</TableCell>
                     <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }} align="center">Actions</TableCell>
                   </TableRow>
@@ -459,14 +472,20 @@ const CreateColumnTable = () => {
                         <TableCell><Chip label={col.DataType} size="small" variant="outlined" color="primary" /></TableCell>
                         <TableCell>{col.SequenceNo}</TableCell>
                         <TableCell>
-                          {canShowSwitch && (
-                            <Switch
-                              checked={col.IsValid || false} // Ensure it's a boolean
-                              onChange={() => handleIsValidChange(col.Id, col.IsValid)}
-                              color="primary"
-                              inputProps={{ 'aria-label': 'toggle required status' }}
-                            />
-                          )}
+                          <Switch
+                            checked={col.IsValid || false} // Ensure it's a boolean
+                            onChange={() => handleIsValidChange(col.Id, col.IsValid)}
+                            color="primary"
+                            inputProps={{ 'aria-label': 'toggle required status' }}
+                          />
+                        </TableCell>
+                        <TableCell> {/* New TableCell for IsReadOnly */}
+                          <Switch
+                            checked={col.IsReadOnly || false} // Ensure it's a boolean
+                            onChange={() => handleIsReadOnlyChange(col.Id, col.IsReadOnly)}
+                            color="secondary" // Use a different color for distinction
+                            inputProps={{ 'aria-label': 'toggle readonly status' }}
+                          />
                         </TableCell>
                         <TableCell hidden>{col.UserName}</TableCell>
                         <TableCell align="center">
@@ -477,7 +496,7 @@ const CreateColumnTable = () => {
                     );
                   }) : (
                     <TableRow>
-                      <TableCell colSpan={7} align="center"> {/* colSpan increased by 2 for new column and hidden column */}
+                      <TableCell colSpan={8} align="center"> {/* colSpan increased by 1 for new column */}
                         <Typography variant="subtitle1" sx={{ p: 3 }}>No columns found for the selected form.</Typography>
                       </TableCell>
                     </TableRow>
@@ -486,7 +505,7 @@ const CreateColumnTable = () => {
               </Table>
             </Box>
             <TablePagination
-              rowsPerPageOptions={[10, 25, 100]}
+              rowsPerPageOptions={[5, 10, 25, 100]}
               component="div"
               count={formColumns.length}
               rowsPerPage={rowsPerPage}

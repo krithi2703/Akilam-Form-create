@@ -33,13 +33,16 @@ import {
   Radio,
   FormHelperText,
   FormLabel,
-  DialogActions
+  DialogActions,
+  useMediaQuery,
+  useTheme
 } from "@mui/material";
 import {
   ArrowBack as ArrowBackIcon,
   Logout as LogoutIcon,
   Login as LoginIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
+  Menu as MenuIcon
 } from "@mui/icons-material";
 import Register from "../Registration/Register";
 import { sendWhatsAppMessage } from "../whatsappService";
@@ -56,6 +59,12 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
   const { formId } = useParams();
   const query = useQuery();
   const formNo = query.get("formNo");
+  const theme = useTheme();
+  
+  // Responsive breakpoints
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
 
   const [formDetails, setFormDetails] = useState(null);
   const [columns, setColumns] = useState([]);
@@ -71,15 +80,16 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
   const [isRegistrationEnded, setIsRegistrationEnded] = useState(false);
   const [showRegistrationEndedDialog, setShowRegistrationEndedDialog] = useState(false);
   const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [paymentDescription, setPaymentDescription] = useState('');
-  const [paymentOrderId, setPaymentOrderId] = useState(null); // To store order ID after successful payment
+  const [paymentOrderId, setPaymentOrderId] = useState(null);
 
   const userId = sessionStorage.getItem("userId");
   const userName = sessionStorage.getItem("userName");
-  const isFormOnlyUserSession = sessionStorage.getItem("isFormOnlyUser") === "true"; // Renamed to avoid conflict
+  const isFormOnlyUserSession = sessionStorage.getItem("isFormOnlyUser") === "true";
   const token = sessionStorage.getItem("token");
 
   const { open, handleOpen, handleClose } = useDialog();
@@ -102,11 +112,29 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
     window.location.reload();
   };
 
+  const handleSuccessfulSubmission = async () => {
+    if (isFormOnlyUserSession) {
+      try {
+        const contentResponse = await api.get(`/content-dtl/${formId}`);
+        if (contentResponse.data && (contentResponse.data.front.length > 0 || contentResponse.data.back.length > 0)) {
+          navigate(`/content-details/${formId}/back`);
+        } else {
+          navigate(`/form/view/${formId}`);
+        }
+      } catch (error) {
+        console.error("Error checking content details after submission:", error);
+        navigate(`/form/view/${formId}`);
+      }
+    } else {
+      handleLogout();
+    }
+  };
+
   const handlePaymentSuccess = async (paymentId, orderId) => {
     toast.success(`Payment successful! Payment ID: ${paymentId}.`);
-    setPaymentOrderId(orderId); // Store order ID if needed
-    setShowPaymentDialog(false); // Close payment dialog
-    handleOpen(); // Open the success dialog
+    setPaymentOrderId(orderId);
+    setShowPaymentDialog(false);
+    handleOpen();
 
     if (userId && formDetails && formDetails.formName) {
       const message = `Your form "${formDetails.formName}" has been submitted successfully.`;
@@ -120,15 +148,13 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
     }
 
     setTimeout(() => {
-      handleLogout();
+      handleSuccessfulSubmission();
     }, 2500);
   };
 
   const handlePaymentFailure = (error) => {
     toast.error(`Payment failed: ${error}`);
-    setShowPaymentDialog(false); // Close payment dialog
-    // Decide what to do on failure: allow retry, show error, etc.
-    // For now, let's just close the dialog.
+    setShowPaymentDialog(false);
   };
 
   const fetchFormAndOptions = useCallback(async () => {
@@ -172,10 +198,18 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
         // Merge validation rules into columns
         sortedColumns = sortedColumns.map(col => ({
           ...col,
-          Validation: formValidationRulesMap.get(col.ColId) || null, // Add Validation property
+          Validation: formValidationRulesMap.get(col.ColId) || null,
         }));
 
-        setColumns(sortedColumns);
+        // Filter out duplicate ColId values
+        const seenColIds = new Set();
+        const uniqueColumns = sortedColumns.filter(col => {
+          const isDuplicate = seenColIds.has(col.ColId);
+          seenColIds.add(col.ColId);
+          return !isDuplicate;
+        });
+
+        setColumns(uniqueColumns);
         setFormDetails({
           formName: sortedColumns[0].FormName,
           formNo: sortedColumns[0].FormNo,
@@ -185,12 +219,13 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
           bannerImage: sortedColumns[0].BannerImage,
           imageOrLogo: sortedColumns[0].ImageOrLogo,
         });
+        
         // Calculate if registration has ended
         const endDate = sortedColumns[0].Enddate;
         if (endDate) {
           setIsRegistrationEnded(new Date(endDate) < new Date());
         } else {
-          setIsRegistrationEnded(false); // If no end date, registration is not considered ended
+          setIsRegistrationEnded(false);
         }
 
         const optionsPromises = sortedColumns.map(async (col) => {
@@ -251,14 +286,13 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
       value = event.target.checked;
     } else if (type === "file" || type === "photo") {
       if (file) {
-        const MAX_PHOTO_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
-        // MAX_FILE_SIZE_BYTES is no longer needed for client-side validation as page count is server-side
-
+        const MAX_PHOTO_SIZE_BYTES = 2 * 1024 * 1024;
+        
         if (type === "photo" && file.size > MAX_PHOTO_SIZE_BYTES) {
           toast.error(`Photo "${file.name}" exceeds the 2MB limit.`);
-          event.target.value = null; // Clear the input
+          event.target.value = null;
           value = null;
-        } else { // No client-side size validation for 'file' type, as page count is server-side
+        } else {
           value = file;
         }
       } else {
@@ -271,7 +305,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
   };
 
   const submitFormDataAndFinalize = async () => {
-    setIsSubmitting(true); // Set submitting state
+    setIsSubmitting(true);
     const formData = new FormData();
     formData.append("formId", formId);
 
@@ -311,13 +345,13 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
       }
 
       setFormValues({});
-      handleOpen(true); // This opens the CustomDialog (success dialog)
+      handleOpen(true);
 
     } catch (err) {
       if (err.response?.status !== 401 && err.response?.status !== 403) {
         toast.error(err.response?.data?.message || "Failed to submit form.");
       }
-      throw err; // Re-throw to be caught by caller if needed
+      throw err;
     } finally {
       setIsSubmitting(false);
     }
@@ -357,7 +391,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
       return;
     }
 
-    // --- Payment Logic Check ---
+    // Payment Logic Check
     const requiresPayment = formDetails?.fee > 0;
     const amountToPay = formDetails?.fee;
     const paymentDesc = `Payment for form: ${formDetails?.formName || 'N/A'}`;
@@ -365,16 +399,15 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
     if (requiresPayment) {
       setPaymentAmount(amountToPay);
       setPaymentDescription(paymentDesc);
-      setShowPaymentDialog(true); // Open payment dialog
-      return; // IMPORTANT: Stop submission here, wait for payment
+      setShowPaymentDialog(true);
+      return;
     }
 
     // If no payment required, proceed to submit form data
     try {
       await submitFormDataAndFinalize();
-      // If no payment was required, and form submitted, then logout
       setTimeout(() => {
-        handleLogout();
+        handleSuccessfulSubmission();
       }, 2500);
     } catch (err) {
       // Error handled in submitFormDataAndFinalize
@@ -388,8 +421,10 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
       setQrDialogOpen(true);
     }
   };
+
   const handleCloseQrDialog = () => setQrDialogOpen(false);
   const handleCloseRegistrationEndedDialog = () => setShowRegistrationEndedDialog(false);
+  
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(formUrl);
@@ -399,11 +434,21 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
     }
   };
 
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
+
   const formUrl = `${window.location.origin}/${formId}?formNo=${formDetails?.formNo || formNo || 1}`;
 
   if (loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+      <Box sx={{ 
+        display: "flex", 
+        justifyContent: "center", 
+        alignItems: "center", 
+        height: "100vh",
+        padding: 2 
+      }}>
         <CircularProgress />
       </Box>
     );
@@ -416,6 +461,10 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
     const errorMessage = validationErrors[ColId];
     const options = columnOptions[ColId] || [];
 
+    // Responsive spacing and sizing
+    const responsiveSpacing = isMobile ? 2 : 3;
+    const responsiveFontSize = isMobile ? '0.875rem' : '1rem';
+
     switch (DataType?.toLowerCase()) {
       case "date":
         return (
@@ -426,13 +475,20 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             label={ColumnName}
             value={value}
             onChange={(e) => handleInputChange(ColId, e)}
-            type="date"
-            InputLabelProps={{ shrink: true }}
-            variant="outlined"
-            sx={{ mb: 3 }}
+                        type="date"
+                        InputLabelProps={{
+                          shrink: true,
+                          sx: { fontSize: responsiveFontSize }
+                        }}
+                        InputProps={{
+                          readOnly: column.IsReadOnly,
+                          sx: { fontSize: responsiveFontSize }
+                        }}            variant="outlined"
+            sx={{ mb: responsiveSpacing }}
             required={column.IsValid}
             error={isError}
             helperText={errorMessage}
+            size={isMobile ? "small" : "medium"}
           />
         );
       case "datetime":
@@ -445,12 +501,19 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             value={value}
             onChange={(e) => handleInputChange(ColId, e)}
             type="datetime-local"
-            InputLabelProps={{ shrink: true }}
-            variant="outlined"
-            sx={{ mb: 3 }}
+                        InputLabelProps={{
+                          shrink: true,
+                          sx: { fontSize: responsiveFontSize }
+                        }}
+                        InputProps={{
+                          readOnly: column.IsReadOnly,
+                          sx: { fontSize: responsiveFontSize }
+                        }}            variant="outlined"
+            sx={{ mb: responsiveSpacing }}
             required={column.IsValid}
             error={isError}
             helperText={errorMessage}
+            size={isMobile ? "small" : "medium"}
           />
         );
       case "int":
@@ -466,45 +529,78 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             onChange={(e) => handleInputChange(ColId, e)}
             type="number"
             variant="outlined"
-            sx={{ mb: 3 }}
+            sx={{ mb: responsiveSpacing }}
             required={column.IsValid}
             error={isError}
             helperText={errorMessage}
+            InputProps={{
+              readOnly: column.IsReadOnly,
+              sx: { fontSize: responsiveFontSize }
+            }}
+            InputLabelProps={{
+              sx: { fontSize: responsiveFontSize }
+            }}
+            size={isMobile ? "small" : "medium"}
           />
         );
       case "boolean":
       case "flg":
       case "checkbox":
         return (
-          <FormControl fullWidth sx={{ mb: 3 }} error={isError}>
-            <FormLabel component="legend" required={column.IsValid}>{ColumnName}</FormLabel>
-            {options.map((option) => (
-              <FormControlLabel
-                key={option}
-                control={
-                  <Checkbox
-                    id={`${ColId}-${option}`}
-                    name={ColId}
-                    checked={formValues[ColId]?.includes(option) || false}
-                    onChange={(e) => {
-                      const currentValues = formValues[ColId] || [];
-                      const newValues = e.target.checked
-                        ? [...currentValues, option]
-                        : currentValues.filter((val) => val !== option);
-                      setFormValues((prev) => ({ ...prev, [ColId]: newValues }));
-                    }}
-                  />
-                }
-                label={option}
-              />
-            ))}
+          <FormControl fullWidth sx={{ mb: responsiveSpacing }} error={isError}>
+            <FormLabel 
+              component="legend" 
+              required={column.IsValid}
+              sx={{ fontSize: responsiveFontSize }}
+            >
+              {ColumnName}
+            </FormLabel>
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: isMobile ? 'column' : 'row',
+              flexWrap: 'wrap',
+              gap: 1
+            }}>
+              {options.map((option) => (
+                <FormControlLabel
+                  key={option}
+                  control={
+                    <Checkbox
+                      id={`${ColId}-${option}`}
+                      name={ColId}
+                      checked={formValues[ColId]?.includes(option) || false}
+                      onChange={(e) => {
+                        const currentValues = formValues[ColId] || [];
+                        const newValues = e.target.checked
+                          ? [...currentValues, option]
+                          : currentValues.filter((val) => val !== option);
+                        setFormValues((prev) => ({ ...prev, [ColId]: newValues }));
+                      }}
+                      size={isMobile ? "small" : "medium"}
+                      disabled={column.IsReadOnly} // <--- Add this
+                    />
+                  }
+                  label={
+                    <Typography sx={{ fontSize: responsiveFontSize }}>
+                      {option}
+                    </Typography>
+                  }
+                />
+              ))}
+            </Box>
             {isError && <FormHelperText>{errorMessage}</FormHelperText>}
           </FormControl>
         );
       case "select":
         return (
-          <FormControl fullWidth sx={{ mb: 3 }} error={isError}>
-            <InputLabel id={`${ColId}-label`} required={column.IsValid}>{ColumnName}</InputLabel>
+          <FormControl fullWidth sx={{ mb: responsiveSpacing }} error={isError}>
+            <InputLabel 
+              id={`${ColId}-label`} 
+              required={column.IsValid}
+              sx={{ fontSize: responsiveFontSize }}
+            >
+              {ColumnName}
+            </InputLabel>
             <Select
               labelId={`${ColId}-label`}
               id={ColId}
@@ -513,9 +609,16 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
               label={ColumnName}
               onChange={(e) => handleInputChange(ColId, e)}
               required={column.IsValid}
+              size={isMobile ? "small" : "medium"}
+              sx={{ fontSize: responsiveFontSize }}
+              disabled={column.IsReadOnly} // <--- Add this
             >
               {options.map((option) => (
-                <MenuItem key={option} value={option}>
+                <MenuItem 
+                  key={option} 
+                  value={option}
+                  sx={{ fontSize: responsiveFontSize }}
+                >
                   {option}
                 </MenuItem>
               ))}
@@ -525,20 +628,31 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
         );
       case "radio":
         return (
-          <FormControl component="fieldset" fullWidth sx={{ mb: 3 }} error={isError}>
-            <FormLabel component="legend" required={column.IsValid}>{ColumnName}</FormLabel>
+          <FormControl component="fieldset" fullWidth sx={{ mb: responsiveSpacing }} error={isError}>
+            <FormLabel 
+              component="legend" 
+              required={column.IsValid}
+              sx={{ fontSize: responsiveFontSize }}
+            >
+              {ColumnName}
+            </FormLabel>
             <RadioGroup
               aria-label={ColumnName}
               name={ColId}
               value={value}
               onChange={(e) => handleInputChange(ColId, e)}
+              disabled={column.IsReadOnly} // <--- Add this
             >
               {options.map((option) => (
                 <FormControlLabel
                   key={option}
                   value={option}
-                  control={<Radio />}
-                  label={option}
+                  control={<Radio size={isMobile ? "small" : "medium"} />}
+                  label={
+                    <Typography sx={{ fontSize: responsiveFontSize }}>
+                      {option}
+                    </Typography>
+                  }
                 />
               ))}
             </RadioGroup>
@@ -551,52 +665,65 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             fullWidth
             id={ColId}
             name={ColId}
+            label={ColumnName}
             multiline
             rows={4}
-            label={ColumnName}
-            value={value}
-            onChange={(e) => handleInputChange(ColId, e)}
-            variant="outlined"
-            sx={{ mb: 3 }}
-            required={column.IsValid}
-            error={isError}
-            helperText={errorMessage}
+            InputProps={{
+              readOnly: column.IsReadOnly, // <--- Add this
+              sx: { fontSize: responsiveFontSize }
+            }}
+            InputLabelProps={{
+              sx: { fontSize: responsiveFontSize }
+            }}
+            size={isMobile ? "small" : "medium"}
           />
         );
       case 'file':
         return (
-            <TextField
-                fullWidth
-                id={ColId}
-                name={ColId}
-                label={ColumnName}
-                onChange={(e) => handleInputChange(ColId, e, 'file')}
-                type="file"
-                InputLabelProps={{ shrink: true }}
-                variant="outlined"
-                sx={{ mb: 3 }}
-                required={column.IsValid}
-                error={isError}
-                helperText={errorMessage || 'Only 2-3 page PDFs allowed'}
-            />
+          <TextField
+            fullWidth
+            id={ColId}
+            name={ColId}
+            label={ColumnName}
+            onChange={(e) => handleInputChange(ColId, e, 'file')}
+            type="file"
+                        InputLabelProps={{
+                          shrink: true,
+                          sx: { fontSize: responsiveFontSize }
+                        }}
+                        InputProps={{
+                          readOnly: column.IsReadOnly,
+                        }}
+                        variant="outlined"            sx={{ mb: responsiveSpacing }}
+            required={column.IsValid}
+            error={isError}
+            helperText={errorMessage || 'Only 2-3 page PDFs allowed'}
+            size={isMobile ? "small" : "medium"}
+          />
         );
       case 'photo':
         return (
-            <TextField
-                fullWidth
-                id={ColId}
-                name={ColId}
-                label={ColumnName}
-                onChange={(e) => handleInputChange(ColId, e, 'photo')}
-                type="file"
-                InputLabelProps={{ shrink: true }}
-                inputProps={{ accept: 'image/*' }}
-                variant="outlined"
-                sx={{ mb: 3 }}
-                required={column.IsValid}
-                error={isError}
-                helperText={errorMessage || 'Max 2MB'}
-            />
+          <TextField
+            fullWidth
+            id={ColId}
+            name={ColId}
+            label={ColumnName}
+            onChange={(e) => handleInputChange(ColId, e, 'photo')}
+            type="file"
+                        InputLabelProps={{
+                          shrink: true,
+                          sx: { fontSize: responsiveFontSize }
+                        }}
+                        InputProps={{
+                          readOnly: column.IsReadOnly,
+                        }}
+                        inputProps={{ accept: 'image/*' }}
+                        variant="outlined"            sx={{ mb: responsiveSpacing }}
+            required={column.IsValid}
+            error={isError}
+            helperText={errorMessage || 'Max 2MB'}
+            size={isMobile ? "small" : "medium"}
+          />
         );
       default:
         return (
@@ -608,10 +735,18 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             value={value}
             onChange={(e) => handleInputChange(ColId, e)}
             variant="outlined"
-            sx={{ mb: 3 }}
+            sx={{ mb: responsiveSpacing }}
             required={column.IsValid}
             error={isError}
             helperText={errorMessage}
+            InputProps={{
+              readOnly: column.IsReadOnly,
+              sx: { fontSize: responsiveFontSize }
+            }}
+            InputLabelProps={{
+              sx: { fontSize: responsiveFontSize }
+            }}
+            size={isMobile ? "small" : "medium"}
           />
         );
     }
@@ -621,17 +756,38 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
     return (
       <Dialog
         open={true}
-        onClose={() => {}} // Prevent closing
+        onClose={() => {}}
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Registration Status</DialogTitle>
+        <DialogTitle sx={{ fontSize: isMobile ? '1.1rem' : '1.25rem' }}>
+          Registration Status
+        </DialogTitle>
         <DialogContent>
-          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", p: 2 }}>
-            <Typography variant="h6" color="error" sx={{ fontWeight: 'bold' }}>
+          <Box sx={{ 
+            display: "flex", 
+            flexDirection: "column", 
+            alignItems: "center", 
+            p: isMobile ? 1 : 2 
+          }}>
+            <Typography 
+              variant="h6" 
+              color="error" 
+              sx={{ 
+                fontWeight: 'bold',
+                fontSize: isMobile ? '1rem' : '1.25rem',
+                textAlign: 'center'
+              }}
+            >
               Registration for this form has ended.
             </Typography>
-            <Typography variant="body2" sx={{ mt: 1 }}>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                mt: 1,
+                textAlign: 'center'
+              }}
+            >
               The end date for this form was {formDetails?.endDate ? new Date(formDetails.endDate).toLocaleDateString() : 'N/A'}.
             </Typography>
           </Box>
@@ -644,103 +800,256 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
     <>
       {isFormOnlyUserSession && (
         <AppBar position="static">
-          <Toolbar>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          <Toolbar sx={{ 
+            minHeight: { xs: '56px', sm: '64px' },
+            padding: { xs: '0 8px', sm: '0 16px' }
+          }}>
+            {isMobile && (
+              <IconButton
+                color="inherit"
+                aria-label="open menu"
+                edge="start"
+                onClick={toggleMobileMenu}
+                sx={{ mr: 1 }}
+              >
+                <MenuIcon />
+              </IconButton>
+            )}
+            
+            <Typography 
+              variant="h6" 
+              component="div" 
+              sx={{ 
+                flexGrow: 1,
+                fontSize: { xs: '1rem', sm: '1.25rem' },
+                textAlign: { xs: 'center', sm: 'left' }
+              }}
+            >
               {formDetails?.formName}
             </Typography>
-            {formDetails?.endDate && (
-                <Typography variant="body1" sx={{ mr: 2 }}>
-                    End Date: {new Date(formDetails.endDate).toLocaleDateString()}
-                </Typography>
+            
+            {!isMobile && formDetails?.endDate && (
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  mr: 2,
+                  fontSize: '0.875rem'
+                }}
+              >
+                End Date: {new Date(formDetails.endDate).toLocaleDateString()}
+              </Typography>
             )}
+            
             <IconButton 
               color="inherit" 
               onClick={handleLogout}
               aria-label="logout"
+              size={isMobile ? "small" : "medium"}
             >
-              <LogoutIcon />
+              <LogoutIcon fontSize={isMobile ? "small" : "medium"} />
             </IconButton>
           </Toolbar>
+
+          {/* Mobile menu for additional info */}
+          {isMobile && mobileMenuOpen && (
+            <Box sx={{ 
+              backgroundColor: 'primary.dark',
+              padding: 2,
+              borderTop: '1px solid rgba(255,255,255,0.1)'
+            }}>
+              {formDetails?.endDate && (
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: 'white',
+                    textAlign: 'center'
+                  }}
+                >
+                  End Date: {new Date(formDetails.endDate).toLocaleDateString()}
+                </Typography>
+              )}
+            </Box>
+          )}
         </AppBar>
       )}
+      
       <Container
         maxWidth="md"
-        sx={{ mt: isFormOnlyUserSession ? 0 : 4, mb: 4, pt: isFormOnlyUserSession ? 4 : 0 }}
+        sx={{ 
+          mt: isFormOnlyUserSession ? 0 : { xs: 2, sm: 4 },
+          mb: { xs: 2, sm: 4 },
+          pt: isFormOnlyUserSession ? { xs: 2, sm: 4 } : 0,
+          px: { xs: 1, sm: 2 }
+        }}
       >
-       {formDetails?.bannerImage && (
-  <Card sx={{ mb: 2, borderRadius: 2, overflow: 'hidden' }}>
-    <Box 
-      sx={{ 
-        width: '100%', 
-        overflow: 'hidden',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}
-    >
-      <img 
-        src={formDetails.bannerImage.startsWith('http://') || formDetails.bannerImage.startsWith('https://') 
-          ? formDetails.bannerImage 
-          : `${api.defaults.baseURL.replace('/api', '')}${formDetails.bannerImage}`}
-        alt="Banner" 
-        style={{ 
-          width: '100%',
-          height: '150px', // Flexible height
-          maxWidth: '1200px',
-          objectFit: 'fill' // Show full image without cropping
-        }} 
-      />
-    </Box>
-  </Card>
-)}
-        <Card elevation={6} sx={{ p: 2 }}>
-          <CardContent>
+        {formDetails?.bannerImage && (
+          <Card sx={{ 
+            mb: 2, 
+            borderRadius: 2, 
+            overflow: 'hidden',
+            boxShadow: 2
+          }}>
+            <Box 
+              sx={{ 
+                width: '100%', 
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <img 
+                src={formDetails.bannerImage.startsWith('http://') || formDetails.bannerImage.startsWith('https://') 
+                  ? formDetails.bannerImage 
+                  : `${api.defaults.baseURL.replace('/api', '')}${formDetails.bannerImage}`}
+                alt="Banner" 
+                style={{ 
+                  width: '100%',
+                  height: isMobile ? '120px' : isTablet ? '140px' : '150px',
+                  maxWidth: '1200px',
+                  objectFit: 'fill'
+                }} 
+              />
+            </Box>
+          </Card>
+        )}
+        
+        <Card 
+          elevation={isMobile ? 2 : 6} 
+          sx={{ 
+            p: { xs: 1, sm: 2 },
+            borderRadius: 2
+          }}
+        >
+          <CardContent sx={{ p: { xs: 1, sm: 2 } }}>
             {error ? (
-              <Alert severity="error">{error}</Alert>
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  mb: 2,
+                  '& .MuiAlert-message': {
+                    fontSize: { xs: '0.875rem', sm: '1rem' }
+                  }
+                }}
+              >
+                {error}
+              </Alert>
             ) : (
-              <Box component="form" noValidate autoComplete="off" onSubmit={handleFormSubmit}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-                  {/* Left: Spacer to balance the logo */}
-                  <Box sx={{ width: 80, flexShrink: 0 }} />
+              <Box 
+                component="form" 
+                noValidate 
+                autoComplete="off" 
+                onSubmit={handleFormSubmit}
+              >
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  mb: { xs: 2, sm: 4 },
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  gap: { xs: 2, sm: 0 }
+                }}>
+                  {/* Left: Logo or Spacer */}
+                  <Box sx={{ 
+                    width: { xs: '60px', sm: '80px' }, 
+                    height: { xs: '60px', sm: '80px' },
+                    flexShrink: 0,
+                    order: { xs: 2, sm: 1 }
+                  }}>
+                    {formDetails?.imageOrLogo ? (
+                      <Box sx={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        border: '1px solid', 
+                        borderColor: 'grey.300', 
+                        borderRadius: 1, 
+                        p: 0.5 
+                      }}>
+                        <img 
+                          src={formDetails.imageOrLogo.startsWith('http://') || formDetails.imageOrLogo.startsWith('https://') 
+                            ? formDetails.imageOrLogo 
+                            : `${api.defaults.baseURL.replace('/api', '')}${formDetails.imageOrLogo}`}
+                          alt="Form Logo" 
+                          style={{ 
+                            width: '100%', 
+                            height: '100%', 
+                            objectFit: 'fill' 
+                          }} 
+                        />
+                      </Box>
+                    ) : (
+                      <Box sx={{ width: '100%', flexShrink: 0 }} />
+                    )}
+                  </Box>
 
                   {/* Center: Form Name */}
                   {formDetails?.formName && (
-                    <Typography variant="h4" component="h1" sx={{ flexGrow: 1, textAlign: 'center' }}>
-                      {formDetails.formName}
-                    </Typography>
+                    <Box sx={{ 
+                      flexGrow: 1, 
+                      textAlign: 'center',
+                      order: { xs: 1, sm: 2 },
+                      px: { xs: 1, sm: 0 }
+                    }}>
+                      <Typography
+                        variant="h5"
+                        component="h1"
+                        sx={{
+                          display: 'inline-block',
+                          paddingBottom: '0.5rem',
+                          background: 'linear-gradient(to right, #667eea, #764ba2)',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' },
+                          fontWeight: 'bold',
+                          lineHeight: 1.2
+                        }}
+                      >
+                        {formDetails.formName}
+                      </Typography>
+                    </Box>
                   )}
 
-                  {/* Right: Logo */}
-                  {formDetails?.imageOrLogo ? (
-                    <Box sx={{ width: 80, height: 80, flexShrink: 0, border: '1px solid', borderColor: 'grey.300', borderRadius: 1, p: 0.5 }}>
-                      <img 
-                        src={formDetails.imageOrLogo.startsWith('http://') || formDetails.imageOrLogo.startsWith('https://') 
-                          ? formDetails.imageOrLogo 
-                          : `${api.defaults.baseURL.replace('/api', '')}${formDetails.imageOrLogo}`}
-                        alt="Form Logo" 
-                        style={{ width: '100%', height: '100%', objectFit: 'fill' }} 
-                      />
-                    </Box>
-                  ) : (
-                    <Box sx={{ width: 80, flexShrink: 0 }} /> // Spacer if no logo
-                  )}
+                  {/* Right: Spacer for balance */}
+                  <Box sx={{ 
+                    width: { xs: '60px', sm: '80px' }, 
+                    flexShrink: 0,
+                    order: { xs: 3, sm: 3 }
+                  }} />
                 </Box>
 
                 {isFormOnlyUserSession && (userId || userName) && (
-                  <Box sx={{ textAlign: 'center', mb: 3, p: 2, backgroundColor: 'grey.100', borderRadius: 1 }}>
-                    <Typography variant="body1" color="text.secondary">
+                  <Box sx={{ 
+                    textAlign: 'center', 
+                    mb: 3, 
+                    p: { xs: 1, sm: 2 }, 
+                    backgroundColor: 'grey.100', 
+                    borderRadius: 1 
+                  }}>
+                    <Typography 
+                      variant="body1" 
+                      color="text.secondary"
+                      sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                    >
                       You are submitting as:
                     </Typography>
-                    <Typography variant="h6" color="primary">
+                    <Typography 
+                      variant="h6" 
+                      color="primary"
+                      sx={{ 
+                        fontSize: { xs: '1rem', sm: '1.25rem' },
+                        fontWeight: 'bold'
+                      }}
+                    >
                       {userName || userId}
                     </Typography>
                   </Box>
                 )}
 
                 <Box>
-                  {columns.map((col) => (
-                    <Box key={col.ColId}>{renderInput(col)}</Box>
-                  ))}
+                  {columns.map((col) => {
+                    return (
+                      <Box key={col.ColId}>{renderInput(col)}</Box>
+                    );
+                  })}
                 </Box>
               </Box>
             )}
@@ -751,8 +1060,10 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
               sx={{
                 display: "flex",
                 justifyContent: "space-between",
-                p: 2,
+                p: { xs: 1, sm: 2 },
                 borderTop: "1px solid #eee",
+                flexDirection: { xs: 'column', sm: 'row' },
+                gap: { xs: 2, sm: 0 }
               }}
             >
               {isPreview ? (
@@ -761,11 +1072,21 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
                     variant="outlined"
                     color="secondary"
                     onClick={() => navigate("/create-column-table")}
+                    fullWidth={isMobile}
+                    size={isMobile ? "small" : "medium"}
                   >
                     Go Back
                   </Button>
                   {isRegistrationEnded ? (
-                    <Typography variant="body2" color="error" sx={{ fontWeight: 'bold' }}>
+                    <Typography 
+                      variant="body2" 
+                      color="error" 
+                      sx={{ 
+                        fontWeight: 'bold',
+                        textAlign: 'center',
+                        width: '100%'
+                      }}
+                    >
                       Registration Ended
                     </Typography>
                   ) : (
@@ -773,6 +1094,8 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
                       variant="contained"
                       color="info"
                       onClick={handleDistribute}
+                      fullWidth={isMobile}
+                      size={isMobile ? "small" : "medium"}
                     >
                       Distribute
                     </Button>
@@ -784,6 +1107,8 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
                     variant="outlined"
                     color="secondary"
                     onClick={() => setFormValues({})}
+                    fullWidth={isMobile}
+                    size={isMobile ? "small" : "medium"}
                   >
                     Clear
                   </Button>
@@ -792,6 +1117,11 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
                     color="primary"
                     onClick={handleSubmit}
                     disabled={isSubmitting}
+                    fullWidth={isMobile}
+                    size={isMobile ? "small" : "medium"}
+                    sx={{ 
+                      minWidth: { xs: '100%', sm: 'auto' }
+                    }}
                   >
                     {isSubmitting ? (
                       <CircularProgress size={24} color="inherit" />
@@ -805,47 +1135,77 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
           )}
         </Card>
 
+        {/* QR Dialog */}
         <Dialog
           open={qrDialogOpen}
           onClose={handleCloseQrDialog}
           maxWidth="md"
           fullWidth
+          PaperProps={{
+            sx: {
+              m: { xs: 1, sm: 2 },
+              maxWidth: { xs: 'calc(100% - 16px)', sm: 'md' }
+            }
+          }}
         >
-          <DialogTitle>Distribute Form</DialogTitle>
+          <DialogTitle sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+            Distribute Form
+          </DialogTitle>
           <DialogContent>
             <Box
               sx={{
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                p: 2,
+                p: { xs: 1, sm: 2 },
               }}
             >
-              <Typography variant="h6" gutterBottom>
+              <Typography 
+                variant="h6" 
+                gutterBottom
+                sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
+              >
                 Scan QR Code to fill the form
               </Typography>
-              <Typography variant="body1" sx={{ mt: 1 }}>
+              <Typography variant="body1" sx={{ mt: 1, textAlign: 'center' }}>
                 Form ID: {formId}
               </Typography>
-              <Typography variant="body1">
+              <Typography variant="body1" sx={{ textAlign: 'center' }}>
                 Start Date: {formDetails?.startDate ? new Date(formDetails.startDate).toLocaleDateString() : 'N/A'}
               </Typography>
-              <Typography variant="body1" sx={{ mb: 2 }}>
+              <Typography variant="body1" sx={{ mb: 2, textAlign: 'center' }}>
                 End Date: {formDetails?.endDate ? new Date(formDetails.endDate).toLocaleDateString() : 'N/A'}
               </Typography>
-              <QRCodeCanvas value={formUrl} size={256} />
-              <Typography variant="caption" sx={{ mt: 2 }}>
+              <QRCodeCanvas 
+                value={formUrl} 
+                size={isMobile ? 200 : 256} 
+              />
+              <Typography variant="caption" sx={{ mt: 2, textAlign: 'center' }}>
                 Or share this link:
               </Typography>
-              <Box sx={{ display: "flex", width: "100%", mt: 1 }}>
+              <Box sx={{ 
+                display: "flex", 
+                width: "100%", 
+                mt: 1,
+                flexDirection: { xs: 'column', sm: 'row' },
+                gap: { xs: 1, sm: 0 }
+              }}>
                 <TextField
                   fullWidth
                   variant="outlined"
                   value={formUrl}
                   InputProps={{ readOnly: true }}
-                  sx={{ mr: 1 }}
+                  sx={{ mr: { xs: 0, sm: 1 } }}
+                  size={isMobile ? "small" : "medium"}
                 />
-                <Button variant="outlined" onClick={handleCopyLink}>
+                <Button 
+                  variant="outlined" 
+                  onClick={handleCopyLink}
+                  sx={{ 
+                    minWidth: { xs: '100%', sm: 'auto' },
+                    mt: { xs: 1, sm: 0 }
+                  }}
+                >
                   Copy
                 </Button>
               </Box>
@@ -853,25 +1213,56 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
           </DialogContent>
         </Dialog>
 
+        {/* Registration Ended Dialog */}
         <Dialog
           open={showRegistrationEndedDialog}
           onClose={handleCloseRegistrationEndedDialog}
           maxWidth="sm"
           fullWidth
+          PaperProps={{
+            sx: {
+              m: { xs: 1, sm: 2 }
+            }
+          }}
         >
-          <DialogTitle>Registration Status</DialogTitle>
+          <DialogTitle sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+            Registration Status
+          </DialogTitle>
           <DialogContent>
-            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", p: 2 }}>
-              <Typography variant="h6" color="error" sx={{ fontWeight: 'bold' }}>
+            <Box sx={{ 
+              display: "flex", 
+              flexDirection: "column", 
+              alignItems: "center", 
+              p: { xs: 1, sm: 2 } 
+            }}>
+              <Typography 
+                variant="h6" 
+                color="error" 
+                sx={{ 
+                  fontWeight: 'bold',
+                  fontSize: { xs: '1rem', sm: '1.25rem' },
+                  textAlign: 'center'
+                }}
+              >
                 Registration for this form has ended.
               </Typography>
-              <Typography variant="body2" sx={{ mt: 1 }}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  mt: 1,
+                  textAlign: 'center'
+                }}
+              >
                 The end date for this form was {formDetails?.endDate ? new Date(formDetails.endDate).toLocaleDateString() : 'N/A'}.
               </Typography>
             </Box>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseRegistrationEndedDialog} color="primary">
+          <DialogActions sx={{ p: { xs: 1, sm: 2 } }}>
+            <Button 
+              onClick={handleCloseRegistrationEndedDialog} 
+              color="primary"
+              size={isMobile ? "small" : "medium"}
+            >
               Close
             </Button>
           </DialogActions>
@@ -882,19 +1273,37 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
           autoHideDuration={3000}
           onClose={() => setSuccessMessage("")}
           message={successMessage}
+          anchorOrigin={{
+            vertical: isMobile ? 'bottom' : 'top',
+            horizontal: 'center'
+          }}
         />
+        
         <CustomDialog open={open} handleClose={handleClose} />
 
         {/* Payment Dialog */}
         <Dialog
           open={showPaymentDialog}
-          onClose={() => setShowPaymentDialog(false)} // Allow closing, but payment might still be pending
+          onClose={() => setShowPaymentDialog(false)}
           maxWidth="sm"
           fullWidth
+          PaperProps={{
+            sx: {
+              m: { xs: 1, sm: 2 }
+            }
+          }}
         >
-          <DialogTitle>Complete Your Payment</DialogTitle>
+          <DialogTitle sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+            Complete Your Payment
+          </DialogTitle>
           <DialogContent>
-            <Typography variant="body1" sx={{ mb: 2 }}>
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                mb: 2,
+                fontSize: { xs: '0.875rem', sm: '1rem' }
+              }}
+            >
               Your form has been submitted. Please complete the payment to finalize.
             </Typography>
             <PaymentButton
@@ -907,17 +1316,38 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
               onPaymentFailure={handlePaymentFailure}
             />
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setShowPaymentDialog(false)}>Close</Button>
+          <DialogActions sx={{ p: { xs: 1, sm: 2 } }}>
+            <Button 
+              onClick={() => setShowPaymentDialog(false)}
+              size={isMobile ? "small" : "medium"}
+            >
+              Close
+            </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Registration Dialog */}
         <Dialog
           open={registerDialogOpen}
           onClose={handleCloseRegisterDialog}
           maxWidth="sm"
           fullWidth
+          PaperProps={{
+            sx: {
+              m: { xs: 1, sm: 2 }
+            }
+          }}
         >
-          <DialogTitle>Register for Form
+          <DialogTitle 
+            sx={{ 
+              fontSize: { xs: '1.1rem', sm: '1.25rem' },
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              pr: { xs: 6, sm: 8 }
+            }}
+          >
+            Register for Form
             <IconButton
               aria-label="close"
               onClick={handleCloseRegisterDialog}
@@ -927,11 +1357,12 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
                 top: 8,
                 color: (theme) => theme.palette.grey[500],
               }}
+              size={isMobile ? "small" : "medium"}
             >
-              <CloseIcon />
+              <CloseIcon fontSize={isMobile ? "small" : "medium"} />
             </IconButton>
           </DialogTitle>
-          <DialogContent>
+          <DialogContent sx={{ p: { xs: 1, sm: 2 } }}>
             <Register 
               setIsLoggedIn={handleRegistrationSuccess} 
               setIsFormOnlyUser={() => {}} 
