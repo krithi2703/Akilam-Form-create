@@ -60,7 +60,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
   const query = useQuery();
   const formNo = query.get("formNo");
   const theme = useTheme();
-  
+
   // Responsive breakpoints
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
@@ -219,7 +219,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
           bannerImage: sortedColumns[0].BannerImage,
           imageOrLogo: sortedColumns[0].ImageOrLogo,
         });
-        
+
         // Calculate if registration has ended
         const endDate = sortedColumns[0].Enddate;
         if (endDate) {
@@ -287,7 +287,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
     } else if (type === "file" || type === "photo") {
       if (file) {
         const MAX_PHOTO_SIZE_BYTES = 2 * 1024 * 1024;
-        
+
         if (type === "photo" && file.size > MAX_PHOTO_SIZE_BYTES) {
           toast.error(`Photo "${file.name}" exceeds the 2MB limit.`);
           event.target.value = null;
@@ -424,7 +424,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
 
   const handleCloseQrDialog = () => setQrDialogOpen(false);
   const handleCloseRegistrationEndedDialog = () => setShowRegistrationEndedDialog(false);
-  
+
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(formUrl);
@@ -442,12 +442,12 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
 
   if (loading) {
     return (
-      <Box sx={{ 
-        display: "flex", 
-        justifyContent: "center", 
-        alignItems: "center", 
+      <Box sx={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
         height: "100vh",
-        padding: 2 
+        padding: 2
       }}>
         <CircularProgress />
       </Box>
@@ -475,15 +475,15 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             label={ColumnName}
             value={value}
             onChange={(e) => handleInputChange(ColId, e)}
-                        type="date"
-                        InputLabelProps={{
-                          shrink: true,
-                          sx: { fontSize: responsiveFontSize }
-                        }}
-                        InputProps={{
-                          readOnly: column.IsReadOnly,
-                          sx: { fontSize: responsiveFontSize }
-                        }}            variant="outlined"
+            type="date"
+            InputLabelProps={{
+              shrink: true,
+              sx: { fontSize: responsiveFontSize }
+            }}
+            InputProps={{
+              readOnly: column.IsReadOnly,
+              sx: { fontSize: responsiveFontSize }
+            }} variant="outlined"
             sx={{ mb: responsiveSpacing }}
             required={column.IsValid}
             error={isError}
@@ -501,14 +501,14 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             value={value}
             onChange={(e) => handleInputChange(ColId, e)}
             type="datetime-local"
-                        InputLabelProps={{
-                          shrink: true,
-                          sx: { fontSize: responsiveFontSize }
-                        }}
-                        InputProps={{
-                          readOnly: column.IsReadOnly,
-                          sx: { fontSize: responsiveFontSize }
-                        }}            variant="outlined"
+            InputLabelProps={{
+              shrink: true,
+              sx: { fontSize: responsiveFontSize }
+            }}
+            InputProps={{
+              readOnly: column.IsReadOnly,
+              sx: { fontSize: responsiveFontSize }
+            }} variant="outlined"
             sx={{ mb: responsiveSpacing }}
             required={column.IsValid}
             error={isError}
@@ -548,15 +548,15 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
       case "checkbox":
         return (
           <FormControl fullWidth sx={{ mb: responsiveSpacing }} error={isError}>
-            <FormLabel 
-              component="legend" 
+            <FormLabel
+              component="legend"
               required={column.IsValid}
               sx={{ fontSize: responsiveFontSize }}
             >
               {ColumnName}
             </FormLabel>
-            <Box sx={{ 
-              display: 'flex', 
+            <Box sx={{
+              display: 'flex',
               flexDirection: isMobile ? 'column' : 'row',
               flexWrap: 'wrap',
               gap: 1
@@ -594,8 +594,8 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
       case "select":
         return (
           <FormControl fullWidth sx={{ mb: responsiveSpacing }} error={isError}>
-            <InputLabel 
-              id={`${ColId}-label`} 
+            <InputLabel
+              id={`${ColId}-label`}
               required={column.IsValid}
               sx={{ fontSize: responsiveFontSize }}
             >
@@ -614,8 +614,8 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
               disabled={column.IsReadOnly} // <--- Add this
             >
               {options.map((option) => (
-                <MenuItem 
-                  key={option} 
+                <MenuItem
+                  key={option}
                   value={option}
                   sx={{ fontSize: responsiveFontSize }}
                 >
@@ -629,8 +629,8 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
       case "radio":
         return (
           <FormControl component="fieldset" fullWidth sx={{ mb: responsiveSpacing }} error={isError}>
-            <FormLabel 
-              component="legend" 
+            <FormLabel
+              component="legend"
               required={column.IsValid}
               sx={{ fontSize: responsiveFontSize }}
             >
@@ -676,9 +676,11 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
               sx: { fontSize: responsiveFontSize }
             }}
             size={isMobile ? "small" : "medium"}
-          />
-        );
-      case 'file':
+            required={column.IsValid}
+            error={isError}
+            helperText={errorMessage || (column.Validation === 'Text Field: Max 5000 Characters (approx. 2 pages)' ? 'Max 5000 Characters (approx. 2 pages)' : '')}
+          />);
+      case "file":
         return (
           <TextField
             fullWidth
@@ -687,17 +689,17 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             label={ColumnName}
             onChange={(e) => handleInputChange(ColId, e, 'file')}
             type="file"
-                        InputLabelProps={{
-                          shrink: true,
-                          sx: { fontSize: responsiveFontSize }
-                        }}
-                        InputProps={{
-                          readOnly: column.IsReadOnly,
-                        }}
-                        variant="outlined"            sx={{ mb: responsiveSpacing }}
+            InputLabelProps={{
+              shrink: true,
+              sx: { fontSize: responsiveFontSize }
+            }}
+            InputProps={{
+              readOnly: column.IsReadOnly,
+            }}
+            variant="outlined" sx={{ mb: responsiveSpacing }}
             required={column.IsValid}
             error={isError}
-            helperText={errorMessage || 'Only 2-3 page PDFs allowed'}
+            helperText={errorMessage || 'Only 2-page PDFs allowed'}
             size={isMobile ? "small" : "medium"}
           />
         );
@@ -710,15 +712,15 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             label={ColumnName}
             onChange={(e) => handleInputChange(ColId, e, 'photo')}
             type="file"
-                        InputLabelProps={{
-                          shrink: true,
-                          sx: { fontSize: responsiveFontSize }
-                        }}
-                        InputProps={{
-                          readOnly: column.IsReadOnly,
-                        }}
-                        inputProps={{ accept: 'image/*' }}
-                        variant="outlined"            sx={{ mb: responsiveSpacing }}
+            InputLabelProps={{
+              shrink: true,
+              sx: { fontSize: responsiveFontSize }
+            }}
+            InputProps={{
+              readOnly: column.IsReadOnly,
+            }}
+            inputProps={{ accept: 'image/*' }}
+            variant="outlined" sx={{ mb: responsiveSpacing }}
             required={column.IsValid}
             error={isError}
             helperText={errorMessage || 'Max 2MB'}
@@ -738,7 +740,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             sx={{ mb: responsiveSpacing }}
             required={column.IsValid}
             error={isError}
-            helperText={errorMessage}
+            helperText={errorMessage || (column.Validation === 'Text Field: Max 5000 Characters (approx. 2 pages)' ? 'Max 5000 Characters (approx. 2 pages)' : '')}
             InputProps={{
               readOnly: column.IsReadOnly,
               sx: { fontSize: responsiveFontSize }
@@ -756,7 +758,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
     return (
       <Dialog
         open={true}
-        onClose={() => {}}
+        onClose={() => { }}
         maxWidth="sm"
         fullWidth
       >
@@ -764,16 +766,16 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
           Registration Status
         </DialogTitle>
         <DialogContent>
-          <Box sx={{ 
-            display: "flex", 
-            flexDirection: "column", 
-            alignItems: "center", 
-            p: isMobile ? 1 : 2 
+          <Box sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            p: isMobile ? 1 : 2
           }}>
-            <Typography 
-              variant="h6" 
-              color="error" 
-              sx={{ 
+            <Typography
+              variant="h6"
+              color="error"
+              sx={{
                 fontWeight: 'bold',
                 fontSize: isMobile ? '1rem' : '1.25rem',
                 textAlign: 'center'
@@ -781,9 +783,9 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             >
               Registration for this form has ended.
             </Typography>
-            <Typography 
-              variant="body2" 
-              sx={{ 
+            <Typography
+              variant="body2"
+              sx={{
                 mt: 1,
                 textAlign: 'center'
               }}
@@ -800,7 +802,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
     <>
       {isFormOnlyUserSession && (
         <AppBar position="static">
-          <Toolbar sx={{ 
+          <Toolbar sx={{
             minHeight: { xs: '56px', sm: '64px' },
             padding: { xs: '0 8px', sm: '0 16px' }
           }}>
@@ -815,11 +817,11 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
                 <MenuIcon />
               </IconButton>
             )}
-            
-            <Typography 
-              variant="h6" 
-              component="div" 
-              sx={{ 
+
+            <Typography
+              variant="h6"
+              component="div"
+              sx={{
                 flexGrow: 1,
                 fontSize: { xs: '1rem', sm: '1.25rem' },
                 textAlign: { xs: 'center', sm: 'left' }
@@ -827,11 +829,11 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             >
               {formDetails?.formName}
             </Typography>
-            
+
             {!isMobile && formDetails?.endDate && (
-              <Typography 
-                variant="body1" 
-                sx={{ 
+              <Typography
+                variant="body1"
+                sx={{
                   mr: 2,
                   fontSize: '0.875rem'
                 }}
@@ -839,9 +841,9 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
                 End Date: {new Date(formDetails.endDate).toLocaleDateString()}
               </Typography>
             )}
-            
-            <IconButton 
-              color="inherit" 
+
+            <IconButton
+              color="inherit"
               onClick={handleLogout}
               aria-label="logout"
               size={isMobile ? "small" : "medium"}
@@ -852,15 +854,15 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
 
           {/* Mobile menu for additional info */}
           {isMobile && mobileMenuOpen && (
-            <Box sx={{ 
+            <Box sx={{
               backgroundColor: 'primary.dark',
               padding: 2,
               borderTop: '1px solid rgba(255,255,255,0.1)'
             }}>
               {formDetails?.endDate && (
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
+                <Typography
+                  variant="body2"
+                  sx={{
                     color: 'white',
                     textAlign: 'center'
                   }}
@@ -872,10 +874,10 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
           )}
         </AppBar>
       )}
-      
+
       <Container
         maxWidth="md"
-        sx={{ 
+        sx={{
           mt: isFormOnlyUserSession ? 0 : { xs: 2, sm: 4 },
           mb: { xs: 2, sm: 4 },
           pt: isFormOnlyUserSession ? { xs: 2, sm: 4 } : 0,
@@ -883,49 +885,49 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
         }}
       >
         {formDetails?.bannerImage && (
-          <Card sx={{ 
-            mb: 2, 
-            borderRadius: 2, 
+          <Card sx={{
+            mb: 2,
+            borderRadius: 2,
             overflow: 'hidden',
             boxShadow: 2
           }}>
-            <Box 
-              sx={{ 
-                width: '100%', 
+            <Box
+              sx={{
+                width: '100%',
                 overflow: 'hidden',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}
             >
-              <img 
-                src={formDetails.bannerImage.startsWith('http://') || formDetails.bannerImage.startsWith('https://') 
-                  ? formDetails.bannerImage 
+              <img
+                src={formDetails.bannerImage.startsWith('http://') || formDetails.bannerImage.startsWith('https://')
+                  ? formDetails.bannerImage
                   : `${api.defaults.baseURL.replace('/api', '')}${formDetails.bannerImage}`}
-                alt="Banner" 
-                style={{ 
+                alt="Banner"
+                style={{
                   width: '100%',
                   height: isMobile ? '120px' : isTablet ? '140px' : '150px',
                   maxWidth: '1200px',
                   objectFit: 'fill'
-                }} 
+                }}
               />
             </Box>
           </Card>
         )}
-        
-        <Card 
-          elevation={isMobile ? 2 : 6} 
-          sx={{ 
+
+        <Card
+          elevation={isMobile ? 2 : 6}
+          sx={{
             p: { xs: 1, sm: 2 },
             borderRadius: 2
           }}
         >
           <CardContent sx={{ p: { xs: 1, sm: 2 } }}>
             {error ? (
-              <Alert 
-                severity="error" 
-                sx={{ 
+              <Alert
+                severity="error"
+                sx={{
                   mb: 2,
                   '& .MuiAlert-message': {
                     fontSize: { xs: '0.875rem', sm: '1rem' }
@@ -935,45 +937,45 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
                 {error}
               </Alert>
             ) : (
-              <Box 
-                component="form" 
-                noValidate 
-                autoComplete="off" 
+              <Box
+                component="form"
+                noValidate
+                autoComplete="off"
                 onSubmit={handleFormSubmit}
               >
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
+                <Box sx={{
+                  display: 'flex',
+                  alignItems: 'center',
                   mb: { xs: 2, sm: 4 },
                   flexDirection: { xs: 'column', sm: 'row' },
                   gap: { xs: 2, sm: 0 }
                 }}>
                   {/* Left: Logo or Spacer */}
-                  <Box sx={{ 
-                    width: { xs: '60px', sm: '80px' }, 
+                  <Box sx={{
+                    width: { xs: '60px', sm: '80px' },
                     height: { xs: '60px', sm: '80px' },
                     flexShrink: 0,
                     order: { xs: 2, sm: 1 }
                   }}>
                     {formDetails?.imageOrLogo ? (
-                      <Box sx={{ 
-                        width: '100%', 
-                        height: '100%', 
-                        border: '1px solid', 
-                        borderColor: 'grey.300', 
-                        borderRadius: 1, 
-                        p: 0.5 
+                      <Box sx={{
+                        width: '100%',
+                        height: '100%',
+                        border: '1px solid',
+                        borderColor: 'grey.300',
+                        borderRadius: 1,
+                        p: 0.5
                       }}>
-                        <img 
-                          src={formDetails.imageOrLogo.startsWith('http://') || formDetails.imageOrLogo.startsWith('https://') 
-                            ? formDetails.imageOrLogo 
+                        <img
+                          src={formDetails.imageOrLogo.startsWith('http://') || formDetails.imageOrLogo.startsWith('https://')
+                            ? formDetails.imageOrLogo
                             : `${api.defaults.baseURL.replace('/api', '')}${formDetails.imageOrLogo}`}
-                          alt="Form Logo" 
-                          style={{ 
-                            width: '100%', 
-                            height: '100%', 
-                            objectFit: 'fill' 
-                          }} 
+                          alt="Form Logo"
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'fill'
+                          }}
                         />
                       </Box>
                     ) : (
@@ -983,8 +985,8 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
 
                   {/* Center: Form Name */}
                   {formDetails?.formName && (
-                    <Box sx={{ 
-                      flexGrow: 1, 
+                    <Box sx={{
+                      flexGrow: 1,
                       textAlign: 'center',
                       order: { xs: 1, sm: 2 },
                       px: { xs: 1, sm: 0 }
@@ -1009,32 +1011,32 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
                   )}
 
                   {/* Right: Spacer for balance */}
-                  <Box sx={{ 
-                    width: { xs: '60px', sm: '80px' }, 
+                  <Box sx={{
+                    width: { xs: '60px', sm: '80px' },
                     flexShrink: 0,
                     order: { xs: 3, sm: 3 }
                   }} />
                 </Box>
 
                 {isFormOnlyUserSession && (userId || userName) && (
-                  <Box sx={{ 
-                    textAlign: 'center', 
-                    mb: 3, 
-                    p: { xs: 1, sm: 2 }, 
-                    backgroundColor: 'grey.100', 
-                    borderRadius: 1 
+                  <Box sx={{
+                    textAlign: 'center',
+                    mb: 3,
+                    p: { xs: 1, sm: 2 },
+                    backgroundColor: 'grey.100',
+                    borderRadius: 1
                   }}>
-                    <Typography 
-                      variant="body1" 
+                    <Typography
+                      variant="body1"
                       color="text.secondary"
                       sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
                     >
                       You are submitting as:
                     </Typography>
-                    <Typography 
-                      variant="h6" 
+                    <Typography
+                      variant="h6"
                       color="primary"
-                      sx={{ 
+                      sx={{
                         fontSize: { xs: '1rem', sm: '1.25rem' },
                         fontWeight: 'bold'
                       }}
@@ -1078,10 +1080,10 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
                     Go Back
                   </Button>
                   {isRegistrationEnded ? (
-                    <Typography 
-                      variant="body2" 
-                      color="error" 
-                      sx={{ 
+                    <Typography
+                      variant="body2"
+                      color="error"
+                      sx={{
                         fontWeight: 'bold',
                         textAlign: 'center',
                         width: '100%'
@@ -1119,7 +1121,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
                     disabled={isSubmitting}
                     fullWidth={isMobile}
                     size={isMobile ? "small" : "medium"}
-                    sx={{ 
+                    sx={{
                       minWidth: { xs: '100%', sm: 'auto' }
                     }}
                   >
@@ -1160,8 +1162,8 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
                 p: { xs: 1, sm: 2 },
               }}
             >
-              <Typography 
-                variant="h6" 
+              <Typography
+                variant="h6"
                 gutterBottom
                 sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
               >
@@ -1176,16 +1178,16 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
               <Typography variant="body1" sx={{ mb: 2, textAlign: 'center' }}>
                 End Date: {formDetails?.endDate ? new Date(formDetails.endDate).toLocaleDateString() : 'N/A'}
               </Typography>
-              <QRCodeCanvas 
-                value={formUrl} 
-                size={isMobile ? 200 : 256} 
+              <QRCodeCanvas
+                value={formUrl}
+                size={isMobile ? 200 : 256}
               />
               <Typography variant="caption" sx={{ mt: 2, textAlign: 'center' }}>
                 Or share this link:
               </Typography>
-              <Box sx={{ 
-                display: "flex", 
-                width: "100%", 
+              <Box sx={{
+                display: "flex",
+                width: "100%",
                 mt: 1,
                 flexDirection: { xs: 'column', sm: 'row' },
                 gap: { xs: 1, sm: 0 }
@@ -1198,10 +1200,10 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
                   sx={{ mr: { xs: 0, sm: 1 } }}
                   size={isMobile ? "small" : "medium"}
                 />
-                <Button 
-                  variant="outlined" 
+                <Button
+                  variant="outlined"
                   onClick={handleCopyLink}
-                  sx={{ 
+                  sx={{
                     minWidth: { xs: '100%', sm: 'auto' },
                     mt: { xs: 1, sm: 0 }
                   }}
@@ -1229,16 +1231,16 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             Registration Status
           </DialogTitle>
           <DialogContent>
-            <Box sx={{ 
-              display: "flex", 
-              flexDirection: "column", 
-              alignItems: "center", 
-              p: { xs: 1, sm: 2 } 
+            <Box sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              p: { xs: 1, sm: 2 }
             }}>
-              <Typography 
-                variant="h6" 
-                color="error" 
-                sx={{ 
+              <Typography
+                variant="h6"
+                color="error"
+                sx={{
                   fontWeight: 'bold',
                   fontSize: { xs: '1rem', sm: '1.25rem' },
                   textAlign: 'center'
@@ -1246,9 +1248,9 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
               >
                 Registration for this form has ended.
               </Typography>
-              <Typography 
-                variant="body2" 
-                sx={{ 
+              <Typography
+                variant="body2"
+                sx={{
                   mt: 1,
                   textAlign: 'center'
                 }}
@@ -1258,8 +1260,8 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             </Box>
           </DialogContent>
           <DialogActions sx={{ p: { xs: 1, sm: 2 } }}>
-            <Button 
-              onClick={handleCloseRegistrationEndedDialog} 
+            <Button
+              onClick={handleCloseRegistrationEndedDialog}
               color="primary"
               size={isMobile ? "small" : "medium"}
             >
@@ -1278,7 +1280,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             horizontal: 'center'
           }}
         />
-        
+
         <CustomDialog open={open} handleClose={handleClose} />
 
         {/* Payment Dialog */}
@@ -1297,9 +1299,9 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             Complete Your Payment
           </DialogTitle>
           <DialogContent>
-            <Typography 
-              variant="body1" 
-              sx={{ 
+            <Typography
+              variant="body1"
+              sx={{
                 mb: 2,
                 fontSize: { xs: '0.875rem', sm: '1rem' }
               }}
@@ -1317,7 +1319,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             />
           </DialogContent>
           <DialogActions sx={{ p: { xs: 1, sm: 2 } }}>
-            <Button 
+            <Button
               onClick={() => setShowPaymentDialog(false)}
               size={isMobile ? "small" : "medium"}
             >
@@ -1338,8 +1340,8 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             }
           }}
         >
-          <DialogTitle 
-            sx={{ 
+          <DialogTitle
+            sx={{
               fontSize: { xs: '1.1rem', sm: '1.25rem' },
               display: 'flex',
               justifyContent: 'space-between',
@@ -1363,9 +1365,9 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             </IconButton>
           </DialogTitle>
           <DialogContent sx={{ p: { xs: 1, sm: 2 } }}>
-            <Register 
-              setIsLoggedIn={handleRegistrationSuccess} 
-              setIsFormOnlyUser={() => {}} 
+            <Register
+              setIsLoggedIn={handleRegistrationSuccess}
+              setIsFormOnlyUser={() => { }}
             />
           </DialogContent>
         </Dialog>
