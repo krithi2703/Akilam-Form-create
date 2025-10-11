@@ -34,8 +34,14 @@ export default function ContentDetails({ isFormOnlyUser }) {
     useEffect(() => {
         const fetchContentDetails = async () => {
             try {
-                const url = isFormOnlyUser ? `/content-dtl/${formId}` : '/content-dtl';
-                const response = await api.get(url);
+                let url = '/content-dtl';
+                let config = {};
+                if (isFormOnlyUser) {
+                    url = '/content-dtl/form';
+                    config = { headers: { formid: formId } };
+                }
+
+                const response = await api.get(url, config);
                 // Check if content is empty for form-only user
                 if (isFormOnlyUser && (!response.data || (response.data.front.length === 0 && response.data.back.length === 0))) {
                     setError('No content available for this form. Please proceed to the form.');
@@ -202,6 +208,7 @@ export default function ContentDetails({ isFormOnlyUser }) {
                                     objectFit: 'fill',
                                     borderRadius: '6px',
                                     mb: 1,
+                                    boxShadow: '0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)',
                                 }}
                             />
                         )}
@@ -289,6 +296,7 @@ export default function ContentDetails({ isFormOnlyUser }) {
                                 objectFit: 'fill',
                                 borderRadius: '6px',
                                 mb: 1,
+                                boxShadow: '0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)',
                             }}
                         />
                     )}
@@ -356,6 +364,7 @@ export default function ContentDetails({ isFormOnlyUser }) {
                                             objectFit: 'fill',
                                             borderRadius: '6px',
                                             mb: 1,
+                                            boxShadow: '0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19)',
                                         }}
                                     />
                                 )}

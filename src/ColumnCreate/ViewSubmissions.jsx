@@ -43,7 +43,13 @@ import {
   RadioGroup,
   Radio,
   FormLabel,
-  TablePagination
+  TablePagination,
+  useMediaQuery,
+  Divider,
+  FormHelperText,
+  alpha,
+  Avatar,
+  Stack
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -51,23 +57,21 @@ import {
   Visibility,
   Download,
   Edit,
-  Logout as LogoutIcon
+  Logout as LogoutIcon,
+  PictureAsPdf,
+  InsertDriveFile
 } from '@mui/icons-material';
-import CloseIcon from '@mui/icons-material/Close'; // Import CloseIcon
+import CloseIcon from '@mui/icons-material/Close';
 import api from "../axiosConfig";
 import { sendWhatsAppMessage } from '../whatsappService';
 import { validateField } from "../utils/validationUtils";
 
-
-
 // Helper to construct base URL for assets
 const getBaseUrl = () => {
   const baseUrl = api.defaults.baseURL;
-  // If the baseURL is a relative path (starts with '/'), use the window's origin.
   if (baseUrl.startsWith('/')) {
     return `${window.location.origin}`;
   }
-  // Otherwise, assume it's a full URL and remove the '/api' suffix.
   return baseUrl.replace('/api', '');
 };
 
@@ -77,6 +81,10 @@ const ViewSubmissions = () => {
   const query = useQuery();
   const theme = useTheme();
   const { formId: formIdFromParams } = useParams();
+
+  // Check if mobile view
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Prioritize state, then fallback to query params
   const formIdFromState = location.state?.formId;
@@ -121,7 +129,6 @@ const ViewSubmissions = () => {
   };
 
   const fetchData = async () => {
-    // Parse formId as integer
     const parsedFormId = parseInt(formId);
     const parsedFormNo = parseInt(formNo);
 
@@ -141,28 +148,24 @@ const ViewSubmissions = () => {
       setLoading(true);
       setError('');
 
-      // Determine which API endpoint to call based on user type
       const endpoint = isFormOnlyUser
         ? `/formvalues/values?formId=${parsedFormId}&formNo=${parsedFormNo}`
         : `/formvalues/values/all?formId=${parsedFormId}&formNo=${parsedFormNo}`;
 
-      // Use the API instance with headers
       const valuesResponse = await api.get(endpoint);
 
       if (valuesResponse.data && valuesResponse.data.length > 0) {
         let { submissions: groupedSubmissions, columns: dynamicColumns, formName: name } = valuesResponse.data[0];
         
-        // Fetch validation rules for the form
         const validationRulesResponse = await api.get(`/validation/${parsedFormId}`);
         const formValidationRulesMap = new Map();
         validationRulesResponse.data.forEach(rule => {
           formValidationRulesMap.set(rule.ColId, rule.ValidationList);
         });
 
-        // Merge validation rules into columns
         dynamicColumns = dynamicColumns.map(col => ({
           ...col,
-          Validation: formValidationRulesMap.get(col.ColId) || null, // Add Validation property
+          Validation: formValidationRulesMap.get(col.ColId) || null,
         }));
 
         const uniqueColumns = Array.from(new Map(dynamicColumns.map(item => [item.ColId, item])).values());
@@ -188,7 +191,7 @@ const ViewSubmissions = () => {
 
   useEffect(() => {
     fetchData();
-  }, [formId, formNo, userId, isFormOnlyUser]); // Depend on formId and formNo (which now correctly combine state/query)
+  }, [formId, formNo, userId, isFormOnlyUser]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -204,6 +207,7 @@ const ViewSubmissions = () => {
     setSelectedSubmission(submission);
     setDialogOpen(true);
   };
+
   const handleDialogClose = () => {
     setDialogOpen(false);
     setSelectedSubmission(null);
@@ -224,9 +228,8 @@ const ViewSubmissions = () => {
 
   // Edit
   const handleEditClick = async (submission) => {
-    setEditSubmission({ ...submission }); // clone for editing
+    setEditSubmission({ ...submission });
 
-    // Fetch options for select, radio, checkbox
     try {
       const optionsPromises = columns.map(async (col) => {
         const dataType = col.DataType?.toLowerCase();
@@ -256,8 +259,7 @@ const ViewSubmissions = () => {
         }
       });
       setEditColumnOptions(newColumnOptions);
-      setEditDialogOpen(true); // Open dialog after options are fetched
-
+      setEditDialogOpen(true);
     } catch (err) {
       console.error("Error fetching options for edit dialog:", err);
       toast.error("Failed to load options for editing.");
@@ -302,32 +304,29 @@ const ViewSubmissions = () => {
     }
 
     setSaving(true);
-    //console.log("Client sending values for update:", editSubmission.values);
     try {
       const submissionId = editSubmission.SubmissionId.toString().replace(':', '/');
       const formData = new FormData();
       formData.append('formId', parseInt(formId));
 
-      // Append all values, handling files separately
       for (const colId in editSubmission.values) {
         if (Object.hasOwnProperty.call(editSubmission.values, colId)) {
           const value = editSubmission.values[colId];
           if (value instanceof File) {
-            formData.append(colId, value); // Append file directly
+            formData.append(colId, value);
           } else if (Array.isArray(value)) {
-            // For checkbox arrays, append each item
             value.forEach(item => formData.append(colId, item));
           } else if (typeof value === 'boolean') {
-            formData.append(colId, value ? '1' : '0'); // Convert boolean to '1' or '0'
+            formData.append(colId, value ? '1' : '0');
           } else {
-            formData.append(colId, value); // Append other values as strings
+            formData.append(colId, value);
           }
         }
       }
 
       await api.put(
         `/formvalues/values/${submissionId}`,
-        formData, // Send FormData
+        formData,
         {
           headers: {
             'Content-Type': 'multipart/form-data',
@@ -337,13 +336,8 @@ const ViewSubmissions = () => {
 
       toast.success('Submission updated successfully!');
 
-            // console.log("Attempting to send WhatsApp message for update...");
-            // console.log("Edit Submission Data:", editSubmission);
-            // console.log("Form Name:", formName);
-
       if (editSubmission.Emailormobileno && formName) {
         const message = `Your form "${formName}" has been updated successfully.`;
-        // console.log("Message:", message);
         try {
           await sendWhatsAppMessage(editSubmission.Emailormobileno, message);
           toast.success("WhatsApp notification sent.");
@@ -351,12 +345,10 @@ const ViewSubmissions = () => {
           console.error("WhatsApp Error:", whatsappError);
           toast.error("Failed to send WhatsApp notification.");
         }
-      } else {
-        // console.log("Cannot send WhatsApp message because Emailormobileno or formName is missing.");
       }
 
       setEditDialogOpen(false);
-      fetchData(); // refresh the data
+      fetchData();
     } catch (err) {
       console.error('Error updating submission:', err);
       const errorMessage = err.response?.data?.message || 'Failed to update submission';
@@ -389,6 +381,7 @@ const ViewSubmissions = () => {
             InputProps={{
               readOnly: col.IsReadOnly,
             }}
+            size={isMobile ? "small" : "medium"}
           />
         );
       
@@ -396,33 +389,38 @@ const ViewSubmissions = () => {
       case 'checkbox':
         return (
           <FormControl component="fieldset" fullWidth sx={{ mb: 2 }} error={isError}>
-            <FormLabel component="legend" required={col.IsValid}>{ColumnName}</FormLabel>
-            {options.map((option) => (
-              <FormControlLabel
-                key={option}
-                control={
-                  <Checkbox
-                    checked={editSubmission?.values[ColId]?.includes(option) || false}
-                    onChange={(e) => {
-                      const currentValues = editSubmission?.values[ColId] || [];
-                      const newValues = e.target.checked
-                        ? [...currentValues, option]
-                        : currentValues.filter((val) => val !== option);
-                      handleEditChange(ColId, newValues);
-                    }}
-                    disabled={col.IsReadOnly}
-                  />
-                }
-                label={option}
-              />
-            ))}
+            <FormLabel component="legend" required={col.IsValid} sx={{ fontSize: isMobile ? '0.875rem' : '1rem' }}>
+              {ColumnName}
+            </FormLabel>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {options.map((option) => (
+                <FormControlLabel
+                  key={option}
+                  control={
+                    <Checkbox
+                      checked={editSubmission?.values[ColId]?.includes(option) || false}
+                      onChange={(e) => {
+                        const currentValues = editSubmission?.values[ColId] || [];
+                        const newValues = e.target.checked
+                          ? [...currentValues, option]
+                          : currentValues.filter((val) => val !== option);
+                        handleEditChange(ColId, newValues);
+                      }}
+                      disabled={col.IsReadOnly}
+                      size={isMobile ? "small" : "medium"}
+                    />
+                  }
+                  label={<Typography variant={isMobile ? "body2" : "body1"}>{option}</Typography>}
+                />
+              ))}
+            </Box>
             {isError && <FormHelperText>{errorMessage}</FormHelperText>}
           </FormControl>
         );
       
       case 'select':
         return (
-          <FormControl fullWidth sx={{ mb: 2 }} error={isError}>
+          <FormControl fullWidth sx={{ mb: 2 }} error={isError} size={isMobile ? "small" : "medium"}>
             <InputLabel required={col.IsValid}>{ColumnName}</InputLabel>
             <Select
               value={value}
@@ -444,7 +442,9 @@ const ViewSubmissions = () => {
       case 'radio':
         return (
           <FormControl component="fieldset" fullWidth sx={{ mb: 2 }} error={isError}>
-            <FormLabel component="legend" required={col.IsValid}>{ColumnName}</FormLabel>
+            <FormLabel component="legend" required={col.IsValid} sx={{ fontSize: isMobile ? '0.875rem' : '1rem' }}>
+              {ColumnName}
+            </FormLabel>
             <RadioGroup
               aria-label={ColumnName}
               name={ColId}
@@ -456,8 +456,8 @@ const ViewSubmissions = () => {
                 <FormControlLabel
                   key={option}
                   value={option}
-                  control={<Radio />}
-                  label={option}
+                  control={<Radio size={isMobile ? "small" : "medium"} />}
+                  label={<Typography variant={isMobile ? "body2" : "body1"}>{option}</Typography>}
                 />
               ))}
             </RadioGroup>
@@ -483,6 +483,7 @@ const ViewSubmissions = () => {
             InputProps={{
               readOnly: col.IsReadOnly,
             }}
+            size={isMobile ? "small" : "medium"}
           />
         );
       
@@ -504,6 +505,7 @@ const ViewSubmissions = () => {
             InputProps={{
               readOnly: col.IsReadOnly,
             }}
+            size={isMobile ? "small" : "medium"}
           />
         );
       
@@ -512,7 +514,7 @@ const ViewSubmissions = () => {
           <TextField
             fullWidth
             multiline
-            rows={4}
+            rows={isMobile ? 3 : 4}
             label={ColumnName}
             value={value}
             onChange={(e) => handleEditChange(ColId, e.target.value)}
@@ -523,18 +525,20 @@ const ViewSubmissions = () => {
             InputProps={{
               readOnly: col.IsReadOnly,
             }}
+            size={isMobile ? "small" : "medium"}
           />
         );
       case 'file':
         return (
           <>
-            <Typography variant="body2" gutterBottom>{ColumnName}</Typography>
+            <Typography variant={isMobile ? "body2" : "body1"} gutterBottom>
+              {ColumnName}
+            </Typography>
             <TextField
               fullWidth
               type="file"
               onChange={(e) => {
                 const file = e.target.files[0];
-                // No client-side size validation for 'file' type, as page count is server-side
                 handleEditChange(ColId, file);
               }}
               sx={{ mb: 2 }}
@@ -544,25 +548,33 @@ const ViewSubmissions = () => {
               InputProps={{
                 readOnly: col.IsReadOnly,
               }}
+              size={isMobile ? "small" : "medium"}
             />
-            {value && <Typography variant="caption">Current file: {value}</Typography>}
+            {value && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                <InsertDriveFile color="primary" />
+                <Typography variant="caption">Current file: {value}</Typography>
+              </Box>
+            )}
           </>
         );
       case 'photo':
         const photoSrc = value && (value.startsWith('http://') || value.startsWith('https://')) ? value : `${getBaseUrl()}${value}`;
         return (
           <>
-            <Typography variant="body2" gutterBottom>{ColumnName}</Typography>
+            <Typography variant={isMobile ? "body2" : "body1"} gutterBottom>
+              {ColumnName}
+            </Typography>
             <TextField
               fullWidth
               type="file"
               inputProps={{ accept: 'image/*' }}
               onChange={(e) => {
                 const file = e.target.files[0];
-                const MAX_PHOTO_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
+                const MAX_PHOTO_SIZE_BYTES = 2 * 1024 * 1024;
                 if (file && file.size > MAX_PHOTO_SIZE_BYTES) {
                   toast.error(`Photo "${file.name}" exceeds the 2MB limit.`);
-                  e.target.value = null; // Clear the input
+                  e.target.value = null;
                   handleEditChange(ColId, null);
                 } else {
                   handleEditChange(ColId, file);
@@ -575,11 +587,23 @@ const ViewSubmissions = () => {
               InputProps={{
                 readOnly: col.IsReadOnly,
               }}
+              size={isMobile ? "small" : "medium"}
             />
-            {value && <img src={photoSrc} alt="preview" style={{ width: '100px', marginTop: '10px' }}/>}
+            {value && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
+                <Avatar 
+                  src={photoSrc} 
+                  variant="rounded"
+                  sx={{ width: 60, height: 60, border: `2px solid ${theme.palette.divider}` }}
+                />
+                <Typography variant="caption" color="text.secondary">
+                  Current photo
+                </Typography>
+              </Box>
+            )}
           </>
         );
-      default: // text
+      default:
         return (
           <TextField
             fullWidth
@@ -593,6 +617,7 @@ const ViewSubmissions = () => {
             InputProps={{
               readOnly: col.IsReadOnly,
             }}
+            size={isMobile ? "small" : "medium"}
           />
         );
     }
@@ -627,7 +652,17 @@ const ViewSubmissions = () => {
     const value = submission.values[col.ColId];
     if (!value) {
       return (
-        <Typography variant="body2" color="text.secondary" fontStyle="italic" sx={truncate ? { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } : {}}>
+        <Typography 
+          variant="body2" 
+          color="text.secondary" 
+          fontStyle="italic"
+          sx={truncate ? { 
+            overflow: 'hidden', 
+            textOverflow: 'ellipsis', 
+            whiteSpace: 'nowrap',
+            fontSize: isMobile ? '0.75rem' : '0.875rem'
+          } : { fontSize: isMobile ? '0.75rem' : '0.875rem' }}
+        >
           Not provided
         </Typography>
       );
@@ -635,30 +670,102 @@ const ViewSubmissions = () => {
 
     if (col.DataType.toLowerCase() === 'photo') {
       return (
-        <Button variant="outlined" size="small" onClick={() => handleViewPhotoClick(value)}>
-          View Photo
-        </Button>
+        <Tooltip title="View Photo">
+          <IconButton 
+            onClick={() => handleViewPhotoClick(value)} 
+            size="small" 
+            color="primary"
+            sx={{
+              backgroundColor: alpha(theme.palette.primary.main, 0.1),
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.primary.main, 0.2),
+              }
+            }}
+          >
+            <Visibility fontSize={isMobile ? "small" : "medium"} />
+          </IconButton>
+        </Tooltip>
       );
     } else if (col.DataType.toLowerCase() === 'file') {
       const fileHref = value.startsWith('http://') || value.startsWith('https://')
         ? value
         : `${getBaseUrl()}${value}`;
-      return <a href={fileHref} target="_blank" rel="noopener noreferrer" style={truncate ? { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' } : { display: 'block' }}>View File</a>;
+      return (
+        <Tooltip title="Download file">
+          <Button
+            component="a"
+            href={fileHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            startIcon={<PictureAsPdf />}
+            size="small"
+            variant="outlined"
+            sx={{
+              textTransform: 'none',
+              fontSize: isMobile ? '0.7rem' : '0.875rem',
+              px: 1,
+              py: 0.5,
+              minWidth: 'auto'
+            }}
+          >
+            {isMobile ? 'File' : 'View File'}
+          </Button>
+        </Tooltip>
+      );
     }
 
+    // Truncate long text for table view
+    const displayValue = truncate && value.length > 50 ? `${value.substring(0, 50)}...` : value;
+
     return (
-      <Typography variant="body2" sx={truncate ? { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } : {}}>
-        {value}
-      </Typography>
+      <Tooltip title={truncate && value.length > 50 ? value : ''} arrow>
+        <Typography 
+          variant="body2" 
+          sx={truncate ? { 
+            overflow: 'hidden', 
+            textOverflow: 'ellipsis', 
+            whiteSpace: 'nowrap',
+            fontSize: isMobile ? '0.75rem' : '0.875rem'
+          } : { 
+            whiteSpace: 'normal',
+            wordBreak: 'break-word',
+            fontSize: isMobile ? '0.75rem' : '0.875rem'
+          }}
+        >
+          {displayValue}
+        </Typography>
+      </Tooltip>
     );
   };
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '80vh',
+        background: isFormOnlyUser ? 'transparent' : `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`
+      }}>
         <Box sx={{ textAlign: 'center' }}>
-          <CircularProgress size={60} thickness={4} />
-          <Typography variant="h6" sx={{ mt: 2 }}>Loading Submissions...</Typography>
+          <CircularProgress 
+            size={isMobile ? 40 : 60} 
+            thickness={4}
+            sx={{ color: theme.palette.primary.main }}
+          />
+          <Typography 
+            variant={isMobile ? "h6" : "h5"} 
+            sx={{ 
+              mt: 2,
+              background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              color: 'transparent',
+              fontWeight: 600
+            }}
+          >
+            Loading Submissions...
+          </Typography>
         </Box>
       </Box>
     );
@@ -667,53 +774,127 @@ const ViewSubmissions = () => {
   return (
     <>
       {isFormOnlyUser && (
-        <AppBar position="static" color="primary" elevation={1}>
-          <Toolbar>
-            
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1, color: theme.palette.primary.contrastText }}>
+        <AppBar 
+          position="sticky" 
+          color="primary" 
+          elevation={2}
+          sx={{
+            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
+          }}
+        >
+          <Toolbar sx={{ minHeight: { xs: 56, sm: 64 } }}>
+            <Typography 
+              variant="h6" 
+              component="div" 
+              sx={{ 
+                flexGrow: 1, 
+                color: theme.palette.primary.contrastText,
+                fontSize: { xs: '1rem', sm: '1.25rem' },
+                fontWeight: 600
+              }}
+            >
               {formName || 'Form Submissions'}
             </Typography>
-            <IconButton color="inherit" onClick={handleLogout}>
-              <LogoutIcon />
-            </IconButton>
+            <Tooltip title="Logout">
+              <IconButton 
+                color="inherit" 
+                onClick={handleLogout}
+                size={isMobile ? "small" : "medium"}
+              >
+                <LogoutIcon fontSize={isMobile ? "small" : "medium"} />
+              </IconButton>
+            </Tooltip>
           </Toolbar>
         </AppBar>
       )}
       
-      <Container maxWidth="xl" sx={{ py: isFormOnlyUser ? 2 : 4 }}>
-        <Card elevation={isFormOnlyUser ? 0 : 3} sx={{ borderRadius: isFormOnlyUser ? 0 : 2, bgcolor: 'background.paper' }}>
+      <Container 
+        maxWidth="xl" 
+        sx={{ 
+          py: isFormOnlyUser ? { xs: 1, sm: 2 } : { xs: 2, sm: 4 },
+          px: { xs: 1, sm: 2, md: 3 }
+        }}
+      >
+        <Card 
+          elevation={isFormOnlyUser ? 0 : 3} 
+          sx={{ 
+            borderRadius: isFormOnlyUser ? 0 : { xs: 1, sm: 2 },
+            bgcolor: 'background.paper',
+            overflow: 'visible',
+            border: isFormOnlyUser ? 'none' : `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+            boxShadow: isFormOnlyUser ? 'none' : `0 8px 32px ${alpha(theme.palette.common.black, 0.1)}`
+          }}
+        >
           <CardContent sx={{ p: 0 }}>
             {/* Header Section - Only show for non-form-only users */}
             {!isFormOnlyUser && (
               <Box sx={{
-                backgroundColor: 'primary.main',
+                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
                 color: 'primary.contrastText',
-                p: 3,
-                borderTopLeftRadius: 8,
-                borderTopRightRadius: 8
+                p: { xs: 2, sm: 3 },
+                borderTopLeftRadius: { xs: 1, sm: 2 },
+                borderTopRightRadius: { xs: 1, sm: 2 },
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  width: '100%',
+                  height: '100%',
+                  background: `radial-gradient(circle at 30% 20%, ${alpha(theme.palette.common.white, 0.1)} 0%, transparent 50%)`
+                }
               }}>
                 <Grid container alignItems="center" spacing={2}>
-                  <Grid>
+                  <Grid item>
                     <IconButton
                       onClick={() => navigate(-1)}
-                      sx={{ color: theme.palette.primary.contrastText }}
+                      sx={{ 
+                        color: theme.palette.primary.contrastText,
+                        backgroundColor: alpha(theme.palette.common.white, 0.2),
+                        '&:hover': {
+                          backgroundColor: alpha(theme.palette.common.white, 0.3),
+                        }
+                      }}
+                      size={isMobile ? "small" : "medium"}
                     >
-                      <ArrowBackIcon />
+                      <ArrowBackIcon fontSize={isMobile ? "small" : "medium"} />
                     </IconButton>
                   </Grid>
-                  <Grid xs="auto">
-                    <Typography variant="h4" fontWeight="bold">
+                  <Grid item xs>
+                    <Typography 
+                      variant={isMobile ? "h5" : "h4"} 
+                      fontWeight="bold"
+                      sx={{
+                        textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                      }}
+                    >
                       {formName || 'Unknown Form'}
                     </Typography>
-                    <Typography variant="body1" sx={{ mt: 1, opacity: 0.9 }}>
+                    <Typography 
+                      variant={isMobile ? "body2" : "body1"} 
+                      sx={{ 
+                        mt: 1, 
+                        opacity: 0.9,
+                        fontSize: { xs: '0.875rem', sm: '1rem' }
+                      }}
+                    >
                       View all submitted data for this form
                     </Typography>
                   </Grid>
-                  <Grid>
+                  <Grid item>
                     <Chip
                       label={`${stats.total} submissions`}
                       variant="outlined"
-                      sx={{ color: theme.palette.primary.contrastText, borderColor: 'rgba(255,255,255,0.5)' }}
+                      sx={{ 
+                        color: theme.palette.primary.contrastText, 
+                        borderColor: alpha(theme.palette.common.white, 0.5),
+                        backgroundColor: alpha(theme.palette.common.white, 0.2),
+                        fontWeight: 600,
+                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                        height: { xs: 32, sm: 40 }
+                      }}
                     />
                   </Grid>
                 </Grid>
@@ -721,192 +902,503 @@ const ViewSubmissions = () => {
             )}
 
             {/* Action Bar */}
-            <Box sx={{ p: 2, backgroundColor: 'background.default', borderBottom: 1, borderColor: 'divider' }}>
-              <Grid container alignItems="center" spacing={2}>
-                <Grid>
-                  <Typography variant="body2" color="text.secondary">
-                    Last updated: {stats.lastUpdated || 'Never'}
-                  </Typography>
-                </Grid>
-                <Grid xs="auto" />
-                <Grid>
+            <Box sx={{ 
+              p: { xs: 1.5, sm: 2 }, 
+              backgroundColor: 'background.default', 
+              borderBottom: 1, 
+              borderColor: 'divider',
+              background: `linear-gradient(to right, ${theme.palette.background.paper} 0%, ${alpha(theme.palette.primary.main, 0.03)} 100%)`
+            }}>
+              <Stack 
+                direction={isMobile ? "column" : "row"} 
+                spacing={isMobile ? 1 : 2} 
+                alignItems={isMobile ? "stretch" : "center"}
+                justifyContent="space-between"
+              >
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  sx={{ 
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                >
+                  Last updated: {stats.lastUpdated || 'Never'}
+                </Typography>
+                
+                <Stack 
+                  direction="row" 
+                  spacing={1} 
+                  alignItems="center"
+                  justifyContent={isMobile ? "space-between" : "flex-end"}
+                >
                   <Tooltip title="Refresh data">
                     <IconButton 
                       onClick={fetchData} 
-                      size="large"
+                      size={isMobile ? "small" : "medium"}
                       sx={{
-                        color: isFormOnlyUser ? 'primary.main' : 'inherit',
-                        transform: isFormOnlyUser ? 'scale(1.2)' : 'none', // Increase size for form-only user
+                        color: isFormOnlyUser ? 'primary.main' : 'primary.main',
+                        backgroundColor: isFormOnlyUser ? alpha(theme.palette.primary.main, 0.1) : 'transparent',
+                        transform: isFormOnlyUser ? 'scale(1.1)' : 'none',
+                        '&:hover': {
+                          backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                          transform: 'rotate(180deg)',
+                          transition: 'transform 0.3s ease'
+                        }
                       }}
                     >
-                      <Refresh sx={{ fontSize: isFormOnlyUser ? '2rem' : '1.5rem' }} hidden={isFormOnlyUser} />
+                      <Refresh fontSize={isFormOnlyUser ? "medium" : "small"} />
                     </IconButton>
                   </Tooltip>
-                </Grid>
-                {!isFormOnlyUser && (
-                  <Grid>
+                  
+                  {!isFormOnlyUser && (
                     <Tooltip title="Export to CSV">
                       <Button
                         variant="outlined"
                         startIcon={<Download />}
                         onClick={handleExportData}
                         disabled={submissions.length === 0}
+                        size={isMobile ? "small" : "medium"}
+                        sx={{
+                          textTransform: 'none',
+                          fontWeight: 600,
+                          borderRadius: 2,
+                          px: { xs: 2, sm: 3 }
+                        }}
                       >
-                        Export
+                        {isMobile ? 'Export' : 'Export CSV'}
                       </Button>
                     </Tooltip>
-                  </Grid>
-                )}
-              </Grid>
+                  )}
+                </Stack>
+              </Stack>
             </Box>
 
             {/* Error */}
             {error && (
               <Box sx={{ p: 2 }}>
-                <Alert severity="error" onClose={() => setError('')}>
+                <Alert 
+                  severity="error" 
+                  onClose={() => setError('')}
+                  sx={{
+                    borderRadius: 2,
+                    border: `1px solid ${theme.palette.error.light}`,
+                    '& .MuiAlert-message': {
+                      fontSize: { xs: '0.875rem', sm: '1rem' }
+                    }
+                  }}
+                >
                   {error}
                 </Alert>
               </Box>
             )}
 
             {/* Data Table */}
-            <Box sx={{ width: '100%', overflow: 'hidden' }}>
+            <Box sx={{ 
+              width: '100%', 
+              overflow: 'hidden',
+              position: 'relative'
+            }}>
               {!error && (
-                <TableContainer component={Paper} elevation={0} sx={{
-                  maxHeight: 'calc(100vh - 250px)', 
-                  borderRadius: 0,
-                  borderRight: isFormOnlyUser ? '3px solid #999' : 'none', // Thicker right border
-                  borderLeft: isFormOnlyUser ? '3px solid #999' : 'none', // Thicker left border
-                  '& .MuiTableCell-head': {
-                    fontWeight: 'bold',
-                    backgroundColor: isFormOnlyUser ? '#e9ecef' : 'action.hover', // Header color
-                    borderBottom: '2px solid',
-                    borderColor: 'divider',
-                  },
-                  '& .MuiTableRow-root:nth-of-type(odd)': { 
-                    backgroundColor: 'action.hover',
-                  },
-                  '& .MuiTableCell-root': {
-                    borderBottom: '1px solid',
-                    borderColor: 'divider',
-                    padding: '12px 16px', 
-                    borderRight: isFormOnlyUser ? '1px solid #dee2e6' : 'none', // Vertical line
-                    borderLeft: isFormOnlyUser ? '1px solid #dee2e6' : 'none', // Vertical line
-                  },
-                  '& .MuiTableCell-root:last-child': {
-                    borderRight: 'none',
-                  },
-                  '& .MuiTableCell-root:first-of-type': {
-                    borderLeft: 'none',
-                  }                }}>
-                  <Table stickyHeader aria-label="submissions table" sx={{ tableLayout: 'fixed' }}>
-                    <TableHead>
-                      <TableRow>
-                        
-                        {columns.map((col) => (
-                          <TableCell key={col.ColId} sx={{ minWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {col.ColumnName}
-                          </TableCell>
-                        ))}
-                        <TableCell width="120" align="center">Actions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {submissions.length > 0 ? (
-                        submissions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((submission) => (
-                          <TableRow key={submission.SubmissionId} hover>
-                            
-                            {columns.map((col) => (
-                              <TableCell key={col.ColId}>
-                                {renderCellContent(col, submission)}
-                              </TableCell>
-                            ))}
-                            <TableCell align="center">
-                                <Tooltip title="View details">
-                                  <IconButton 
-                                    size="small" 
-                                    onClick={() => handleViewClick(submission)}
-                                    sx={{ color: 'primary.main', mr: 1 }}
-                                  >
-                                    <Visibility fontSize="small" />
-                                  </IconButton>
-                                </Tooltip>
-                              <Tooltip title="Edit submission">
-                                <IconButton 
-                                  size="small" 
-                                  onClick={() => handleEditClick(submission)}
-                                  sx={{ color: 'secondary.main' }}
-                                >
-                                  <Edit fontSize="small"/>
-                                </IconButton>
+                <>
+                  <TableContainer 
+                    component={Paper} 
+                    elevation={0} 
+                    sx={{
+                      maxHeight: isMobile ? 'calc(100vh - 200px)' : 'calc(100vh - 300px)',
+                      borderRadius: 0,
+                      border: isFormOnlyUser ? `2px solid ${alpha(theme.palette.divider, 0.3)}` : 'none',
+                      background: `linear-gradient(to bottom, ${theme.palette.background.paper} 0%, ${alpha(theme.palette.background.default, 0.5)} 100%)`,
+                      '& .MuiTableCell-head': {
+                        fontWeight: 'bold',
+                        backgroundColor: isFormOnlyUser 
+                          ? alpha(theme.palette.primary.main, 0.1) 
+                          : alpha(theme.palette.primary.main, 0.05),
+                        borderBottom: '2px solid',
+                        borderColor: 'divider',
+                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                        py: { xs: 1, sm: 1.5 },
+                        px: { xs: 0.5, sm: 2 },
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1
+                      },
+                      '& .MuiTableRow-root:nth-of-type(odd)': { 
+                        backgroundColor: alpha(theme.palette.primary.main, 0.02),
+                      },
+                      '& .MuiTableRow-root:hover': {
+                        backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                        transition: 'background-color 0.2s ease'
+                      },
+                      '& .MuiTableCell-root': {
+                        borderBottom: '1px solid',
+                        borderColor: alpha(theme.palette.divider, 0.3),
+                        padding: { xs: '8px 4px', sm: '12px 16px' },
+                        fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                      },
+                      '& .MuiTableCell-body': {
+                        maxWidth: isMobile ? 120 : 200,
+                        minWidth: isMobile ? 80 : 100
+                      }
+                    }}
+                  >
+                    <Table 
+                      stickyHeader 
+                      aria-label="submissions table" 
+                      sx={{ 
+                        tableLayout: isMobile ? 'auto' : 'fixed',
+                        minWidth: isMobile ? 600 : '100%'
+                      }}
+                    >
+                      <TableHead>
+                        <TableRow>
+                          {/* Show only key columns in mobile view */}
+                          {!isMobile && columns.map((col) => (
+                            <TableCell 
+                              key={col.ColId} 
+                              sx={{ 
+                                minWidth: 120,
+                                maxWidth: 200,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              <Tooltip title={col.ColumnName} arrow>
+                                <Typography variant="subtitle2" noWrap>
+                                  {col.ColumnName}
+                                </Typography>
                               </Tooltip>
                             </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={columns.length + 1} align="center" sx={{ p: 4 }}>
-                            <Typography variant="h6" color="text.secondary">No submissions yet</Typography>
+                          ))}
+                          
+                          {/* In mobile view, show only 1-2 key columns and actions */}
+                          {isMobile && columns.slice(0, 2).map((col) => (
+                            <TableCell 
+                              key={col.ColId} 
+                              sx={{ 
+                                minWidth: 100,
+                                maxWidth: 150,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              <Typography variant="subtitle2" noWrap fontSize="0.75rem">
+                                {col.ColumnName}
+                              </Typography>
+                            </TableCell>
+                          ))}
+                          
+                          <TableCell 
+                            width={isMobile ? 80 : 120} 
+                            align="center"
+                            sx={{
+                              minWidth: isMobile ? 80 : 120
+                            }}
+                          >
+                            <Typography variant="subtitle2" fontSize={isMobile ? "0.75rem" : "0.875rem"}>
+                              Actions
+                            </Typography>
                           </TableCell>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                      </TableHead>
+                      <TableBody>
+                        {submissions.length > 0 ? (
+                          submissions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((submission) => (
+                            <TableRow 
+                              key={submission.SubmissionId} 
+                              hover
+                              sx={{
+                                '&:last-child td': {
+                                  borderBottom: 'none'
+                                }
+                              }}
+                            >
+                              {/* Show all columns in desktop view */}
+                              {!isMobile && columns.map((col) => (
+                                <TableCell key={col.ColId}>
+                                  {renderCellContent(col, submission)}
+                                </TableCell>
+                              ))}
+                              
+                              {/* Show only 1-2 key columns in mobile view */}
+                              {isMobile && columns.slice(0, 2).map((col) => (
+                                <TableCell key={col.ColId}>
+                                  {renderCellContent(col, submission)}
+                                </TableCell>
+                              ))}
+                              
+                              <TableCell align="center">
+                                <Stack 
+                                  direction="row" 
+                                  spacing={isMobile ? 0.5 : 1} 
+                                  justifyContent="center"
+                                  alignItems="center"
+                                >
+                                  <Tooltip title="View details">
+                                    <IconButton 
+                                      size="small" 
+                                      onClick={() => handleViewClick(submission)}
+                                      sx={{ 
+                                        color: 'primary.main',
+                                        backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                                        '&:hover': {
+                                          backgroundColor: alpha(theme.palette.primary.main, 0.2),
+                                        }
+                                      }}
+                                    >
+                                      <Visibility fontSize={isMobile ? "small" : "medium"} />
+                                    </IconButton>
+                                  </Tooltip>
+                                  <Tooltip title="Edit submission">
+                                    <IconButton 
+                                      size="small" 
+                                      onClick={() => handleEditClick(submission)}
+                                      sx={{ 
+                                        color: 'secondary.main',
+                                        backgroundColor: alpha(theme.palette.secondary.main, 0.1),
+                                        '&:hover': {
+                                          backgroundColor: alpha(theme.palette.secondary.main, 0.2),
+                                        }
+                                      }}
+                                    >
+                                      <Edit fontSize={isMobile ? "small" : "medium"}/>
+                                    </IconButton>
+                                  </Tooltip>
+                                </Stack>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell 
+                              colSpan={(isMobile ? 3 : columns.length + 1)} 
+                              align="center" 
+                              sx={{ 
+                                p: 4,
+                                borderBottom: 'none'
+                              }}
+                            >
+                              <Box sx={{ textAlign: 'center', py: 4 }}>
+                                <Typography 
+                                  variant="h6" 
+                                  color="text.secondary"
+                                  sx={{ 
+                                    fontSize: { xs: '1rem', sm: '1.25rem' },
+                                    mb: 1
+                                  }}
+                                >
+                                  No submissions yet
+                                </Typography>
+                                <Typography 
+                                  variant="body2" 
+                                  color="text.secondary"
+                                  sx={{ opacity: 0.7 }}
+                                >
+                                  Submit data to see it appear here
+                                </Typography>
+                              </Box>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  
+                  {/* Pagination */}
+                  {submissions.length > 0 && (
+                    <TablePagination
+                      rowsPerPageOptions={[10, 25, 100]}
+                      component="div"
+                      count={submissions.length}
+                      rowsPerPage={rowsPerPage}
+                      page={page}
+                      onPageChange={handleChangePage}
+                      onRowsPerPageChange={handleChangeRowsPerPage}
+                      sx={{
+                        borderTop: `1px solid ${theme.palette.divider}`,
+                        '& .MuiTablePagination-toolbar': {
+                          padding: { xs: 1, sm: 2 },
+                          flexWrap: isMobile ? 'wrap' : 'nowrap'
+                        },
+                        '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+                          fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                        }
+                      }}
+                    />
+                  )}
+                </>
               )}
             </Box>
-            <TablePagination
-              rowsPerPageOptions={[10, 25, 100]}
-              component="div"
-              count={submissions.length}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={handleChangePage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-            />
           </CardContent>
         </Card>
 
         {/* View Dialog */}
-        <Dialog open={dialogOpen} onClose={handleDialogClose} maxWidth="md">
-            <DialogTitle>
+        <Dialog 
+          open={dialogOpen} 
+          onClose={handleDialogClose} 
+          maxWidth="md"
+          fullWidth
+          fullScreen={isMobile}
+          PaperProps={{
+            sx: {
+              borderRadius: isMobile ? 0 : 2,
+              background: theme.palette.background.paper,
+              boxShadow: `0 20px 60px ${alpha(theme.palette.common.black, 0.3)}`,
+              border: `1px solid ${alpha(theme.palette.divider, 0.2)}`
+            }
+          }}
+        >
+          <DialogTitle
+            sx={{
+              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+              color: 'primary.contrastText',
+              py: 2,
+              position: 'relative'
+            }}
+          >
+            <Typography variant="h6" component="div" fontWeight="600">
               Submission Details (ID: #{selectedSubmission?.SubmissionId})
-            </DialogTitle>
-            <DialogContent dividers>
-              {selectedSubmission && (
-                <Grid container spacing={2}>
-                  {columns.map((col) => (
-                    <Grid xs={12} sm={6} key={col.ColId}>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        {col.ColumnName}
-                      </Typography>
+            </Typography>
+            <IconButton
+              aria-label="close"
+              onClick={handleDialogClose}
+              sx={{
+                position: 'absolute',
+                right: 8,
+                top: 8,
+                color: 'primary.contrastText'
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent 
+            dividers 
+            sx={{ 
+              p: 0,
+              background: theme.palette.background.paper
+            }}
+          >
+            {selectedSubmission && (
+              <Box sx={{ p: { xs: 2, sm: 3 } }}>
+                {columns.map((col, index) => (
+                  <React.Fragment key={col.ColId}>
+                    <Box sx={{ 
+                      pt: index === 0 ? 0 : 2, 
+                      pb: 2,
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        backgroundColor: alpha(theme.palette.primary.main, 0.02),
+                        borderRadius: 1,
+                        px: 2,
+                        mx: -2
+                      }
+                    }}>
                       <Typography 
-                        variant="body1" 
+                        variant="subtitle2" 
+                        color="text.secondary"
                         sx={{ 
-                          mt: 1, // Increased from 0.5 for better separation
-                          whiteSpace: 'normal', 
-                          wordBreak: 'break-word' 
+                          fontWeight: 600,
+                          fontSize: { xs: '0.875rem', sm: '1rem' },
+                          mb: 1
                         }}
                       >
-                        {renderCellContent(col, selectedSubmission, false)}
+                        {col.ColumnName}
                       </Typography>
-                    </Grid>
-                  ))}
-                </Grid>
-              )}
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleDialogClose}>Close</Button>
-            </DialogActions>
-          </Dialog>
+                      <Box sx={{ 
+                        minHeight: 24,
+                        display: 'flex',
+                        alignItems: 'flex-start'
+                      }}>
+                        {renderCellContent(col, selectedSubmission, false)}
+                      </Box>
+                    </Box>
+                    {index < columns.length - 1 && (
+                      <Divider 
+                        sx={{ 
+                          mx: { xs: -2, sm: -3 },
+                          borderBottomWidth: 1,
+                          borderColor: alpha(theme.palette.divider, 0.5)
+                        }} 
+                      />
+                    )}
+                  </React.Fragment>
+                ))}
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions sx={{ p: 2, gap: 1, background: theme.palette.background.paper }}>
+            <Button 
+              onClick={handleDialogClose}
+              variant="contained"
+              fullWidth={isMobile}
+              sx={{
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600
+              }}
+            >
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         {/* Edit Dialog */}
-        <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm">
-          <DialogTitle>
-            Edit Submission (ID: #{editSubmission?.SubmissionId})
+        <Dialog 
+          open={editDialogOpen} 
+          onClose={() => setEditDialogOpen(false)} 
+          maxWidth="sm"
+          fullWidth
+          fullScreen={isMobile}
+          PaperProps={{
+            sx: {
+              borderRadius: isMobile ? 0 : 2,
+              background: theme.palette.background.paper,
+              boxShadow: `0 20px 60px ${alpha(theme.palette.common.black, 0.3)}`,
+              border: `1px solid ${alpha(theme.palette.divider, 0.2)}`
+            }
+          }}
+        >
+          <DialogTitle
+            sx={{
+              background: `linear-gradient(135deg, ${theme.palette.secondary.main} 0%, ${theme.palette.secondary.dark} 100%)`,
+              color: 'secondary.contrastText',
+              py: 2,
+              position: 'relative'
+            }}
+          >
+            <Typography variant="h6" component="div" fontWeight="600">
+              Edit Submission (ID: #{editSubmission?.SubmissionId})
+            </Typography>
+            <IconButton
+              aria-label="close"
+              onClick={() => setEditDialogOpen(false)}
+              sx={{
+                position: 'absolute',
+                right: 8,
+                top: 8,
+                color: 'secondary.contrastText'
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
           </DialogTitle>
-          <DialogContent dividers>
-            <Box component="form" id="edit-submission-form" onSubmit={handleEditSubmit}>
+          <DialogContent 
+            dividers 
+            sx={{ 
+              p: 0,
+              background: theme.palette.background.paper
+            }}
+          >
+            <Box 
+              component="form" 
+              id="edit-submission-form" 
+              onSubmit={handleEditSubmit}
+              sx={{ p: { xs: 2, sm: 3 } }}
+            >
               {editSubmission && columns.map(col => (
                 <Box key={col.ColId}>
                   {renderEditInput(col)}
@@ -914,8 +1406,18 @@ const ViewSubmissions = () => {
               ))}
             </Box>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setEditDialogOpen(false)} disabled={saving}>
+          <DialogActions sx={{ p: 2, gap: 1, background: theme.palette.background.paper }}>
+            <Button 
+              onClick={() => setEditDialogOpen(false)} 
+              disabled={saving}
+              variant="outlined"
+              fullWidth={isMobile}
+              sx={{
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600
+              }}
+            >
               Cancel
             </Button>
             <Button 
@@ -923,16 +1425,50 @@ const ViewSubmissions = () => {
               type="submit"
               form="edit-submission-form"
               disabled={saving}
+              fullWidth={isMobile}
+              sx={{
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                '&:hover': {
+                  background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
+                }
+              }}
             >
-              {saving ? <CircularProgress size={24} /> : 'Update'}
+              {saving ? <CircularProgress size={24} color="inherit" /> : 'Update Submission'}
             </Button>
           </DialogActions>
         </Dialog>
 
         {/* Photo View Dialog */}
-        <Dialog open={photoDialogOpen} onClose={handlePhotoDialogClose} maxWidth="sm">
-          <DialogTitle>
-            Photo Preview
+        <Dialog 
+          open={photoDialogOpen} 
+          onClose={handlePhotoDialogClose} 
+          maxWidth="md"
+          fullWidth
+          fullScreen={isMobile}
+          PaperProps={{
+            sx: {
+              borderRadius: isMobile ? 0 : 2,
+              overflow: 'hidden',
+              background: theme.palette.background.paper,
+              boxShadow: `0 20px 60px ${alpha(theme.palette.common.black, 0.3)}`,
+              border: `1px solid ${alpha(theme.palette.divider, 0.2)}`
+            }
+          }}
+        >
+          <DialogTitle
+            sx={{
+              background: `linear-gradient(135deg, ${theme.palette.grey[800]} 0%, ${theme.palette.grey[900]} 100%)`,
+              color: 'common.white',
+              py: 2,
+              position: 'relative'
+            }}
+          >
+            <Typography variant="h6" component="div" fontWeight="600">
+              Photo Preview
+            </Typography>
             <IconButton
               aria-label="close"
               onClick={handlePhotoDialogClose}
@@ -940,21 +1476,68 @@ const ViewSubmissions = () => {
                 position: 'absolute',
                 right: 8,
                 top: 8,
-                color: (theme) => theme.palette.grey[500],
+                color: 'common.white'
               }}
             >
               <CloseIcon />
             </IconButton>
           </DialogTitle>
-          <DialogContent dividers>
+          <DialogContent 
+            dividers 
+            sx={{ 
+              p: 0, 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              minHeight: 400,
+              background: theme.palette.grey[100]
+            }}
+          >
             {selectedPhotoUrl ? (
-              <img src={selectedPhotoUrl} alt="Submission Photo" style={{ maxWidth: '100%', height: 'auto' }} />
+              <Box sx={{ 
+                p: 2,
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                background: theme.palette.grey[100]
+              }}>
+                <img 
+                  src={selectedPhotoUrl} 
+                  alt="Submission Photo" 
+                  style={{ 
+                    maxWidth: '100%', 
+                    maxHeight: '70vh',
+                    height: 'auto',
+                    borderRadius: 8,
+                    boxShadow: `0 8px 32px ${alpha(theme.palette.common.black, 0.3)}`
+                  }} 
+                />
+              </Box>
             ) : (
-              <Typography>No photo available.</Typography>
+              <Typography 
+                variant="body1" 
+                color="text.secondary"
+                sx={{ p: 4 }}
+              >
+                No photo available.
+              </Typography>
             )}
           </DialogContent>
-          <DialogActions>
-            <Button onClick={handlePhotoDialogClose}>Close</Button>
+          <DialogActions sx={{ p: 2, background: theme.palette.background.paper }}>
+            <Button 
+              onClick={handlePhotoDialogClose}
+              variant="contained"
+              fullWidth={isMobile}
+              sx={{
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600
+              }}
+            >
+              Close
+            </Button>
           </DialogActions>
         </Dialog>
       </Container>
