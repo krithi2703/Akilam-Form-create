@@ -540,7 +540,7 @@ const ViewSubmissions = () => {
               sx={{ mb: 2 }}
               required={col.IsValid}
               error={isError}
-              helperText={errorMessage || 'Only 2-page PDFs allowed'}
+              helperText={errorMessage || 'Only 1 or 2 page PDFs allowed'}
               InputProps={{
                 readOnly: col.IsReadOnly,
               }}

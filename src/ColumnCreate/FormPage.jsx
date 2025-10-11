@@ -748,7 +748,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             variant="outlined" sx={{ mb: responsiveSpacing }}
             required={column.IsValid}
             error={isError}
-            helperText={errorMessage || 'Only 2-page PDFs allowed'}
+            helperText={errorMessage || 'Only 1 or 2 page PDFs allowed'}
             size={isMobile ? "small" : "medium"}
           />
         );
