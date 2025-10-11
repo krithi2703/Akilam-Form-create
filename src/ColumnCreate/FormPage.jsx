@@ -327,6 +327,13 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
       }
     }
 
+    // --- ADD THIS CONSOLE.LOG ---
+    console.log("FormData being sent:");
+    for (let pair of formData.entries()) {
+        console.log(pair[0]+ ': ' + pair[1]); 
+    }
+    // --- END ADDITION ---
+
     try {
       await api.post("/formvalues/submit", formData, {
         headers: {
@@ -357,10 +364,21 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
       handleOpen(true);
 
     } catch (err) {
-      if (err.response?.status !== 401 && err.response?.status !== 403) {
-        toast.error(err.response?.data?.message || "Failed to submit form.");
+      // --- MODIFY THIS CATCH BLOCK ---
+      if (err.response) {
+        console.error("Backend Error Response:", err.response.data);
+        console.error("Backend Error Status:", err.response.status);
+        console.error("Backend Error Headers:", err.response.headers);
+        toast.error(err.response.data?.message || "Failed to submit form. Check console for details.");
+      } else if (err.request) {
+        console.error("No response received:", err.request);
+        toast.error("No response from server. Check network connection.");
+      } else {
+        console.error("Error setting up request:", err.message);
+        toast.error("An unexpected error occurred. Check console for details.");
       }
       throw err;
+      // --- END MODIFICATION ---
     } finally {
       setIsSubmitting(false);
     }
