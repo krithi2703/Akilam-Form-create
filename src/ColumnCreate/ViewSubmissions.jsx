@@ -623,11 +623,11 @@ const ViewSubmissions = () => {
     toast.success("Data exported successfully!");
   };
 
-  const renderCellContent = (col, submission) => {
+  const renderCellContent = (col, submission, truncate = true) => {
     const value = submission.values[col.ColId];
     if (!value) {
       return (
-        <Typography variant="body2" color="text.secondary" fontStyle="italic">
+        <Typography variant="body2" color="text.secondary" fontStyle="italic" sx={truncate ? { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } : {}}>
           Not provided
         </Typography>
       );
@@ -643,10 +643,14 @@ const ViewSubmissions = () => {
       const fileHref = value.startsWith('http://') || value.startsWith('https://')
         ? value
         : `${getBaseUrl()}${value}`;
-      return <a href={fileHref} target="_blank" rel="noopener noreferrer">View File</a>;
+      return <a href={fileHref} target="_blank" rel="noopener noreferrer" style={truncate ? { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' } : { display: 'block' }}>View File</a>;
     }
 
-    return value;
+    return (
+      <Typography variant="body2" sx={truncate ? { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } : {}}>
+        {value}
+      </Typography>
+    );
   };
 
   if (loading) {
@@ -795,12 +799,14 @@ const ViewSubmissions = () => {
                   '& .MuiTableCell-root:first-of-type': {
                     borderLeft: 'none',
                   }                }}>
-                  <Table stickyHeader aria-label="submissions table">
+                  <Table stickyHeader aria-label="submissions table" sx={{ tableLayout: 'fixed' }}>
                     <TableHead>
                       <TableRow>
                         
                         {columns.map((col) => (
-                          <TableCell key={col.ColId}>{col.ColumnName}</TableCell>
+                          <TableCell key={col.ColId} sx={{ minWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {col.ColumnName}
+                          </TableCell>
                         ))}
                         <TableCell width="120" align="center">Actions</TableCell>
                       </TableRow>
@@ -874,8 +880,15 @@ const ViewSubmissions = () => {
                       <Typography variant="subtitle2" color="text.secondary">
                         {col.ColumnName}
                       </Typography>
-                      <Typography variant="body1" sx={{ mt: 0.5 }}>
-                        {renderCellContent(col, selectedSubmission)}
+                      <Typography 
+                        variant="body1" 
+                        sx={{ 
+                          mt: 1, // Increased from 0.5 for better separation
+                          whiteSpace: 'normal', 
+                          wordBreak: 'break-word' 
+                        }}
+                      >
+                        {renderCellContent(col, selectedSubmission, false)}
                       </Typography>
                     </Grid>
                   ))}
