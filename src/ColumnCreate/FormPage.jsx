@@ -482,6 +482,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
   }
 
   const renderInput = (column) => {
+
     const { DataType, ColumnName, ColId } = column;
     const value = formValues[ColId] || "";
     const isError = !!validationErrors[ColId];
