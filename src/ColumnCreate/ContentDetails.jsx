@@ -38,7 +38,7 @@ export default function ContentDetails({ isFormOnlyUser }) {
                 const response = await api.get(url);
                 // Check if content is empty for form-only user
                 if (isFormOnlyUser && (!response.data || (response.data.front.length === 0 && response.data.back.length === 0))) {
-                    navigate(`/form/view/${formId}`); // Navigate to FormPage if no content
+                    setError('No content available for this form. Please proceed to the form.');
                     return; // Stop further processing in this component
                 }
                 setContent(response.data);
@@ -47,7 +47,7 @@ export default function ContentDetails({ isFormOnlyUser }) {
                 // In this case, for form-only user, we should also navigate to FormPage.
                 console.error("Error fetching content details:", err);
                 if (isFormOnlyUser) {
-                    navigate(`/form/view/${formId}`);
+                    setError('Failed to fetch content details for this form. Please proceed to the form.');
                 } else {
                     setError(err.response?.data?.message || err.message || 'Failed to fetch content details.');
                 }
