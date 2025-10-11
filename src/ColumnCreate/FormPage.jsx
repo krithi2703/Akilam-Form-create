@@ -95,7 +95,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
   const { open, handleOpen, handleClose } = useDialog();
 
   const handleLogout = () => {
-    console.log("Logout clicked - formId:", formId);
+    //console.log("Logout clicked - formId:", formId);
     sessionStorage.clear();
     if (setIsLoggedIn) {
       setIsLoggedIn(false);
@@ -328,9 +328,9 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
     }
 
     // --- ADD THIS CONSOLE.LOG ---
-    console.log("FormData being sent:");
+    //console.log("FormData being sent:");
     for (let pair of formData.entries()) {
-        console.log(pair[0]+ ': ' + pair[1]); 
+        //console.log(pair[0]+ ': ' + pair[1]); 
     }
     // --- END ADDITION ---
 
@@ -342,13 +342,13 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
       });
       toast.success("Form submitted successfully!");
 
-      console.log("Attempting to send WhatsApp message...");
-      console.log("User ID:", userId);
-      console.log("Form Details:", formDetails);
+      // console.log("Attempting to send WhatsApp message...");
+      // console.log("User ID:", userId);
+      // console.log("Form Details:", formDetails);
 
       if (userId && formDetails && formDetails.formName) {
         const message = `Your form "${formDetails.formName}" has been submitted successfully.`;
-        console.log("Message:", message);
+        // console.log("Message:", message);
         try {
           await sendWhatsAppMessage(userId, message);
           toast.success("WhatsApp notification sent.");
@@ -357,7 +357,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
           toast.error("Failed to send WhatsApp notification.");
         }
       } else {
-        console.log("Cannot send WhatsApp message because userId or formName is missing.");
+        // console.log("Cannot send WhatsApp message because userId or formName is missing.");
       }
 
       setFormValues({});

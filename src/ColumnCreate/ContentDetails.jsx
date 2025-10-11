@@ -71,7 +71,7 @@ export default function ContentDetails({ isFormOnlyUser }) {
                     if (response.data) {
                         setFormName(response.data.FormName);
                         setFormDetails(response.data); // Set full form details
-                        console.log("Form Details:", response.data); // ADD THIS LINE
+                       // console.log("Form Details:", response.data); // ADD THIS LINE
                     }
                 } catch (error) {
                     console.error("Error fetching form details:", error);

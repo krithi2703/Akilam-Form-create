@@ -302,7 +302,7 @@ const ViewSubmissions = () => {
     }
 
     setSaving(true);
-    console.log("Client sending values for update:", editSubmission.values);
+    //console.log("Client sending values for update:", editSubmission.values);
     try {
       const submissionId = editSubmission.SubmissionId.toString().replace(':', '/');
       const formData = new FormData();
@@ -337,13 +337,13 @@ const ViewSubmissions = () => {
 
       toast.success('Submission updated successfully!');
 
-      console.log("Attempting to send WhatsApp message for update...");
-      console.log("Edit Submission Data:", editSubmission);
-      console.log("Form Name:", formName);
+            // console.log("Attempting to send WhatsApp message for update...");
+            // console.log("Edit Submission Data:", editSubmission);
+            // console.log("Form Name:", formName);
 
       if (editSubmission.Emailormobileno && formName) {
         const message = `Your form "${formName}" has been updated successfully.`;
-        console.log("Message:", message);
+        // console.log("Message:", message);
         try {
           await sendWhatsAppMessage(editSubmission.Emailormobileno, message);
           toast.success("WhatsApp notification sent.");
@@ -352,7 +352,7 @@ const ViewSubmissions = () => {
           toast.error("Failed to send WhatsApp notification.");
         }
       } else {
-        console.log("Cannot send WhatsApp message because Emailormobileno or formName is missing.");
+        // console.log("Cannot send WhatsApp message because Emailormobileno or formName is missing.");
       }
 
       setEditDialogOpen(false);

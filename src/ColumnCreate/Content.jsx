@@ -18,9 +18,9 @@ export default function Content() {
     const userId = sessionStorage.getItem('userId'); // Get userId
 
     useEffect(() => {
-        console.log('Content.jsx received state:', location.state);
-        console.log('Passed Form ID:', passedFormId);
-        console.log('Passed Form Name:', passedFormName);
+        // console.log('Content.jsx received state:', location.state);
+        // console.log('Passed Form ID:', passedFormId);
+        // console.log('Passed Form Name:', passedFormName);
 
         if (passedFormId) {
             setActualFormId(passedFormId);
