@@ -519,7 +519,7 @@ const ViewSubmissions = () => {
             sx={{ mb: 2 }}
             required={col.IsValid}
             error={isError}
-            helperText={errorMessage}
+            helperText={errorMessage || (col.Validation === 'Text Field: Max 5000 Characters (approx. 2 pages)' ? 'Max 5000 Characters (approx. 2 pages)' : '')}
             InputProps={{
               readOnly: col.IsReadOnly,
             }}
@@ -540,7 +540,7 @@ const ViewSubmissions = () => {
               sx={{ mb: 2 }}
               required={col.IsValid}
               error={isError}
-              helperText={errorMessage || 'Only 2-3 page PDFs allowed'}
+              helperText={errorMessage || 'Only 2-page PDFs allowed'}
               InputProps={{
                 readOnly: col.IsReadOnly,
               }}
@@ -589,7 +589,7 @@ const ViewSubmissions = () => {
             sx={{ mb: 2 }}
             required={col.IsValid}
             error={isError}
-            helperText={errorMessage}
+            helperText={errorMessage || (col.Validation === 'Text Field: Max 5000 Characters (approx. 2 pages)' ? 'Max 5000 Characters (approx. 2 pages)' : '')}
             InputProps={{
               readOnly: col.IsReadOnly,
             }}

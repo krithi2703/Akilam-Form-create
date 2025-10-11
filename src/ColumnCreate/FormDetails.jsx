@@ -268,7 +268,14 @@ const FormDetails = () => {
 
         // --- Fetch available validation types ---
         const validationTypesResponse = await api.get('/validation/types');
-        setAvailableValidations(validationTypesResponse.data);
+        const fetchedValidations = validationTypesResponse.data;
+
+        // Add a placeholder validation for "2 pages only allowed" for text fields
+        const twoPagesValidation = {
+          Id: 'TEXT_MAX_5000_CHARS',
+          ValidationList: 'Text Field: Max 5000 Characters (approx. 2 pages)'
+        };
+        setAvailableValidations([...fetchedValidations, twoPagesValidation]);
 
       } catch (err) {
         setError(err.message || 'Failed to fetch initial data.');
