@@ -282,7 +282,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
     let value;
     const file = event.target.files ? event.target.files[0] : null;
 
-    if (type === "checkbox") {
+    if (type === "boolean") {
       value = event.target.checked;
     } else if (type === "file" || type === "photo") {
       if (file) {
@@ -310,11 +310,20 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
     formData.append("formId", formId);
 
     for (const colId in formValues) {
+      const value = formValues[colId];
       const column = columns.find(c => c.ColId.toString() === colId);
+
       if (column && (column.DataType.toLowerCase() === 'file' || column.DataType.toLowerCase() === 'photo')) {
-        formData.append(colId, formValues[colId]);
-      } else {
-        formData.append(colId, formValues[colId]);
+        formData.append(colId, value); // File objects are handled correctly
+      } else if (Array.isArray(value)) {
+        // Handle arrays (e.g., from multi-select checkboxes)
+        value.forEach(item => formData.append(colId, item));
+      } else if (typeof value === 'boolean') {
+        // Convert booleans to '1' or '0'
+        formData.append(colId, value ? '1' : '0');
+      }
+      else {
+        formData.append(colId, value); // Other values (strings, numbers)
       }
     }
 
@@ -543,55 +552,77 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             size={isMobile ? "small" : "medium"}
           />
         );
-      case "boolean":
-      case "flg":
-      case "checkbox":
-        return (
-          <FormControl fullWidth sx={{ mb: responsiveSpacing }} error={isError}>
-            <FormLabel
-              component="legend"
-              required={column.IsValid}
-              sx={{ fontSize: responsiveFontSize }}
-            >
-              {ColumnName}
-            </FormLabel>
-            <Box sx={{
-              display: 'flex',
-              flexDirection: isMobile ? 'column' : 'row',
-              flexWrap: 'wrap',
-              gap: 1
-            }}>
-              {options.map((option) => (
+            case "boolean":
+            case "flg":
+              return (
                 <FormControlLabel
-                  key={option}
                   control={
                     <Checkbox
-                      id={`${ColId}-${option}`}
+                      id={ColId}
                       name={ColId}
-                      checked={formValues[ColId]?.includes(option) || false}
-                      onChange={(e) => {
-                        const currentValues = formValues[ColId] || [];
-                        const newValues = e.target.checked
-                          ? [...currentValues, option]
-                          : currentValues.filter((val) => val !== option);
-                        setFormValues((prev) => ({ ...prev, [ColId]: newValues }));
-                      }}
+                      checked={!!formValues[ColId]} // Convert to boolean
+                      onChange={(e) => handleInputChange(ColId, e, 'boolean')} // Use handleInputChange for boolean
                       size={isMobile ? "small" : "medium"}
-                      disabled={column.IsReadOnly} // <--- Add this
+                      disabled={column.IsReadOnly}
                     />
                   }
                   label={
                     <Typography sx={{ fontSize: responsiveFontSize }}>
-                      {option}
+                      {ColumnName}
                     </Typography>
                   }
+                  sx={{ mb: responsiveSpacing }}
+                  required={column.IsValid}
+                  error={isError}
+                  helperText={errorMessage}
                 />
-              ))}
-            </Box>
-            {isError && <FormHelperText>{errorMessage}</FormHelperText>}
-          </FormControl>
-        );
-      case "select":
+              );
+            case "checkbox": // This case is for multi-select checkboxes
+              return (
+                <FormControl fullWidth sx={{ mb: responsiveSpacing }} error={isError}>
+                  <FormLabel 
+                    component="legend" 
+                    required={column.IsValid}
+                    sx={{ fontSize: responsiveFontSize }}
+                  >
+                    {ColumnName}
+                  </FormLabel>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexDirection: isMobile ? 'column' : 'row',
+                    flexWrap: 'wrap',
+                    gap: 1
+                  }}>
+                    {options.map((option) => (
+                      <FormControlLabel
+                        key={option}
+                        control={
+                          <Checkbox
+                            id={`${ColId}-${option}`}
+                            name={ColId}
+                            checked={formValues[ColId]?.includes(option) || false}
+                            onChange={(e) => {
+                              const currentValues = formValues[ColId] || [];
+                              const newValues = e.target.checked
+                                ? [...currentValues, option]
+                                : currentValues.filter((val) => val !== option);
+                              setFormValues((prev) => ({ ...prev, [ColId]: newValues }));
+                            }}
+                            size={isMobile ? "small" : "medium"}
+                            disabled={column.IsReadOnly}
+                          />
+                        }
+                        label={
+                          <Typography sx={{ fontSize: responsiveFontSize }}>
+                            {option}
+                          </Typography>
+                        }
+                      />
+                    ))}
+                  </Box>
+                  {isError && <FormHelperText>{errorMessage}</FormHelperText>}
+                </FormControl>
+              );      case "select":
         return (
           <FormControl fullWidth sx={{ mb: responsiveSpacing }} error={isError}>
             <InputLabel
