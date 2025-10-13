@@ -719,7 +719,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             multiline
             rows={4}
             InputProps={{
-              readOnly: column.IsReadOnly, // <--- Add this
+              readOnly: column.IsReadOnly,
               sx: { fontSize: responsiveFontSize }
             }}
             InputLabelProps={{
@@ -729,6 +729,8 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             required={column.IsValid}
             error={isError}
             helperText={errorMessage || (column.Validation === 'Text Field: Max 5000 Characters (approx. 2 pages)' ? 'Max 5000 Characters (approx. 2 pages)' : '')}
+            value={value}
+            onChange={(e) => handleInputChange(ColId, e)}
             sx={{ mb: responsiveSpacing }}
           />);
       case "file":
@@ -785,9 +787,10 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             id={ColId}
             name={ColId}
             label={ColumnName}
-            value={value}
-            onChange={(e) => handleInputChange(ColId, e)}
-            variant="outlined"
+            onChange={(e) => {
+              console.log('Textarea onChange fired for ColId:', ColId, ', value:', e.target.value);
+              handleInputChange(ColId, e);
+            }}
             sx={{ mb: responsiveSpacing }}
             required={column.IsValid}
             error={isError}

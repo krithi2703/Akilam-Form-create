@@ -183,14 +183,14 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
       }
 
       const phoneNumber = identifier.startsWith('+91') ? identifier : `+91${identifier}`;
-      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      // const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-      //const otpCode = "123456";
+      const otpCode = "123456";
 
 
       // console.log("Generated OTP:", otpCode);
-       const message = `Your OTP is: ${otpCode}`;
-       await sendWhatsAppMessage(phoneNumber, message);
+      //  const message = `Your OTP is: ${otpCode}`;
+      //  await sendWhatsAppMessage(phoneNumber, message);
 
       sessionStorage.setItem('currentOtp', otpCode); 
 
