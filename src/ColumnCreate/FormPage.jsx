@@ -35,7 +35,8 @@ import {
   FormLabel,
   DialogActions,
   useMediaQuery,
-  useTheme
+  useTheme,
+  Divider
 } from "@mui/material";
 import {
   ArrowBack as ArrowBackIcon,
@@ -65,6 +66,9 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
+
+  // Responsive spacing and sizing
+  const responsiveSpacing = isMobile ? 2 : 3;
 
   const [formDetails, setFormDetails] = useState(null);
   const [columns, setColumns] = useState([]);
@@ -756,7 +760,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             size={isMobile ? "small" : "medium"}
           />
         );
-      case 'photo':
+      case "photo":
         return (
           <TextField
             fullWidth
@@ -780,6 +784,32 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             size={isMobile ? "small" : "medium"}
           />
         );
+      case "h1":
+      case "h2":
+      case "h3":
+      case "h4":
+      case "h5":
+      case "h6":
+        return (
+          <Typography
+            key={ColId}
+            variant={DataType.toLowerCase()}
+            sx={{ mb: 2, fontWeight: 'bold', textAlign: 'center' }}
+          >
+            {ColumnName}
+          </Typography>
+        );
+      case "p":
+        return (
+          <Typography
+            key={ColId}
+            variant="body1"
+            sx={{ mb: responsiveSpacing }}
+          >
+            {ColumnName}
+          </Typography>
+        );
+
       default:
         return (
           <TextField
@@ -1101,7 +1131,8 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
                 )}
 
                 <Box>
-                  {columns.map((col) => {
+                  {columns.map((col, index) => {
+                    const isHeading = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(col.DataType?.toLowerCase());
                     return (
                       <Box key={col.ColId}>{renderInput(col)}</Box>
                     );

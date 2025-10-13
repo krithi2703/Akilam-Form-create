@@ -528,6 +528,31 @@ const ViewSubmissions = () => {
             size={isMobile ? "small" : "medium"}
           />
         );
+      case "h1":
+      case "h2":
+      case "h3":
+      case "h4":
+      case "h5":
+      case "h6":
+        return (
+          <Typography
+            key={ColId}
+            variant={DataType.toLowerCase()}
+            sx={{ mb: 2, fontWeight: 'bold' }}
+          >
+            {ColumnName}
+          </Typography>
+        );
+      case "p":
+        return (
+          <Typography
+            key={ColId}
+            variant="body1"
+            sx={{ mb: 2 }}
+          >
+            {ColumnName}
+          </Typography>
+        );
       case 'file':
         return (
           <>
@@ -717,25 +742,51 @@ const ViewSubmissions = () => {
     // Truncate long text for table view
     const displayValue = truncate && value.length > 50 ? `${value.substring(0, 50)}...` : value;
 
-    return (
-      <Tooltip title={truncate && value.length > 50 ? value : ''} arrow>
-        <Typography 
-          variant="body2" 
-          sx={truncate ? { 
-            overflow: 'hidden', 
-            textOverflow: 'ellipsis', 
-            whiteSpace: 'nowrap',
-            fontSize: isMobile ? '0.75rem' : '0.875rem'
-          } : { 
-            whiteSpace: 'normal',
-            wordBreak: 'break-word',
-            fontSize: isMobile ? '0.75rem' : '0.875rem'
-          }}
-        >
-          {displayValue}
-        </Typography>
-      </Tooltip>
-    );
+    switch (col.DataType?.toLowerCase()) {
+      case "h1":
+      case "h2":
+      case "h3":
+      case "h4":
+      case "h5":
+      case "h6":
+        return (
+          <Typography
+            variant={col.DataType.toLowerCase()}
+            sx={{ mb: 2, fontWeight: 'bold', fontSize: isMobile ? '0.875rem' : '1rem' }}
+          >
+            {value}
+          </Typography>
+        );
+      case "p":
+        return (
+          <Typography
+            variant="body1"
+            sx={{ fontSize: isMobile ? '0.875rem' : '1rem' }}
+          >
+            {value}
+          </Typography>
+        );
+      default:
+        return (
+          <Tooltip title={truncate && value.length > 50 ? value : ''} arrow>
+            <Typography 
+              variant="body2" 
+              sx={truncate ? { 
+                overflow: 'hidden', 
+                textOverflow: 'ellipsis', 
+                whiteSpace: 'nowrap',
+                fontSize: isMobile ? '0.75rem' : '0.875rem'
+              } : { 
+                whiteSpace: 'normal',
+                wordBreak: 'break-word',
+                fontSize: isMobile ? '0.75rem' : '0.875rem'
+              }}
+            >
+              {displayValue}
+            </Typography>
+          </Tooltip>
+        );
+    }
   };
 
   if (loading) {
@@ -1163,49 +1214,43 @@ const ViewSubmissions = () => {
           >
             {selectedSubmission && (
               <Box sx={{ p: { xs: 2, sm: 3 } }}>
-                {columns.map((col, index) => (
-                  <React.Fragment key={col.ColId}>
-                    <Box sx={{ 
-                      pt: index === 0 ? 0 : 2, 
-                      pb: 2,
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
-                        backgroundColor: alpha(theme.palette.primary.main, 0.02),
-                        borderRadius: 1,
-                        px: 2,
-                        mx: -2
-                      }
-                    }}>
-                      <Typography 
-                        variant="subtitle2" 
-                        color="text.secondary"
-                        sx={{ 
-                          fontWeight: 600,
-                          fontSize: { xs: '0.875rem', sm: '1rem' },
-                          mb: 1
-                        }}
-                      >
-                        {col.ColumnName}
-                      </Typography>
+                {columns.map((col, index) => {
+                  const isHeading = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(col.DataType?.toLowerCase());
+                  return (
+                    <React.Fragment key={col.ColId}>
                       <Box sx={{ 
-                        minHeight: 24,
-                        display: 'flex',
-                        alignItems: 'flex-start'
+                        pt: index === 0 ? 0 : 2, 
+                        pb: 2,
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          backgroundColor: alpha(theme.palette.primary.main, 0.02),
+                          borderRadius: 1,
+                          px: 2,
+                          mx: -2
+                        }
                       }}>
-                        {renderCellContent(col, selectedSubmission, false)}
+                        <Typography 
+                          variant="subtitle2" 
+                          color="text.secondary"
+                          sx={{ 
+                            fontWeight: 600,
+                            fontSize: { xs: '0.875rem', sm: '1rem' },
+                            mb: 1
+                          }}
+                        >
+                          {col.ColumnName}
+                        </Typography>
+                        <Box sx={{ 
+                          minHeight: 24,
+                          display: 'flex',
+                          alignItems: 'flex-start'
+                        }}>
+                          {renderCellContent(col, selectedSubmission, false)}
+                        </Box>
                       </Box>
-                    </Box>
-                    {index < columns.length - 1 && (
-                      <Divider 
-                        sx={{ 
-                          mx: { xs: -2, sm: -3 },
-                          borderBottomWidth: 1,
-                          borderColor: alpha(theme.palette.divider, 0.5)
-                        }} 
-                      />
-                    )}
-                  </React.Fragment>
-                ))}
+                    </React.Fragment>
+                  );
+                })}
               </Box>
             )}
           </DialogContent>
@@ -1278,11 +1323,7 @@ const ViewSubmissions = () => {
               onSubmit={handleEditSubmit}
               sx={{ p: { xs: 2, sm: 3 } }}
             >
-              {editSubmission && columns.map(col => (
-                <Box key={col.ColId}>
-                  {renderEditInput(col)}
-                </Box>
-              ))}
+                    {isHeading && <Divider sx={{ my: 2, borderBottomWidth: 2, borderColor: 'grey.400' }} />}
             </Box>
           </DialogContent>
           <DialogActions sx={{ p: 2, gap: 1, background: theme.palette.background.paper }}>
