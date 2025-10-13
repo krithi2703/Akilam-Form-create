@@ -247,7 +247,7 @@ export default function ContentDetails({ isFormOnlyUser }) {
                                     </Button>
                                 )}
                                 {paramSide === 'back' && (
-                                    <Button variant="contained" onClick={() => { window.location.href = `/${formId}`; }}>
+                                    <Button variant="contained" onClick={() => { sessionStorage.clear(); window.location.href = `/${formId}`; }}>
                                         Finish
                                     </Button>
                                 )}

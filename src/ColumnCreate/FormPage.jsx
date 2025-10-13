@@ -729,6 +729,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             required={column.IsValid}
             error={isError}
             helperText={errorMessage || (column.Validation === 'Text Field: Max 5000 Characters (approx. 2 pages)' ? 'Max 5000 Characters (approx. 2 pages)' : '')}
+            sx={{ mb: responsiveSpacing }}
           />);
       case "file":
         return (
