@@ -38,13 +38,13 @@ export default function ContentDetails({ isFormOnlyUser }) {
                 let config = {};
                 if (isFormOnlyUser) {
                     url = '/content-dtl/form';
-                    config = { headers: { formid: formId } };
+                    config = { headers: { formid: parseInt(formId, 10) } };
                 }
 
                 const response = await api.get(url, config);
                 // Check if content is empty for form-only user
                 if (isFormOnlyUser && (!response.data || (response.data.front.length === 0 && response.data.back.length === 0))) {
-                    setError('No content available for this form. Please proceed to the form.');
+                    navigate(`/form/view/${formId}`);
                     return; // Stop further processing in this component
                 }
                 setContent(response.data);
