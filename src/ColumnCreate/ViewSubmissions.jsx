@@ -5,6 +5,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 function useQuery() {
   return new URLSearchParams(useLocation().search);
 }
+
 import { toast } from 'react-toastify';
 import {
   Container,
@@ -536,7 +537,6 @@ const ViewSubmissions = () => {
       case "h6":
         return (
           <Typography
-            key={ColId}
             variant={DataType.toLowerCase()}
             sx={{ mb: 2, fontWeight: 'bold' }}
           >
@@ -546,7 +546,6 @@ const ViewSubmissions = () => {
       case "p":
         return (
           <Typography
-            key={ColId}
             variant="body1"
             sx={{ mb: 2 }}
           >
@@ -1104,26 +1103,130 @@ const ViewSubmissions = () => {
                     >
                       <TableHead>
                         <TableRow>
-                                                    {/* Show only key columns in normal view */}                           {!isMobile && columns.slice(0, 6).map((col) => (                             <TableCell                               key={col.ColId}                               sx={{                                 minWidth: 120,                                 maxWidth: 200,                                 overflow: 'hidden',                                 textOverflow: 'ellipsis',                                 whiteSpace: 'nowrap'                               }}                             >                               <Tooltip title={col.ColumnName} arrow>                                 <Typography variant="subtitle2" noWrap>                                   {col.ColumnName}                                 </Typography>                               </Tooltip>                             </TableCell>                           ))}                                                      {/* In mobile view, show only 1-2 key columns and actions */}                           {isMobile && columns.slice(0, 2).map((col) => (                             <TableCell                               key={col.ColId}                               sx={{                                 minWidth: 100,                                 maxWidth: 150,                                 overflow: 'hidden',                                 textOverflow: 'ellipsis',                                 whiteSpace: 'nowrap'                               }}                             >                               <Typography variant="subtitle2" noWrap fontSize="0.75rem">                                 {col.ColumnName}                               </Typography>                             </TableCell>                           ))}                                                      <TableCell                             width={isMobile ? 80 : 120}                             align="center"                             sx={{                               minWidth: isMobile ? 80 : 120                             }}                           >                             <Typography variant="subtitle2" fontSize={isMobile ? "0.75rem" : "0.875rem"}>                               Actions                             </Typography>                           </TableCell>                         </TableRow>                       </TableHead>                       <TableBody>                         {submissions.length > 0 ? (                           submissions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((submission) => (                             <TableRow                               key={submission.SubmissionId}                               hover                               sx={{                                 '&:last-child td': {                                   borderBottom: 'none'                                 }                               }}                             >                               {/* Show only 6 columns in desktop view */}                               {!isMobile && columns.slice(0, 6).map((col) => (                                 <TableCell key={col.ColId}>                                   {renderCellContent(col, submission)}                                 </TableCell>                               ))}                                                              {/* Show only 1-2 key columns in mobile view */}                               {isMobile && columns.slice(0, 2).map((col) => (                                 <TableCell key={col.ColId}>                                   {renderCellContent(col, submission)}                                 </TableCell>                               ))}                                                              <TableCell align="center">                                 <Stack                                   direction="row"                                   spacing={isMobile ? 0.5 : 1}                                   justifyContent="center"                                   alignItems="center"                                 >                                   <Tooltip title="View details">                                     <IconButton                                       size="small"                                       onClick={() => handleViewClick(submission)}                                       sx={{                                         color: 'primary.main',                                         backgroundColor: alpha(theme.palette.primary.main, 0.1),                                         '&:hover': {                                           backgroundColor: alpha(theme.palette.primary.main, 0.2),                                         }                                       }}                                     >                                       <Visibility fontSize={isMobile ? "small" : "medium"} />                                     </IconButton>                                   </Tooltip>                                   <Tooltip title="Edit submission">                                     <IconButton                                       size="small"                                       onClick={() => handleEditClick(submission)}                                       sx={{                                         color: 'secondary.main',                                         backgroundColor: alpha(theme.palette.secondary.main, 0.1),                                         '&:hover': {                                           backgroundColor: alpha(theme.palette.secondary.main, 0.2),                                         }                                       }}                                     >                                       <Edit fontSize={isMobile ? "small" : "medium"}/>                                     </IconButton>                                   </Tooltip>                                 </Stack>                               </TableCell>                             </TableRow>                           ))                         ) : (                           <TableRow>                             <TableCell                               colSpan={(isMobile ? 3 : 7)}  
-                              align="center" 
-                              sx={{ 
+                          {isMobile
+                            ? columns.slice(0, 2).map((col) => (
+                                <TableCell
+                                  key={col.ColId}
+                                  sx={{
+                                    minWidth: 100,
+                                    maxWidth: 150,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  <Typography variant="subtitle2" noWrap fontSize="0.75rem">
+                                    {col.ColumnName}
+                                  </Typography>
+                                </TableCell>
+                              ))
+                            : columns.slice(0, 6).map((col) => (
+                                <TableCell
+                                  key={col.ColId}
+                                  sx={{
+                                    minWidth: 120,
+                                    maxWidth: 200,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  <Tooltip title={col.ColumnName} arrow>
+                                    <Typography variant="subtitle2" noWrap>
+                                      {col.ColumnName}
+                                    </Typography>
+                                  </Tooltip>
+                                </TableCell>
+                              ))}
+                          <TableCell
+                            width={isMobile ? 80 : 120}
+                            align="center"
+                          >
+                            Actions
+                          </TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {submissions.length > 0 ? (
+                          submissions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((submission) => (
+                            <TableRow
+                              key={submission.SubmissionId}
+                              hover
+                              sx={{
+                                '&:last-child td': {
+                                  borderBottom: 'none'
+                                }
+                              }}
+                            >
+                              {(isMobile ? columns.slice(0, 2) : columns.slice(0, 6)).map((col) => (
+                                <TableCell key={col.ColId}>
+                                  {renderCellContent(col, submission)}
+                                </TableCell>
+                              ))}
+                              <TableCell align="center">
+                                <Stack
+                                  direction="row"
+                                  spacing={isMobile ? 0.5 : 1}
+                                  justifyContent="center"
+                                  alignItems="center"
+                                >
+                                  <Tooltip title="View details">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleViewClick(submission)}
+                                      sx={{
+                                        color: 'primary.main',
+                                        backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                                        '&:hover': {
+                                          backgroundColor: alpha(theme.palette.primary.main, 0.2),
+                                        }
+                                      }}
+                                    >
+                                      <Visibility fontSize={isMobile ? "small" : "medium"} />
+                                    </IconButton>
+                                  </Tooltip>
+                                  <Tooltip title="Edit submission">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleEditClick(submission)}
+                                      sx={{
+                                        color: 'secondary.main',
+                                        backgroundColor: alpha(theme.palette.secondary.main, 0.1),
+                                        '&:hover': {
+                                          backgroundColor: alpha(theme.palette.secondary.main, 0.2),
+                                        }
+                                      }}
+                                    >
+                                      <Edit fontSize={isMobile ? "small" : "medium"}/>
+                                    </IconButton>
+                                  </Tooltip>
+                                </Stack>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell
+                              colSpan={(isMobile ? 3 : 7)}
+                              align="center"
+                              sx={{
                                 p: 4,
                                 borderBottom: 'none'
                               }}
                             >
                               <Box sx={{ textAlign: 'center', py: 4 }}>
-                                <Typography 
-                                  variant="h6" 
+                                <Typography
+                                  variant="h6"
                                   color="text.secondary"
-                                  sx={{ 
+                                  sx={{
                                     fontSize: { xs: '1rem', sm: '1.25rem' },
                                     mb: 1
                                   }}
                                 >
                                   No submissions yet
                                 </Typography>
-                                <Typography 
-                                  variant="body2" 
+                                <Typography
+                                  variant="body2"
                                   color="text.secondary"
                                   sx={{ opacity: 0.7 }}
                                 >
@@ -1323,7 +1426,11 @@ const ViewSubmissions = () => {
               onSubmit={handleEditSubmit}
               sx={{ p: { xs: 2, sm: 3 } }}
             >
-                    {isHeading && <Divider sx={{ my: 2, borderBottomWidth: 2, borderColor: 'grey.400' }} />}
+              {editSubmission && columns.map((col) => (
+                <React.Fragment key={col.ColId}>
+                  {renderEditInput(col)}
+                </React.Fragment>
+              ))}
             </Box>
           </DialogContent>
           <DialogActions sx={{ p: 2, gap: 1, background: theme.palette.background.paper }}>
