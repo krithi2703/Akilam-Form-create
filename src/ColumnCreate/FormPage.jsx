@@ -347,30 +347,23 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
         },
       });
       toast.success("Form submitted successfully!");
-
-      // console.log("Attempting to send WhatsApp message...");
-      // console.log("User ID:", userId);
-      // console.log("Form Details:", formDetails);
-
-      if (userId && formDetails && formDetails.formName) {
-        const message = `Your form "${formDetails.formName}" has been submitted successfully.`;
-        // console.log("Message:", message);
-        try {
-          await sendWhatsAppMessage(userId, message);
-          toast.success("WhatsApp notification sent.");
-        } catch (whatsappError) {
-          console.error("WhatsApp Error:", whatsappError);
-          toast.error("Failed to send WhatsApp notification.");
-        }
-      } else {
-        // console.log("Cannot send WhatsApp message because userId or formName is missing.");
-      }
-
       setFormValues({});
       handleOpen(true);
 
+      // Secondary actions that can run in the background or have their own loading indicators
+      // Do NOT await these if they are not critical for the immediate UI response
+      if (userId && formDetails && formDetails.formName) {
+        const message = `Your form "${formDetails.formName}" has been submitted successfully.`;
+        // Do not await sendWhatsAppMessage here to prevent blocking the UI reset
+        sendWhatsAppMessage(userId, message)
+          .then(() => toast.success("WhatsApp notification sent."))
+          .catch((whatsappError) => {
+            console.error("WhatsApp Error:", whatsappError);
+            toast.error("Failed to send WhatsApp notification.");
+          });
+      }
+
     } catch (err) {
-      // --- MODIFY THIS CATCH BLOCK ---
       if (err.response) {
         console.error("Backend Error Response:", err.response.data);
         console.error("Backend Error Status:", err.response.status);
@@ -384,7 +377,6 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
         toast.error("An unexpected error occurred. Check console for details.");
       }
       throw err;
-      // --- END MODIFICATION ---
     } finally {
       setIsSubmitting(false);
     }

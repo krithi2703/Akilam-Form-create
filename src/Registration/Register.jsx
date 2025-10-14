@@ -212,7 +212,8 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
     
     setOtp("");
     setOtpError("");
-    await handleSendOtp(formRegData.identifier);
+    const otpType = formRegisterTab === 0 ? 'email' : 'phone';
+    await handleSendOtp(formRegData.identifier, otpType);
   };
 
   const handleVerifyOtp = async () => {
@@ -652,14 +653,15 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
         <DialogTitle>User Already Registered</DialogTitle>
         <DialogContent>
           <Typography>
-            This phone number is already registered. Do you want to edit the submission?
+            This {formRegisterTab === 0 ? 'email' : 'phone number'} is already registered. Do you want to edit the submission?
           </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowAlreadyRegisteredDialog(false)}>Cancel</Button>
           <Button onClick={async () => {
             setShowAlreadyRegisteredDialog(false);
-            await handleSendOtp(formRegData.identifier);
+            const otpType = formRegisterTab === 0 ? 'email' : 'phone';
+            await handleSendOtp(formRegData.identifier, otpType);
           }} variant="contained">
             Edit
           </Button>
