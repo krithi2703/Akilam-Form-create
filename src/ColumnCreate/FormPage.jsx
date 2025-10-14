@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import api from "../axiosConfig";
 import { QRCodeCanvas } from "qrcode.react";
 import { toast } from 'react-toastify';
-import { useDialog, CustomDialog } from "../SideBar/MuiDialogExample";
+import { useDialog, CustomDialog , SocialShareDialog} from "../SideBar/MuiDialogExample";
 import {
   Container,
   Box,
@@ -43,7 +43,8 @@ import {
   Logout as LogoutIcon,
   Login as LoginIcon,
   Close as CloseIcon,
-  Menu as MenuIcon
+  Menu as MenuIcon,
+  Share as ShareIcon
 } from "@mui/icons-material";
 import Register from "../Registration/Register";
 import { sendWhatsAppMessage } from "../whatsappService";
@@ -90,6 +91,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [paymentDescription, setPaymentDescription] = useState('');
   const [paymentOrderId, setPaymentOrderId] = useState(null);
+  const [isshareDialogOpen, setIsShareDialogOpen] = useState(false);
 
   const userId = sessionStorage.getItem("userId");
   const userName = sessionStorage.getItem("userName");
@@ -334,7 +336,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
     // --- ADD THIS CONSOLE.LOG ---
     //console.log("FormData being sent:");
     for (let pair of formData.entries()) {
-        //console.log(pair[0]+ ': ' + pair[1]); 
+      //console.log(pair[0]+ ': ' + pair[1]); 
     }
     // --- END ADDITION ---
 
@@ -456,13 +458,12 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
   const handleCloseQrDialog = () => setQrDialogOpen(false);
   const handleCloseRegistrationEndedDialog = () => setShowRegistrationEndedDialog(false);
 
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(formUrl);
-      toast.success("Link copied to clipboard!");
-    } catch (err) {
-      toast.error("Failed to copy link. Please copy it manually.");
-    }
+  const handleOpenShareDialog = () => {
+    setIsShareDialogOpen(true);
+  };
+
+  const handleCloseShareDialog = () => {
+    setIsShareDialogOpen(false);
   };
 
   const toggleMobileMenu = () => {
@@ -575,77 +576,77 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             size={isMobile ? "small" : "medium"}
           />
         );
-            case "boolean":
-            case "flg":
-              return (
+      case "boolean":
+      case "flg":
+        return (
+          <FormControlLabel
+            control={
+              <Checkbox
+                id={ColId}
+                name={ColId}
+                checked={!!formValues[ColId]} // Convert to boolean
+                onChange={(e) => handleInputChange(ColId, e, 'boolean')} // Use handleInputChange for boolean
+                size={isMobile ? "small" : "medium"}
+                disabled={column.IsReadOnly}
+              />
+            }
+            label={
+              <Typography sx={{ fontSize: responsiveFontSize }}>
+                {ColumnName}
+              </Typography>
+            }
+            sx={{ mb: responsiveSpacing }}
+            required={column.IsValid}
+            error={isError}
+            helperText={errorMessage}
+          />
+        );
+      case "checkbox": // This case is for multi-select checkboxes
+        return (
+          <FormControl fullWidth sx={{ mb: responsiveSpacing }} error={isError}>
+            <FormLabel
+              component="legend"
+              required={column.IsValid}
+              sx={{ fontSize: responsiveFontSize }}
+            >
+              {ColumnName}
+            </FormLabel>
+            <Box sx={{
+              display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
+              flexWrap: 'wrap',
+              gap: 1
+            }}>
+              {options.map((option) => (
                 <FormControlLabel
+                  key={option}
                   control={
                     <Checkbox
-                      id={ColId}
+                      id={`${ColId}-${option}`}
                       name={ColId}
-                      checked={!!formValues[ColId]} // Convert to boolean
-                      onChange={(e) => handleInputChange(ColId, e, 'boolean')} // Use handleInputChange for boolean
+                      checked={formValues[ColId]?.includes(option) || false}
+                      onChange={(e) => {
+                        const currentValues = formValues[ColId] || [];
+                        const newValues = e.target.checked
+                          ? [...currentValues, option]
+                          : currentValues.filter((val) => val !== option);
+                        setFormValues((prev) => ({ ...prev, [ColId]: newValues }));
+                      }}
                       size={isMobile ? "small" : "medium"}
                       disabled={column.IsReadOnly}
                     />
                   }
                   label={
                     <Typography sx={{ fontSize: responsiveFontSize }}>
-                      {ColumnName}
+                      {option}
                     </Typography>
                   }
-                  sx={{ mb: responsiveSpacing }}
-                  required={column.IsValid}
-                  error={isError}
-                  helperText={errorMessage}
                 />
-              );
-            case "checkbox": // This case is for multi-select checkboxes
-              return (
-                <FormControl fullWidth sx={{ mb: responsiveSpacing }} error={isError}>
-                  <FormLabel 
-                    component="legend" 
-                    required={column.IsValid}
-                    sx={{ fontSize: responsiveFontSize }}
-                  >
-                    {ColumnName}
-                  </FormLabel>
-                  <Box sx={{ 
-                    display: 'flex', 
-                    flexDirection: isMobile ? 'column' : 'row',
-                    flexWrap: 'wrap',
-                    gap: 1
-                  }}>
-                    {options.map((option) => (
-                      <FormControlLabel
-                        key={option}
-                        control={
-                          <Checkbox
-                            id={`${ColId}-${option}`}
-                            name={ColId}
-                            checked={formValues[ColId]?.includes(option) || false}
-                            onChange={(e) => {
-                              const currentValues = formValues[ColId] || [];
-                              const newValues = e.target.checked
-                                ? [...currentValues, option]
-                                : currentValues.filter((val) => val !== option);
-                              setFormValues((prev) => ({ ...prev, [ColId]: newValues }));
-                            }}
-                            size={isMobile ? "small" : "medium"}
-                            disabled={column.IsReadOnly}
-                          />
-                        }
-                        label={
-                          <Typography sx={{ fontSize: responsiveFontSize }}>
-                            {option}
-                          </Typography>
-                        }
-                      />
-                    ))}
-                  </Box>
-                  {isError && <FormHelperText>{errorMessage}</FormHelperText>}
-                </FormControl>
-              );      case "select":
+              ))}
+            </Box>
+            {isError && <FormHelperText>{errorMessage}</FormHelperText>}
+          </FormControl>
+        ); case "select":
         return (
           <FormControl fullWidth sx={{ mb: responsiveSpacing }} error={isError}>
             <InputLabel
@@ -1287,13 +1288,14 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
                 />
                 <Button
                   variant="outlined"
-                  onClick={handleCopyLink}
+                  onClick={handleOpenShareDialog}
+                  startIcon={<ShareIcon />}
                   sx={{
                     minWidth: { xs: '100%', sm: 'auto' },
                     mt: { xs: 1, sm: 0 }
                   }}
                 >
-                  Copy
+                  Share
                 </Button>
               </Box>
             </Box>
@@ -1456,6 +1458,14 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
             />
           </DialogContent>
         </Dialog>
+
+        {/* Social Share Dialog */}
+        <SocialShareDialog
+          open={isshareDialogOpen}
+          handleClose={handleCloseShareDialog}
+          shareUrl={formUrl}
+          title={formDetails?.formName || "Check out this form!"}
+        />
       </Container>
     </>
   );

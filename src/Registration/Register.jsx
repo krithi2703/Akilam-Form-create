@@ -549,7 +549,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
               <Box sx={{ mt: 1 }}>
                 <Tabs value={formRegisterTab} onChange={handleFormRegisterTabChange} centered>
                   <Tab label="Email" />
-                  <Tab label="Phone" />
+                  <Tab label="Phone" hidden/>
                 </Tabs>
 
                 {formRegisterTab === 0 && (
