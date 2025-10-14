@@ -38,7 +38,12 @@ import {
   CardHeader,
   Tooltip,
   Fade,
-  Zoom
+  Zoom,
+  useMediaQuery,
+  useTheme,
+  Avatar,
+  Breadcrumbs,
+  Link
 } from '@mui/material';
 import { 
   Add as AddIcon, 
@@ -48,7 +53,10 @@ import {
   Delete as DeleteIcon,
   CheckCircle as CheckCircleIcon,
   Warning as WarningIcon,
-  Info as InfoIcon
+  Info as InfoIcon,
+  Home as HomeIcon,
+  ListAlt as ListAltIcon,
+  NavigateNext as NavigateNextIcon
 } from '@mui/icons-material';
 import { alpha } from '@mui/material/styles';
 import api from '../axiosConfig';
@@ -56,8 +64,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import ColumnOptionEditorDialog from './ColumnOptionEditorDialog';
 
-// Enhanced ValidationRuleDialog with better styling
+// Enhanced ValidationRuleDialog with better styling and dark mode support
 const ValidationRuleDialog = ({ open, onClose, onSave, validationOptions, initialValue }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isDarkMode = theme.palette.mode === 'dark';
+  
   const [selectedValue, setSelectedValue] = useState(initialValue || '');
 
   useEffect(() => {
@@ -68,6 +80,18 @@ const ValidationRuleDialog = ({ open, onClose, onSave, validationOptions, initia
     onSave(selectedValue);
   };
 
+  const dialogStyle = {
+    borderRadius: 3,
+    boxShadow: isDarkMode 
+      ? '0 8px 32px rgba(0,0,0,0.4)' 
+      : '0 8px 32px rgba(0,0,0,0.12)',
+    m: isMobile ? 2 : 3,
+    background: isDarkMode 
+      ? theme.palette.background.paper 
+      : theme.palette.background.paper,
+    border: isDarkMode ? `1px solid ${theme.palette.divider}` : 'none'
+  };
+
   return (
     <Dialog 
       open={open} 
@@ -75,26 +99,42 @@ const ValidationRuleDialog = ({ open, onClose, onSave, validationOptions, initia
       maxWidth="sm" 
       fullWidth
       TransitionComponent={Fade}
-      PaperProps={{
-        sx: {
-          borderRadius: 2,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
-        }
-      }}
+      PaperProps={{ sx: dialogStyle }}
     >
       <DialogTitle sx={{ 
-        bgcolor: 'primary.main', 
-        color: 'white',
-        py: 2
+        py: 3,
+        position: 'relative',
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          bottom: 0,
+          left: '5%',
+          width: '90%',
+          height: '2px',
+          bgcolor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+        }
       }}>
-        <Box display="flex" alignItems="center">
-          <RuleIcon sx={{ mr: 1 }} />
-          Set Validation Rule
+        <Box display="flex" alignItems="center" sx={{ flexDirection: isMobile ? 'column' : 'row', gap: 1 }}>
+          <RuleIcon sx={{ mr: 1, fontSize: isMobile ? '1.5rem' : 'inherit' }} />
+          <Typography variant={isMobile ? "h6" : "h5"} fontWeight="600" color={isDarkMode ? 'text.primary' : 'text.primary'}>
+            Set Validation Rule
+          </Typography>
         </Box>
       </DialogTitle>
-      <DialogContent sx={{ p: 3 }}>
-        <FormControl fullWidth sx={{ mt: 2 }}>
-          <InputLabel id="validation-select-label">Select Validation Rule</InputLabel>
+      <DialogContent sx={{ p: isMobile ? 2 : 3, pt: 3 }}>
+        <FormControl fullWidth sx={{ mt: 1 }}>
+          <InputLabel 
+            id="validation-select-label" 
+            sx={{ 
+              transform: 'translate(14px, 14px) scale(1)',
+              '&.Mui-focused': {
+                color: 'primary.main'
+              },
+              color: isDarkMode ? 'text.secondary' : 'text.primary'
+            }}
+          >
+            Select Validation Rule
+          </InputLabel>
           <Select
             labelId="validation-select-label"
             value={selectedValue}
@@ -102,31 +142,64 @@ const ValidationRuleDialog = ({ open, onClose, onSave, validationOptions, initia
             onChange={(e) => setSelectedValue(e.target.value)}
             sx={{
               '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'grey.300',
+                borderColor: isDarkMode ? theme.palette.divider : 'grey.300',
+                borderWidth: '2px'
               },
               '&:hover .MuiOutlinedInput-notchedOutline': {
                 borderColor: 'primary.main',
               },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'primary.main',
+                borderWidth: '2px'
+              },
+              borderRadius: 2,
+              backgroundColor: isDarkMode ? theme.palette.background.default : 'background.paper'
+            }}
+            MenuProps={{
+              PaperProps: {
+                sx: {
+                  borderRadius: 2,
+                  mt: 1,
+                  boxShadow: isDarkMode 
+                    ? '0 8px 24px rgba(0,0,0,0.4)' 
+                    : '0 8px 24px rgba(0,0,0,0.12)',
+                  backgroundColor: isDarkMode 
+                    ? theme.palette.background.paper 
+                    : 'background.paper'
+                }
+              }
             }}
           >
             <MenuItem value="">
-              <em>No Validation</em>
+              <em style={{ color: isDarkMode ? theme.palette.text.secondary : 'inherit' }}>No Validation</em>
             </MenuItem>
             {validationOptions.map((option) => (
-              <MenuItem key={option.Id} value={option.Id}>
-                {option.ValidationList}
+              <MenuItem key={option.Id} value={option.Id} sx={{ py: 1.5 }}>
+                <Box>
+                  <Typography variant="body1" fontWeight="500" color={isDarkMode ? 'text.primary' : 'text.primary'}>
+                    {option.ValidationList}
+                  </Typography>
+                </Box>
               </MenuItem>
             ))}
           </Select>
         </FormControl>
       </DialogContent>
-      <DialogActions sx={{ p: 3, pt: 0 }}>
+      <DialogActions sx={{ p: isMobile ? 2 : 3, pt: 0, gap: 1 }}>
         <Button 
           onClick={onClose} 
           variant="outlined"
+          fullWidth={isMobile}
           sx={{ 
             borderRadius: 2,
-            px: 3
+            px: 3,
+            py: isMobile ? 1.5 : 1,
+            textTransform: 'none',
+            fontWeight: '600',
+            borderWidth: '2px',
+            '&:hover': {
+              borderWidth: '2px'
+            }
           }}
         >
           Cancel
@@ -135,9 +208,17 @@ const ValidationRuleDialog = ({ open, onClose, onSave, validationOptions, initia
           onClick={handleSave} 
           variant="contained"
           startIcon={<CheckCircleIcon />}
+          fullWidth={isMobile}
           sx={{ 
             borderRadius: 2,
-            px: 3
+            px: 3,
+            py: isMobile ? 1.5 : 1,
+            textTransform: 'none',
+            fontWeight: '600',
+            boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
+            '&:hover': {
+              boxShadow: '0 6px 16px rgba(25, 118, 210, 0.4)'
+            }
           }}
         >
           Save Rule
@@ -150,6 +231,11 @@ const ValidationRuleDialog = ({ open, onClose, onSave, validationOptions, initia
 const FormDetails = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmallMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isDarkMode = theme.palette.mode === 'dark';
+  
   const { formId, formNo } = location.state || {};
   const [formName, setFormName] = useState('');
   const [bannerImageFile, setBannerImageFile] = useState(null);
@@ -182,6 +268,70 @@ const FormDetails = () => {
   const [isValidFormBack, setIsValidFormBack] = useState(false);
 
   const userId = sessionStorage.getItem('userId');
+
+  // Dark mode styles
+  const cardStyle = {
+    borderRadius: 3,
+    boxShadow: isDarkMode 
+      ? '0 4px 20px rgba(0,0,0,0.3)' 
+      : '0 4px 20px rgba(0,0,0,0.08)',
+    overflow: 'visible',
+    backgroundColor: isDarkMode 
+      ? theme.palette.background.paper 
+      : theme.palette.background.paper,
+    border: isDarkMode ? `1px solid ${theme.palette.divider}` : 'none'
+  };
+
+  const tableContainerStyle = {
+    borderRadius: 0,
+    border: 'none',
+    boxShadow: 'none',
+    backgroundColor: isDarkMode 
+      ? theme.palette.background.paper 
+      : theme.palette.background.paper
+  };
+
+  const tableRowHoverStyle = {
+    '&:hover': {
+      backgroundColor: isDarkMode 
+        ? theme.palette.action.hover 
+        : 'action.hover',
+    },
+    transition: 'background-color 0.2s ease'
+  };
+
+  const listItemStyle = {
+    borderRadius: 2,
+    mb: 1,
+    py: 2,
+    border: isDarkMode 
+      ? `1px solid ${theme.palette.divider}` 
+      : '1px solid rgba(0,0,0,0.1)',
+    '&:hover': {
+      backgroundColor: isDarkMode 
+        ? theme.palette.action.hover 
+        : 'rgba(33, 150, 243, 0.08)',
+      transform: 'translateX(4px)',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    },
+    transition: 'all 0.2s ease',
+    backgroundColor: isDarkMode 
+      ? theme.palette.background.paper 
+      : theme.palette.background.paper
+  };
+
+  const dialogStyle = {
+    borderRadius: 3,
+    boxShadow: isDarkMode 
+      ? '0 12px 48px rgba(0,0,0,0.4)' 
+      : '0 12px 48px rgba(0,0,0,0.15)',
+    m: isMobile ? 1 : 3,
+    height: isMobile ? '90vh' : 'auto',
+    backgroundColor: isDarkMode 
+      ? theme.palette.background.paper 
+      : theme.palette.background.paper,
+    border: isDarkMode ? `1px solid ${theme.palette.divider}` : 'none'
+  };
 
   const handleBannerFileChange = (event) => {
     const file = event.target.files[0];
@@ -514,29 +664,123 @@ const FormDetails = () => {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-        <CircularProgress size={60} thickness={4} />
+      <Box 
+        display="flex" 
+        justifyContent="center" 
+        alignItems="center" 
+        minHeight="70vh"
+        sx={{
+          backgroundColor: isDarkMode ? theme.palette.background.default : 'background.default'
+        }}
+      >
+        <Box textAlign="center">
+          <CircularProgress 
+            size={isMobile ? 50 : 60} 
+            thickness={4} 
+            sx={{ 
+              color: 'primary.main',
+              mb: 2
+            }} 
+          />
+          <Typography 
+            variant={isMobile ? "h6" : "h5"} 
+            color="text.secondary"
+            fontWeight="500"
+          >
+            Loading Form Details...
+          </Typography>
+        </Box>
       </Box>
     );
   }
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 4, mb: 6 }}>
-      <Grid container spacing={4}>
+    <Container 
+      maxWidth="xl" 
+      sx={{ 
+        mt: isMobile ? 2 : 4, 
+        mb: isMobile ? 4 : 6,
+        px: isMobile ? 2 : 3,
+        backgroundColor: isDarkMode ? theme.palette.background.default : 'background.default',
+        minHeight: '100vh'
+      }}
+    >
+      {/* Breadcrumb Navigation */}
+      <Box sx={{ mb: isMobile ? 3 : 4 }}>
+        <Breadcrumbs 
+          separator={<NavigateNextIcon fontSize="small" />}
+          aria-label="breadcrumb"
+          sx={{
+            '& .MuiBreadcrumbs-ol': {
+              flexWrap: isSmallMobile ? 'wrap' : 'nowrap'
+            }
+          }}
+        >
+          <Link
+            underline="hover"
+            color="inherit"
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate('/');
+            }}
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              fontSize: isSmallMobile ? '0.875rem' : '1rem',
+              color: isDarkMode ? 'text.primary' : 'inherit'
+            }}
+          >
+            <HomeIcon sx={{ mr: 0.5, fontSize: isSmallMobile ? '1rem' : '1.25rem' }} />
+            Home
+          </Link>
+          <Link
+            underline="hover"
+            color="inherit"
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate('/forms');
+            }}
+            sx={{ 
+              fontSize: isSmallMobile ? '0.875rem' : '1rem',
+              color: isDarkMode ? 'text.primary' : 'inherit'
+            }}
+          >
+            Forms
+          </Link>
+          <Typography 
+            color="text.primary" 
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              fontSize: isSmallMobile ? '0.875rem' : '1rem'
+            }}
+          >
+            <ListAltIcon sx={{ mr: 0.5, fontSize: isSmallMobile ? '1rem' : '1.25rem' }} />
+            {formName || 'Form Configuration'}
+          </Typography>
+        </Breadcrumbs>
+      </Box>
+
+      <Grid container spacing={isMobile ? 2 : 3}>
         {/* Banner Card */}
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} lg={4}>
           <Card 
             sx={{ 
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              overflow: 'visible'
+              ...cardStyle,
+              height: 'fit-content',
+              position: 'sticky',
+              top: isMobile ? 0 : 20
             }}
           >
             <CardHeader
               title={
                 <Box display="flex" alignItems="center">
-                  <ImageIcon sx={{ mr: 1, color: 'primary.main' }} />
-                  Banner Image
+                  <ImageIcon sx={{ mr: 1.5, color: 'primary.main' }} />
+                  <Typography variant="h6" fontWeight="600" color={isDarkMode ? 'text.primary' : 'text.primary'}>
+                    Banner Image
+                  </Typography>
                 </Box>
               }
               titleTypographyProps={{ 
@@ -544,17 +788,18 @@ const FormDetails = () => {
                 fontWeight: 600 
               }}
               sx={{ 
-                pb: 1,
-                background: 'linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%)'
+                pb: 2,
+                borderBottom: '1px solid',
+                borderColor: 'divider'
               }}
             />
-            <CardContent>
-              <Stack spacing={2} alignItems="center">
+            <CardContent sx={{ p: 3 }}>
+              <Stack spacing={2.5} alignItems="center">
                 {bannerImagePreviewUrl ? (
                   <Box 
                     sx={{ 
                       width: '100%', 
-                      height: 180, 
+                      height: isMobile ? 160 : 200, 
                       border: '2px dashed',
                       borderColor: 'primary.light',
                       borderRadius: 2, 
@@ -562,7 +807,7 @@ const FormDetails = () => {
                       alignItems: 'center', 
                       justifyContent: 'center', 
                       overflow: 'hidden',
-                      bgcolor: 'grey.50',
+                      bgcolor: isDarkMode ? 'grey.900' : 'grey.50',
                       transition: 'all 0.3s ease',
                       '&:hover': {
                         borderColor: 'primary.main',
@@ -584,26 +829,29 @@ const FormDetails = () => {
                   <Box 
                     sx={{ 
                       width: '100%', 
-                      height: 180, 
+                      height: isMobile ? 160 : 200, 
                       border: '2px dashed',
-                      borderColor: 'grey.400',
+                      borderColor: isDarkMode ? 'grey.600' : 'grey.400',
                       borderRadius: 2, 
                       display: 'flex', 
                       flexDirection: 'column',
                       alignItems: 'center', 
                       justifyContent: 'center', 
-                      backgroundColor: 'grey.50',
-                      color: 'grey.500',
+                      backgroundColor: isDarkMode ? 'grey.900' : 'grey.50',
+                      color: isDarkMode ? 'grey.400' : 'grey.500',
                       transition: 'all 0.3s ease',
                       '&:hover': {
                         borderColor: 'primary.main',
-                        backgroundColor: 'grey.100'
+                        backgroundColor: isDarkMode ? 'grey.800' : 'grey.100'
                       }
                     }}
                   >
-                    <ImageIcon sx={{ fontSize: 48, mb: 1, opacity: 0.5 }} />
-                    <Typography variant="body2" color="text.secondary">
+                    <ImageIcon sx={{ fontSize: isMobile ? 40 : 48, mb: 1.5, opacity: 0.5 }} />
+                    <Typography variant="body2" color="text.secondary" textAlign="center">
                       No Banner Image
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" textAlign="center" sx={{ mt: 0.5 }}>
+                      Upload a banner image for your form
                     </Typography>
                   </Box>
                 )}
@@ -616,12 +864,13 @@ const FormDetails = () => {
                     startIcon={bannerImagePreviewUrl ? <ImageIcon /> : <AddIcon />}
                     sx={{ 
                       borderRadius: 2,
-                      py: 1,
+                      py: 1.5,
                       textTransform: 'none',
-                      fontWeight: 600
+                      fontWeight: 600,
+                      fontSize: isMobile ? '0.875rem' : '1rem'
                     }}
                   >
-                    {bannerImagePreviewUrl ? 'Change Banner Image' : 'Upload Banner Image'}
+                    {bannerImagePreviewUrl ? 'Change Banner' : 'Upload Banner'}
                   </Button>
                 </label>
                 <input
@@ -642,7 +891,10 @@ const FormDetails = () => {
                       setBannerImageFile(null);
                       setBannerImagePreviewUrl("");
                     }}
-                    sx={{ textTransform: 'none' }}
+                    sx={{ 
+                      textTransform: 'none',
+                      borderRadius: 1
+                    }}
                   >
                     Remove Image
                   </Button>
@@ -653,31 +905,27 @@ const FormDetails = () => {
         </Grid>
 
         {/* Main Form Card */}
-        <Grid item xs={12} md={12}>
-          <Card 
-            sx={{ 
-              borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-              overflow: 'visible'
-            }}
-          >
-            <CardContent sx={{ p: 4 }}>
+        <Grid item xs={12} lg={8}>
+          <Card sx={cardStyle}>
+            <CardContent sx={{ p: isMobile ? 2 : 4 }}>
               <Box component="form" onSubmit={handleSubmit} noValidate>
                 {/* Header Section */}
                 <Box 
                   sx={{ 
                     display: 'flex', 
+                    flexDirection: isMobile ? 'column' : 'row',
                     justifyContent: 'space-between', 
-                    alignItems: 'center', 
+                    alignItems: isMobile ? 'flex-start' : 'center', 
                     mb: 4,
-                    pb: 2,
+                    pb: 3,
                     borderBottom: '1px solid',
-                    borderColor: 'divider'
+                    borderColor: 'divider',
+                    gap: isMobile ? 2 : 0
                   }}
                 >
-                  <Box>
+                  <Box sx={{ width: '100%' }}>
                     <Typography 
-                      variant="h4" 
+                      variant={isMobile ? "h5" : "h4"} 
                       component="h1" 
                       fontWeight="700"
                       color="primary.main"
@@ -685,11 +933,15 @@ const FormDetails = () => {
                     >
                       Form Configuration
                     </Typography>
-                    <Typography variant="body1" color="text.secondary">
+                    <Typography 
+                      variant={isMobile ? "body2" : "body1"} 
+                      color="text.secondary"
+                      sx={{ mb: isMobile ? 2 : 0 }}
+                    >
                       Add and configure columns for your form
                     </Typography>
                   </Box>
-                  <Tooltip title="Add form information" arrow>
+                  <Tooltip title="Add form information" arrow placement={isMobile ? "bottom" : "left"}>
                     <Button
                       variant="contained"
                       color="primary"
@@ -698,10 +950,11 @@ const FormDetails = () => {
                       sx={{
                         borderRadius: 2,
                         px: 3,
-                        py: 1,
+                        py: 1.5,
                         textTransform: 'none',
                         fontWeight: 600,
-                        ml: 10
+                        width: isMobile ? '100%' : 'auto',
+                        whiteSpace: 'nowrap'
                       }}
                     >
                       Add Form Info
@@ -709,19 +962,29 @@ const FormDetails = () => {
                   </Tooltip>
                 </Box>
                
-                <Grid container spacing={3}>
+                <Grid container spacing={isMobile ? 2 : 3}>
                   {/* Form Name and Select Columns */}
                   <Grid item xs={12}>
                     <Card 
                       variant="outlined"
                       sx={{ 
                         borderRadius: 2,
-                        borderColor: 'grey.200',
-                        bgcolor: 'grey.50'
+                        borderColor: isDarkMode ? theme.palette.divider : 'grey.200',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          borderColor: 'primary.light',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                        },
+                        backgroundColor: isDarkMode ? theme.palette.background.paper : 'background.paper'
                       }}
                     >
-                      <CardContent sx={{ p: 3 }}>
-                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" sx={{ width: '100%' }}>
+                      <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+                        <Stack 
+                          direction={{ xs: 'column', sm: 'row' }} 
+                          spacing={2} 
+                          alignItems={{ xs: 'stretch', sm: 'center' }} 
+                          sx={{ width: '100%' }}
+                        >
                           <Box sx={{ flexGrow: 1 }}>
                             <TextField 
                               label="Form Name" 
@@ -729,20 +992,28 @@ const FormDetails = () => {
                               InputProps={{ 
                                 readOnly: true,
                                 sx: { 
-                                  bgcolor: 'white',
-                                  borderRadius: 1,
-                                  overflow: 'visible'
+                                  borderRadius: 2,
+                                  '& .MuiOutlinedInput-input': {
+                                    py: isMobile ? 1.5 : 2,
+                                    fontSize: isMobile ? '0.875rem' : '1rem'
+                                  },
+                                  backgroundColor: isDarkMode ? theme.palette.background.default : 'background.paper'
                                 }
                               }} 
                               variant="outlined"
+                              fullWidth
                               sx={{
                                 '& .MuiOutlinedInput-root': {
                                   '&.Mui-focused fieldset': {
                                     borderColor: 'primary.main',
+                                    borderWidth: '2px'
                                   },
+                                },
+                                '& .MuiInputLabel-root': {
+                                  fontSize: isMobile ? '0.875rem' : '1rem'
                                 }
                               }}
-                            hidden />
+                            />
                           </Box>
                           <Tooltip title="Select columns to add to your form" arrow>
                             <Button
@@ -750,15 +1021,21 @@ const FormDetails = () => {
                               color="secondary"
                               startIcon={<AddIcon />}
                               onClick={handleOpenDialog}
-                              fullWidth
+                              fullWidth={isMobile}
                               sx={{ 
                                 whiteSpace: 'nowrap',
                                 borderRadius: 2,
                                 px: 4,
-                                py: 1.5,
+                                py: isMobile ? 1.5 : 2,
                                 textTransform: 'none',
                                 fontWeight: 600,
-                                width: { xs: '100%', sm: '100%' }
+                                minWidth: isMobile ? 'auto' : 200,
+                                width: { xs: '100%', sm: 'auto' },
+                                fontSize: isMobile ? '0.875rem' : '1rem',
+                                boxShadow: '0 4px 12px rgba(156, 39, 176, 0.3)',
+                                '&:hover': {
+                                  boxShadow: '0 6px 16px rgba(156, 39, 176, 0.4)'
+                                }
                               }}
                             >
                               Select Columns
@@ -777,17 +1054,23 @@ const FormDetails = () => {
                         sx={{
                           borderRadius: 2,
                           alignItems: 'center',
+                          py: isMobile ? 1 : 2,
                           '& .MuiAlert-message': {
-                            width: '100%'
+                            width: '100%',
+                            py: 0.5
                           }
                         }}
-                        action={
-                          submitStatus.type === 'success' && (
-                            <CheckCircleIcon color="success" />
-                          )
-                        }
+                        iconMapping={{
+                          success: <CheckCircleIcon fontSize="large" />,
+                          warning: <WarningIcon fontSize="large" />,
+                          error: <WarningIcon fontSize="large" />,
+                          info: <InfoIcon fontSize="large" />
+                        }}
                       >
-                        <Typography fontWeight="500">
+                        <Typography 
+                          fontWeight="500" 
+                          fontSize={isMobile ? '0.875rem' : '1rem'}
+                        >
                           {submitStatus.message}
                         </Typography>
                       </Alert>
@@ -801,43 +1084,50 @@ const FormDetails = () => {
                     sx={{ 
                       mt: 4,
                       borderRadius: 2,
-                      border: '1px solid',
+                      border: '2px solid',
                       borderColor: 'primary.light',
-                      bgcolor: alpha('#1976d2', 0.02)
+                      overflow: 'hidden',
+                      backgroundColor: isDarkMode ? theme.palette.background.paper : 'background.paper'
                     }}
                   >
                     <CardHeader
                       title={
-                        <Box display="flex" alignItems="center">
+                        <Box display="flex" alignItems="center" flexWrap="wrap" gap={1}>
                           <CheckCircleIcon sx={{ mr: 1, color: 'success.main' }} />
-                          Selected Columns & Sequence Configuration
+                          <Typography variant="h6" fontWeight="600" color="primary.dark">
+                            Selected Columns & Sequence
+                          </Typography>
+                          <Chip 
+                            label={`${selectedColumns.length} column(s)`} 
+                            size="small" 
+                            color="primary"
+                            variant="filled"
+                            sx={{ ml: 'auto' }}
+                          />
                         </Box>
                       }
-                      subheader={`${selectedColumns.length} column(s) selected`}
-                      titleTypographyProps={{ 
-                        variant: 'h6',
-                        fontWeight: 600,
-                        color: 'primary.dark'
+                      sx={{ 
+                        pb: 2,
+                        borderBottom: '1px solid',
+                        borderColor: 'divider'
                       }}
-                      subheaderTypographyProps={{
-                        color: 'text.secondary'
-                      }}
-                      sx={{ pb: 1 }}
                     />
-                    <CardContent>
+                    <CardContent sx={{ p: 0 }}>
                       <TableContainer 
                         component={Paper}
                         variant="outlined"
-                        sx={{ borderRadius: 2 }}
+                        sx={tableContainerStyle}
                       >
-                        <Table>
+                        <Table sx={{ minWidth: isMobile ? 600 : 'auto' }}>
                           <TableHead>
-                            <TableRow sx={{ bgcolor: 'grey.50' }}>
-                              <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>Column Name</TableCell>
-                              <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>Data Type</TableCell>
-                              <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>Validation Rule</TableCell>
-                              <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>Sequence Number</TableCell>
-                              <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>Actions</TableCell>
+                            <TableRow sx={{ 
+                              backgroundColor: isDarkMode ? theme.palette.background.default : 'grey.50' 
+                            }}>
+                              <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>Column Name</TableCell>
+                              <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>Data Type</TableCell>
+                              <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2 }}>Validation Rule</TableCell>
+                              <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2, width: 150 }}>Sequence</TableCell>
+                              <TableCell sx={{ fontWeight: 600, color: 'text.primary', py: 2, width: 100 }}>Actions</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
@@ -848,25 +1138,26 @@ const FormDetails = () => {
                               return (
                                 <TableRow 
                                   key={colId}
-                                  sx={{ 
-                                    '&:last-child td, &:last-child th': { border: 0 },
-                                    '&:hover': { bgcolor: 'action.hover' }
-                                  }}
+                                  sx={tableRowHoverStyle}
                                 >
-                                  <TableCell>
-                                    <Typography fontWeight="500">
+                                  <TableCell sx={{ py: 2 }}>
+                                    <Typography fontWeight="500" fontSize={isMobile ? '0.875rem' : '1rem'}>
                                       {column?.ColumnName}
                                     </Typography>
                                   </TableCell>
-                                  <TableCell>
+                                  <TableCell sx={{ py: 2 }}>
                                     <Chip 
                                       label={column?.DataType} 
                                       size="small"
                                       color="primary"
                                       variant="outlined"
+                                      sx={{ 
+                                        fontWeight: '500',
+                                        fontSize: isMobile ? '0.75rem' : '0.875rem'
+                                      }}
                                     />
                                   </TableCell>
-                                  <TableCell>
+                                  <TableCell sx={{ py: 2 }}>
                                     {validation ? (
                                       <Chip 
                                         label={validation.ValidationList} 
@@ -875,14 +1166,24 @@ const FormDetails = () => {
                                         variant="filled"
                                         onDelete={() => handleClearValidationRule(colId)}
                                         deleteIcon={<CloseIcon />}
+                                        sx={{ 
+                                          fontWeight: '500',
+                                          fontSize: isMobile ? '0.75rem' : '0.875rem',
+                                          maxWidth: isMobile ? 150 : 200
+                                        }}
                                       />
                                     ) : (
-                                      <Typography variant="body2" color="text.secondary" fontStyle="italic">
+                                      <Typography 
+                                        variant="body2" 
+                                        color="text.secondary" 
+                                        fontStyle="italic"
+                                        fontSize={isMobile ? '0.75rem' : '0.875rem'}
+                                      >
                                         No validation
                                       </Typography>
                                     )}
                                   </TableCell>
-                                  <TableCell sx={{ width: 150 }}>
+                                  <TableCell sx={{ py: 2, width: 150 }}>
                                     <TextField
                                       type="number"
                                       value={sequences[colId] || ''}
@@ -894,19 +1195,36 @@ const FormDetails = () => {
                                       helperText={sequenceErrors[colId]}
                                       sx={{
                                         '& .MuiOutlinedInput-root': {
-                                          borderRadius: 1
+                                          borderRadius: 1,
+                                          fontSize: isMobile ? '0.875rem' : '1rem',
+                                          backgroundColor: isDarkMode ? theme.palette.background.default : 'background.paper'
+                                        },
+                                        '& .MuiFormHelperText-root': {
+                                          fontSize: isMobile ? '0.7rem' : '0.75rem',
+                                          mx: 0
+                                        }
+                                      }}
+                                      InputProps={{
+                                        sx: {
+                                          py: isMobile ? 0.75 : 1
                                         }
                                       }}
                                     />
                                   </TableCell>
-                                  <TableCell>
+                                  <TableCell sx={{ py: 2, width: 100 }}>
                                     <Tooltip title="Remove column" arrow>
                                       <IconButton 
                                         onClick={() => handleRemoveColumn(colId)}
                                         color="error"
-                                        size="small"
+                                        size={isMobile ? "small" : "medium"}
+                                        sx={{
+                                          '&:hover': {
+                                            backgroundColor: 'error.light',
+                                            color: 'white'
+                                          }
+                                        }}
                                       >
-                                        <CloseIcon />
+                                        <CloseIcon fontSize={isMobile ? "small" : "medium"} />
                                       </IconButton>
                                     </Tooltip>
                                   </TableCell>
@@ -917,7 +1235,7 @@ const FormDetails = () => {
                         </Table>
                       </TableContainer>
 
-                      <Box sx={{ mt: 3 }}>
+                      <Box sx={{ p: 3, pt: 2 }}>
                         <Button 
                           type="submit" 
                           variant="contained" 
@@ -927,14 +1245,16 @@ const FormDetails = () => {
                           startIcon={<CheckCircleIcon />}
                           sx={{ 
                             borderRadius: 2,
-                            py: 1.5,
+                            py: 2,
                             textTransform: 'none',
                             fontWeight: 600,
-                            fontSize: '1.1rem',
+                            fontSize: isMobile ? '1rem' : '1.1rem',
                             boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
                             '&:hover': {
-                              boxShadow: '0 6px 16px rgba(25, 118, 210, 0.4)'
-                            }
+                              boxShadow: '0 6px 16px rgba(25, 118, 210, 0.4)',
+                              transform: 'translateY(-1px)'
+                            },
+                            transition: 'all 0.3s ease'
                           }}
                         >
                           Save Form Configuration
@@ -951,73 +1271,97 @@ const FormDetails = () => {
                       mt: 4,
                       borderRadius: 2,
                       border: '1px solid',
-                      borderColor: 'grey.200'
+                      borderColor: isDarkMode ? theme.palette.divider : 'grey.200',
+                      overflow: 'hidden',
+                      backgroundColor: isDarkMode ? theme.palette.background.paper : 'background.paper'
                     }}
                   >
                     <CardHeader
                       title={
-                        <Box display="flex" alignItems="center">
+                        <Box display="flex" alignItems="center" flexWrap="wrap" gap={1}>
                           <InfoIcon sx={{ mr: 1, color: 'info.main' }} />
-                          Existing Columns in Form
+                          <Typography variant="h6" fontWeight="600" color={isDarkMode ? 'text.primary' : 'text.primary'}>
+                            Existing Columns in Form
+                          </Typography>
+                          <Chip 
+                            label={`${existingColumns.length} column(s)`} 
+                            size="small" 
+                            color="info"
+                            variant="filled"
+                            sx={{ ml: 'auto' }}
+                          />
                         </Box>
                       }
-                      subheader={`${existingColumns.length} column(s) already configured`}
-                      titleTypographyProps={{ 
-                        variant: 'h6',
-                        fontWeight: 600
+                      sx={{ 
+                        pb: 2,
+                        borderBottom: '1px solid',
+                        borderColor: 'divider'
                       }}
-                      sx={{ pb: 1 }}
                     />
-                    <CardContent>
+                    <CardContent sx={{ p: 0 }}>
                       <TableContainer 
                         component={Paper}
                         variant="outlined"
-                        sx={{ borderRadius: 2 }}
+                        sx={tableContainerStyle}
                       >
-                        <Table>
+                        <Table sx={{ minWidth: isMobile ? 600 : 'auto' }}>
                           <TableHead>
-                            <TableRow sx={{ bgcolor: 'grey.50' }}>
-                              <TableCell sx={{ fontWeight: 600 }}>Column ID</TableCell>
-                              <TableCell sx={{ fontWeight: 600 }}>Column Name</TableCell>
-                              <TableCell sx={{ fontWeight: 600 }}>Data Type</TableCell>
-                              <TableCell sx={{ fontWeight: 600 }}>Sequence</TableCell>
+                            <TableRow sx={{ 
+                              backgroundColor: isDarkMode ? theme.palette.background.default : 'grey.50' 
+                            }}>
+                              <TableCell sx={{ fontWeight: 600, py: 2 }}>Column ID</TableCell>
+                              <TableCell sx={{ fontWeight: 600, py: 2 }}>Column Name</TableCell>
+                              <TableCell sx={{ fontWeight: 600, py: 2 }}>Data Type</TableCell>
+                              <TableCell sx={{ fontWeight: 600, py: 2 }}>Sequence</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
                             {existingColumns.map((col) => (
                               <TableRow 
                                 key={col.ColId}
-                                sx={{ 
-                                  '&:last-child td, &:last-child th': { border: 0 },
-                                  '&:hover': { bgcolor: 'action.hover' }
-                                }}
+                                sx={tableRowHoverStyle}
                               >
-                                <TableCell>
+                                <TableCell sx={{ py: 2 }}>
                                   <Chip 
                                     label={col.ColId} 
                                     size="small"
                                     color="default"
                                     variant="outlined"
+                                    sx={{ 
+                                      fontWeight: '500',
+                                      fontSize: isMobile ? '0.75rem' : '0.875rem'
+                                    }}
                                   />
                                 </TableCell>
-                                <TableCell>
-                                  <Typography fontWeight="500">
+                                <TableCell sx={{ py: 2 }}>
+                                  <Typography 
+                                    fontWeight="500" 
+                                    fontSize={isMobile ? '0.875rem' : '1rem'}
+                                  >
                                     {col.ColumnName}
                                   </Typography>
                                 </TableCell>
-                                <TableCell>
+                                <TableCell sx={{ py: 2 }}>
                                   <Chip 
                                     label={col.DataType} 
                                     size="small"
                                     color="primary"
                                     variant="outlined"
+                                    sx={{ 
+                                      fontWeight: '500',
+                                      fontSize: isMobile ? '0.75rem' : '0.875rem'
+                                    }}
                                   />
                                 </TableCell>
-                                <TableCell>
+                                <TableCell sx={{ py: 2 }}>
                                   <Chip 
                                     label={col.SequenceNo} 
                                     size="small"
                                     color="secondary"
+                                    sx={{ 
+                                      fontWeight: '500',
+                                      fontSize: isMobile ? '0.75rem' : '0.875rem'
+                                    }}
                                   />
                                 </TableCell>
                               </TableRow>
@@ -1041,26 +1385,24 @@ const FormDetails = () => {
         maxWidth="md" 
         fullWidth
         TransitionComponent={Zoom}
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            boxShadow: '0 12px 48px rgba(0,0,0,0.15)'
-          }
-        }}
+        PaperProps={{ sx: dialogStyle }}
       >
         <DialogTitle sx={{ 
-          bgcolor: 'primary.main', 
-          color: 'white',
-          py: 3
+          py: 3,
+          position: 'sticky',
+          top: 0,
+          zIndex: 1,
+          backgroundColor: isDarkMode ? theme.palette.background.paper : 'background.paper',
+          borderBottom: isDarkMode ? `1px solid ${theme.palette.divider}` : '1px solid rgba(0,0,0,0.1)'
         }}>
-          <Box display="flex" alignItems="center">
-            <AddIcon sx={{ mr: 2 }} />
-            <Typography variant="h6" fontWeight="600">
+          <Box display="flex" alignItems="center" flexDirection={isMobile ? 'column' : 'row'} gap={1}>
+            <AddIcon sx={{ mr: isMobile ? 0 : 2, fontSize: isMobile ? '1.5rem' : 'inherit' }} />
+            <Typography variant={isMobile ? "h6" : "h5"} fontWeight="600" textAlign={isMobile ? 'center' : 'left'} color={isDarkMode ? 'text.primary' : 'text.primary'}>
               Select Columns for Form
             </Typography>
           </Box>
         </DialogTitle>
-        <DialogContent sx={{ p: 0 }}>
+        <DialogContent sx={{ p: 0, maxHeight: isMobile ? 'calc(90vh - 140px)' : '60vh' }}>
           <List sx={{ py: 1 }}>
             {availableColumns.map((col) => {
               const isExisting = existingColumnIds.includes(col.ColumnId);
@@ -1071,16 +1413,13 @@ const FormDetails = () => {
                   button="true" 
                   disabled={isExisting}
                   sx={{
-                    py: 2,
-                    px: 3,
-                    borderBottom: '1px solid',
-                    borderColor: 'divider',
+                    ...listItemStyle,
                     '&:hover': {
-                      bgcolor: isExisting ? 'transparent' : 'action.hover'
+                      bgcolor: isExisting ? 'transparent' : (isDarkMode ? theme.palette.action.hover : 'action.hover')
                     },
                     '&.Mui-disabled': {
                       opacity: 0.6
-                    }
+                    },
                   }}
                 >
                   <Checkbox
@@ -1092,11 +1431,12 @@ const FormDetails = () => {
                   />
                   <ListItemText 
                     primary={
-                      <Box display="flex" alignItems="center">
+                      <Box display="flex" alignItems="center" flexWrap="wrap" gap={1}>
                         <Typography 
                           variant="body1" 
                           fontWeight={500}
                           color={isExisting ? 'text.secondary' : 'text.primary'}
+                          fontSize={isMobile ? '0.875rem' : '1rem'}
                         >
                           {col.ColumnName}
                         </Typography>
@@ -1105,13 +1445,21 @@ const FormDetails = () => {
                             label="Already in form" 
                             size="small" 
                             color="default"
-                            sx={{ ml: 2 }}
+                            sx={{ 
+                              fontSize: isMobile ? '0.7rem' : '0.75rem',
+                              height: isMobile ? 20 : 24
+                            }}
                           />
                         )}
                       </Box>
                     } 
                     secondary={
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography 
+                        variant="body2" 
+                        color="text.secondary"
+                        fontSize={isMobile ? '0.75rem' : '0.875rem'}
+                        sx={{ mt: 0.5 }}
+                      >
                         ID: {col.ColumnId} • Type: {col.DataType}
                       </Typography>
                     } 
@@ -1122,7 +1470,7 @@ const FormDetails = () => {
                     col.DataType?.toLowerCase() === 'checkbox') && 
                    !isExisting && 
                    isSelected && (
-                    <>
+                    <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
                       {columnValidations[col.ColumnId] ? (
                         <Tooltip title="Clear validation rule" arrow>
                           <Button
@@ -1134,13 +1482,15 @@ const FormDetails = () => {
                               handleClearValidationRule(col.ColumnId);
                             }}
                             sx={{ 
-                              ml: 2, 
                               textTransform: 'none',
-                              borderRadius: 1
+                              borderRadius: 1,
+                              fontSize: isMobile ? '0.7rem' : '0.875rem',
+                              px: isMobile ? 1 : 2,
+                              minWidth: 'auto'
                             }}
-                            startIcon={<CloseIcon />}
+                            startIcon={<CloseIcon fontSize={isMobile ? "small" : "medium"} />}
                           >
-                            Clear
+                            {isMobile ? '' : 'Clear'}
                           </Button>
                         </Tooltip>
                       ) : (
@@ -1154,31 +1504,45 @@ const FormDetails = () => {
                               handleOpenValidationDialog(col);
                             }}
                             sx={{ 
-                              ml: 2, 
                               textTransform: 'none',
-                              borderRadius: 1
+                              borderRadius: 1,
+                              fontSize: isMobile ? '0.7rem' : '0.875rem',
+                              px: isMobile ? 1 : 2,
+                              minWidth: 'auto'
                             }}
-                            startIcon={<RuleIcon />}
+                            startIcon={<RuleIcon fontSize={isMobile ? "small" : "medium"} />}
                           >
-                            Set Required
+                            {isMobile ? '' : 'Set Required'}
                           </Button>
                         </Tooltip>
                       )}
-                    </>
+                    </Box>
                   )}
                 </ListItem>
               );
             })}
           </List>
         </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
+        <DialogActions sx={{ 
+          p: isMobile ? 2 : 3, 
+          gap: 1,
+          backgroundColor: isDarkMode ? theme.palette.background.paper : 'background.paper',
+          borderTop: isDarkMode ? `1px solid ${theme.palette.divider}` : '1px solid rgba(0,0,0,0.1)'
+        }}>
           <Button 
             onClick={handleCloseDialog} 
             variant="outlined"
+            fullWidth={isMobile}
             sx={{ 
               borderRadius: 2,
-              px: 4,
-              textTransform: 'none'
+              px: 3,
+              py: isMobile ? 1.5 : 1,
+              textTransform: 'none',
+              fontWeight: '600',
+              borderWidth: '2px',
+              '&:hover': {
+                borderWidth: '2px'
+              }
             }}
           >
             Cancel
@@ -1187,11 +1551,17 @@ const FormDetails = () => {
             onClick={handleConfirmDialog} 
             variant="contained"
             startIcon={<CheckCircleIcon />}
+            fullWidth={isMobile}
             sx={{ 
               borderRadius: 2,
-              px: 4,
+              px: 3,
+              py: isMobile ? 1.5 : 1,
               textTransform: 'none',
-              fontWeight: 600
+              fontWeight: '600',
+              boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
+              '&:hover': {
+                boxShadow: '0 6px 16px rgba(25, 118, 210, 0.4)'
+              }
             }}
           >
             Confirm Selection
@@ -1232,22 +1602,39 @@ const FormDetails = () => {
         TransitionComponent={Fade}
         PaperProps={{
           sx: {
-            borderRadius: 2,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
+            borderRadius: 3,
+            boxShadow: isDarkMode 
+              ? '0 8px 32px rgba(0,0,0,0.4)' 
+              : '0 8px 32px rgba(0,0,0,0.12)',
+            m: isMobile ? 2 : 3,
+            backgroundColor: isDarkMode 
+              ? theme.palette.background.paper 
+              : theme.palette.background.paper,
+            border: isDarkMode ? `1px solid ${theme.palette.divider}` : 'none'
           }
         }}
       >
         <DialogTitle sx={{
-          bgcolor: 'primary.main',
-          color: 'white',
-          py: 2
+          py: 3,
+          position: 'relative',
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            bottom: 0,
+            left: '5%',
+            width: '90%',
+            height: '2px',
+            bgcolor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+          }
         }}>
-          <Box display="flex" alignItems="center">
-            <InfoIcon sx={{ mr: 1 }} />
-            Form Info Options
+          <Box display="flex" alignItems="center" sx={{ flexDirection: isMobile ? 'column' : 'row', gap: 1 }}>
+            <InfoIcon sx={{ mr: 1, fontSize: isMobile ? '1.5rem' : 'inherit' }} />
+            <Typography variant={isMobile ? "h6" : "h5"} fontWeight="600" color={isDarkMode ? 'text.primary' : 'text.primary'}>
+              Form Info Options
+            </Typography>
           </Box>
         </DialogTitle>
-        <DialogContent sx={{ p: 3 }}>
+        <DialogContent sx={{ p: isMobile ? 2 : 3, pt: 3 }}>
           <Stack spacing={2}>
             <FormControlLabel
               control={
@@ -1255,9 +1642,14 @@ const FormDetails = () => {
                   checked={isValidFormFront}
                   onChange={(e) => setIsValidFormFront(e.target.checked)}
                   color="primary"
+                  size={isMobile ? "small" : "medium"}
                 />
               }
-              label="Show info Before"
+              label={
+                <Typography variant={isMobile ? "body2" : "body1"} fontWeight="500" color={isDarkMode ? 'text.primary' : 'text.primary'}>
+                  Show info Before Form
+                </Typography>
+              }
             />
             <FormControlLabel
               control={
@@ -1265,13 +1657,18 @@ const FormDetails = () => {
                   checked={isValidFormBack}
                   onChange={(e) => setIsValidFormBack(e.target.checked)}
                   color="primary"
+                  size={isMobile ? "small" : "medium"}
                 />
               }
-              label="Show info Back"
+              label={
+                <Typography variant={isMobile ? "body2" : "body1"} fontWeight="500" color={isDarkMode ? 'text.primary' : 'text.primary'}>
+                  Show info After Form
+                </Typography>
+              }
             />
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 0 }}>
+        <DialogActions sx={{ p: isMobile ? 2 : 3, pt: 0, gap: 1 }}>
           <Button
             onClick={() => {
               setInfoDialogOpen(false);
@@ -1279,9 +1676,17 @@ const FormDetails = () => {
               setIsValidFormBack(false);
             }}
             variant="outlined"
+            fullWidth={isMobile}
             sx={{
               borderRadius: 2,
-              px: 3
+              px: 3,
+              py: isMobile ? 1.5 : 1,
+              textTransform: 'none',
+              fontWeight: '600',
+              borderWidth: '2px',
+              '&:hover': {
+                borderWidth: '2px'
+              }
             }}
           >
             Cancel
@@ -1292,9 +1697,17 @@ const FormDetails = () => {
             }}
             variant="contained"
             startIcon={<CheckCircleIcon />}
+            fullWidth={isMobile}
             sx={{
               borderRadius: 2,
-              px: 3
+              px: 3,
+              py: isMobile ? 1.5 : 1,
+              textTransform: 'none',
+              fontWeight: '600',
+              boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
+              '&:hover': {
+                boxShadow: '0 6px 16px rgba(25, 118, 210, 0.4)'
+              }
             }}
           >
             Continue

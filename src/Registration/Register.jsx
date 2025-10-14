@@ -43,6 +43,14 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
   const [showEditPreviewDialog, setShowEditPreviewDialog] = useState(false); // New state
   const [showAlreadyRegisteredDialog, setShowAlreadyRegisteredDialog] = useState(false);
   const [isExistingFormUser, setIsExistingFormUser] = useState(false);
+  const [formRegisterTab, setFormRegisterTab] = useState(0);
+
+  const handleFormRegisterTabChange = (event, newValue) => {
+    setFormRegisterTab(newValue);
+    setFormRegData({ identifier: "" });
+    setIdentifierError("");
+    setEmailError("");
+  };
 
   const [registerData, setRegisterData] = useState({
     name: "",
@@ -52,6 +60,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [formRegData, setFormRegData] = useState({
     identifier: "",
+    email: "",
   });
   const [firebaseUID, setFirebaseUID] = useState(null); // New state for Firebase UID
   const [showPassword, setShowPassword] = useState(false);
@@ -66,6 +75,8 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
   const [provisionalToken, setProvisionalToken] = useState(null);
   const [otpTimer, setOtpTimer] = useState(0);
   const [canResendOtp, setCanResendOtp] = useState(false);
+
+
 
   // Timer effect for OTP
   useEffect(() => {
@@ -154,53 +165,40 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
     const { name, value } = e.target;
     setFormRegData({ ...formRegData, [name]: value });
 
-    if (name === 'identifier') {
+    if (formRegisterTab === 0) { // Email tab
+        if (value && !validateEmail(value)) {
+            setEmailError("Invalid email address.");
+        } else {
+            setEmailError("");
+        }
+        setIdentifierError('');
+    } else { // Phone tab
         if (value && !validateIdentifier(value)) {
             setIdentifierError('Please enter a valid 10-digit phone number, optionally with a +91 prefix.');
         } else {
             setIdentifierError('');
         }
+        setEmailError('');
     }
   };
 
-  const handleSendOtp = async (identifier) => {
-    //console.log("Sending OTP to:", identifier);
+  const handleSendOtp = async (identifier, type) => {
     setOtpLoading(true);
     setOtpError("");
     
     try {
-      let fetchedFormName = formName;
-      if (!fetchedFormName && formId) {
-        try {
-          const response = await api.get(`/formname/${formId}`);
-          if (response.data.FormName) {
-            fetchedFormName = response.data.FormName;
-            setFormName(response.data.FormName);
-          }
-        } catch (error) {
-          console.error("Error fetching form name:", error);
-        }
-      }
-
-      const phoneNumber = identifier.startsWith('+91') ? identifier : `+91${identifier}`;
-      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-      //const otpCode = "123456";
-
-
-      // console.log("Generated OTP:", otpCode);
-       const message = `Your OTP is: ${otpCode}`;
-       await sendWhatsAppMessage(phoneNumber, message);
-
-      sessionStorage.setItem('currentOtp', otpCode); 
+      await api.post("/formregister/send-otp", {
+        identifier: identifier,
+        type: type,
+      });
 
       setShowOtpDialog(true);
       setOtpTimer(35); // Start 35-second timer
       setCanResendOtp(false);
-      toast.success("OTP sent successfully via WhatsApp!");
+      toast.success(`OTP sent successfully to your ${type}!`);
     } catch (error) {
-      console.error("Error sending OTP via WhatsApp:", error);
-      let errorMessage = "Failed to send OTP via WhatsApp. Please try again later.";
+      console.error(`Error sending OTP via ${type}:`, error);
+      let errorMessage = `Failed to send OTP via ${type}. Please try again later.`;
       
       setAlert({ type: "error", message: errorMessage });
       toast.error(errorMessage);
@@ -227,26 +225,17 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
     setOtpError("");
     
     try {
-      const storedOtp = sessionStorage.getItem('currentOtp');
-
-      if (otp === storedOtp) {
-        await api.post("/formregister/verify-whatsapp-otp", {
-          identifier: formRegData.identifier,
-          otp: otp,
-        });
+      const res = await api.post("/formregister/verify-otp", {
+        identifier: formRegData.identifier,
+        otp: otp,
+      });
         
-        handleFormRegistrationSuccess({ token: provisionalToken }, formRegData.identifier, isExistingFormUser);
-        setShowOtpDialog(false);
-        sessionStorage.removeItem('currentOtp');
-        setOtpTimer(0);
-        setCanResendOtp(false);
-      } else {
-        throw new Error("Invalid OTP. Please try again.");
-      }
+      handleFormRegistrationSuccess(res.data, formRegData.identifier, isExistingFormUser);
+      setShowOtpDialog(false);
 
     } catch (error) {
       console.error("Error verifying OTP:", error);
-      let errorMessage = error.message || "Invalid OTP. Please try again.";
+      let errorMessage = error.response?.data?.message || "Invalid OTP. Please try again.";
       
       setOtpError(errorMessage);
       toast.error(errorMessage);
@@ -301,12 +290,13 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
       data = {
         identifier: formRegData.identifier,
         formId: formId,
+        type: formRegisterTab === 0 ? 'email' : 'phone',
       };
     }
 
     if (Object.values(data).some((val) => !val && val !== 0)) {
       if (type === "formregister" && !data.identifier) {
-        setAlert({ type: "error", message: "Phone No is required." });
+        setAlert({ type: "error", message: "Phone No or Email is required." });
         setLoading(false);
         return;
       } else if (type !== "formregister") {
@@ -344,7 +334,8 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
       } else if (type === "formregister") {
         setProvisionalToken(result.token);
         setIsExistingFormUser(false); // It's a new registration for this form
-        await handleSendOtp(formRegData.identifier);
+        const otpType = formRegisterTab === 0 ? 'email' : 'phone';
+        await handleSendOtp(formRegData.identifier, otpType);
       }
     } catch (err) {
       console.error("Form registration error:", err);
@@ -369,6 +360,8 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
       handleSubmit(type);
     }
   };
+
+
 
   const handleFormRegistrationSuccess = (result, identifier, wasExistingUser = false) => {
     sessionStorage.setItem("userId", identifier);
@@ -553,41 +546,82 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
             )}
 
             {forceFormRegister && (
-              <Box component="form" sx={{ mt: 1 }}>
-                {showDistributeMessage ? (
-                  <Typography
-                    variant="h6"
-                    color="primary"
-                    sx={{ textAlign: "center", mt: 3 }}
-                  >
-                    Verification Successful! Redirecting to form...
-                  </Typography>
-                ) : (
-                  <>
-                    <TextField
-                      margin="normal"
-                      required
-                      fullWidth
-                      id="identifier"
-                      label="Phone No"
-                      name="identifier"
-                      value={formRegData.identifier}
-                      onChange={handleFormRegChange}
-                      onKeyDown={(e) => handleKeyPress(e, 'formregister')}
-                      error={!!identifierError}
-                      helperText={identifierError || "Please enter your 10-digit WhatsApp number to receive an OTP."}
-                    />
-                    <Button
-                      type="button"
-                      fullWidth
-                      variant="contained"
-                      sx={{ mt: 3, mb: 2 }}
-                      onClick={() => handleSubmit("formregister")}
-                      disabled={loading || !/^(\+91)?[0-9]{10}$/.test(formRegData.identifier)}
-                    >
-                      {loading ? <CircularProgress size={24} /> : "Register and Continue"}
-                    </Button>
-                  </>
+              <Box sx={{ mt: 1 }}>
+                <Tabs value={formRegisterTab} onChange={handleFormRegisterTabChange} centered>
+                  <Tab label="Email" />
+                  <Tab label="Phone" />
+                </Tabs>
+
+                {formRegisterTab === 0 && (
+                  <Box component="form" sx={{ mt: 1 }}>
+                    {showDistributeMessage ? (
+                      <Typography variant="h6" color="primary" sx={{ textAlign: "center", mt: 3 }}>
+                        Verification Successful! Redirecting to form...
+                      </Typography>
+                    ) : (
+                      <>
+                        <TextField
+                          margin="normal"
+                          required
+                          fullWidth
+                          id="identifier"
+                          label="Email Address"
+                          name="identifier"
+                          autoComplete="email"
+                          value={formRegData.identifier}
+                          onChange={handleFormRegChange}
+                          error={!!emailError}
+                          helperText={emailError || "enter your mail"}
+                        />
+                        <Button
+                          type="button"
+                          fullWidth
+                          variant="contained"
+                          sx={{ mt: 3, mb: 2 }}
+                          onClick={() => handleSubmit("formregister")}
+                          disabled={loading || !validateEmail(formRegData.identifier)}
+                        >
+                          {loading ? <CircularProgress size={24} /> : "Register with Email"}
+                        </Button>
+                      </>
+                    )}
+                  </Box>
+                )}
+
+                {formRegisterTab === 1 && (
+                  <Box component="form" sx={{ mt: 1 }}>
+                    {showDistributeMessage ? (
+                      <Typography variant="h6" color="primary" sx={{ textAlign: "center", mt: 3 }}>
+                        Verification Successful! Redirecting to form...
+                      </Typography>
+                    ) : (
+                      <>
+                        <TextField
+                          margin="normal"
+                          required
+                          fullWidth
+                          id="identifier"
+                          label="Phone No"
+                          name="identifier"
+                          value={formRegData.identifier}
+                          onChange={handleFormRegChange}
+                          onKeyDown={(e) => handleKeyPress(e, 'formregister')}
+                          error={!!identifierError}
+                          helperText={identifierError || "Please enter your 10-digit WhatsApp number to receive an OTP."}
+                        />
+                        <Button
+                          type="button"
+                          fullWidth
+                          variant="contained"
+                          sx={{ mt: 3, mb: 2 }}
+                          onClick={() => handleSubmit("formregister")}
+                          disabled={loading || !/^(\+91)?[0-9]{10}$/.test(formRegData.identifier)}
+                        >
+                          {loading ? <CircularProgress size={24} /> : "Register with Phone"}
+                        </Button>
+                      </>
+                    )}
+                  </Box>
                 )}
               </Box>
             )}
@@ -633,10 +667,13 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
       </Dialog>
 
       <Dialog open={showOtpDialog} onClose={() => !otpLoading && setShowOtpDialog(false)}>
-        <DialogTitle>Verify Phone Number</DialogTitle>
+        <DialogTitle>{formRegisterTab === 0 ? 'Verify Email Address' : 'Verify Phone Number'}</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
-            A 6-digit OTP has been sent to your WhatsApp number. Please enter it below.
+            {formRegisterTab === 0 
+              ? "A 6-digit OTP has been sent to your email address. Please enter it below."
+              : "A 6-digit OTP has been sent to your WhatsApp number. Please enter it below."
+            }
           </Typography>
           
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 2, flexDirection: 'column' }}>
@@ -709,6 +746,8 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
           </Button>
         </DialogActions>
       </Dialog>
+
+
     </Container>
   );
 }

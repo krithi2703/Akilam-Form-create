@@ -24,6 +24,10 @@ api.interceptors.request.use(
     if (userId && config.headers.userid !== 'preview') {
       config.headers.userid = userId;
     }
+    const isFormOnlyUser = sessionStorage.getItem('isFormOnlyUser');
+    if (isFormOnlyUser === 'true') {
+      config.headers['is-form-only-user'] = 'true';
+    }
     return config;
   },
   (error) => {
