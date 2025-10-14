@@ -124,6 +124,9 @@ const ViewSubmissions = () => {
   const userId = sessionStorage.getItem('userId');
   const isFormOnlyUser = sessionStorage.getItem('isFormOnlyUser') === 'true';
 
+  const filteredColumnsForTable = columns.filter(col => !["h1", "h2", "h3", "h4", "h5", "h6", "p"].includes(col.DataType?.toLowerCase()));
+  const displayedColumnsForTable = filteredColumnsForTable.slice(0, isMobile ? 2 : 6);
+
   const handleLogout = () => {
     sessionStorage.clear();
     window.location.href = `/${formId}`;
@@ -535,22 +538,18 @@ const ViewSubmissions = () => {
       case "h4":
       case "h5":
       case "h6":
-        return (
-          <Typography
-            variant={DataType.toLowerCase()}
-            sx={{ mb: 2, fontWeight: 'bold' }}
-          >
-            {ColumnName}
-          </Typography>
-        );
       case "p":
         return (
-          <Typography
-            variant="body1"
+          <TextField
+            fullWidth
+            label={ColumnName}
+            value={ColumnName} // Display ColumnName as value
             sx={{ mb: 2 }}
-          >
-            {ColumnName}
-          </Typography>
+            InputProps={{
+              readOnly: true, // Make it read-only
+            }}
+            size={isMobile ? "small" : "medium"}
+          />
         );
       case 'file':
         return (
@@ -748,22 +747,30 @@ const ViewSubmissions = () => {
       case "h4":
       case "h5":
       case "h6":
-        return (
-          <Typography
-            variant={col.DataType.toLowerCase()}
-            sx={{ mb: 2, fontWeight: 'bold', fontSize: isMobile ? '0.875rem' : '1rem' }}
-          >
-            {value}
-          </Typography>
-        );
       case "p":
+        if (truncate) {
+          return (
+            <Typography 
+              variant="body2" 
+              color="text.secondary" 
+              fontStyle="italic"
+              sx={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}
+            >
+              (Not displayed in table)
+            </Typography>
+          );
+        }
         return (
-          <Typography
-            variant="body1"
-            sx={{ fontSize: isMobile ? '0.875rem' : '1rem' }}
-          >
-            {value}
-          </Typography>
+          <TextField
+            fullWidth
+            label={col.ColumnName}
+            value={value}
+            sx={{ mb: 2 }}
+            InputProps={{
+              readOnly: true, // Make it read-only
+            }}
+            size={isMobile ? "small" : "medium"}
+          />
         );
       default:
         return (
@@ -1103,41 +1110,30 @@ const ViewSubmissions = () => {
                     >
                       <TableHead>
                         <TableRow>
-                          {isMobile
-                            ? columns.slice(0, 2).map((col) => (
-                                <TableCell
-                                  key={col.ColId}
-                                  sx={{
-                                    minWidth: 100,
-                                    maxWidth: 150,
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap'
-                                  }}
-                                >
-                                  <Typography variant="subtitle2" noWrap fontSize="0.75rem">
+                          {displayedColumnsForTable.map((col) => (
+                            <TableCell
+                              key={col.ColId}
+                              sx={{
+                                minWidth: isMobile ? 100 : 120,
+                                maxWidth: isMobile ? 150 : 200,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {isMobile ? (
+                                <Typography variant="subtitle2" noWrap fontSize="0.75rem">
+                                  {col.ColumnName}
+                                </Typography>
+                              ) : (
+                                <Tooltip title={col.ColumnName} arrow>
+                                  <Typography variant="subtitle2" noWrap>
                                     {col.ColumnName}
                                   </Typography>
-                                </TableCell>
-                              ))
-                            : columns.slice(0, 6).map((col) => (
-                                <TableCell
-                                  key={col.ColId}
-                                  sx={{
-                                    minWidth: 120,
-                                    maxWidth: 200,
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap'
-                                  }}
-                                >
-                                  <Tooltip title={col.ColumnName} arrow>
-                                    <Typography variant="subtitle2" noWrap>
-                                      {col.ColumnName}
-                                    </Typography>
-                                  </Tooltip>
-                                </TableCell>
-                              ))}
+                                </Tooltip>
+                              )}
+                            </TableCell>
+                          ))}
                           <TableCell
                             width={isMobile ? 80 : 120}
                             align="center"
@@ -1158,7 +1154,7 @@ const ViewSubmissions = () => {
                                 }
                               }}
                             >
-                              {(isMobile ? columns.slice(0, 2) : columns.slice(0, 6)).map((col) => (
+                              {displayedColumnsForTable.map((col) => (
                                 <TableCell key={col.ColId}>
                                   {renderCellContent(col, submission)}
                                 </TableCell>
