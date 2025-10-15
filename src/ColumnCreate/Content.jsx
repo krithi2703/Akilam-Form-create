@@ -66,7 +66,7 @@ export default function Content() {
 
             if (response.status === 201) {
                 toast.success('Content details inserted successfully!');
-                navigate('/content-details');
+                navigate('/content-table');
                 setFormData({
                     formNameDisplay: passedFormName || '',
                     contentHeader: '',
