@@ -362,15 +362,20 @@ const CreateColumnTable = () => {
       {/* Header */}
       <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 3, bgcolor: 'background.paper' }}>
         <CardContent sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: { xs: 'column', sm: 'row' } }}>
-          <Typography variant={{ xs: 'h5', sm: 'h4' }} component="h1" sx={{ fontWeight: 'bold', color: 'primary.main', mb: { xs: 2, sm: 0 } }}>
+          <Typography variant={{ xs: 'h5', sm: 'h4' }} component="h1" sx={{ fontWeight: 'bold', color: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2', mb: { xs: 2, sm: 0 } }}>
             Form Details
           </Typography>
           <Box sx={{ display: "flex", gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
             <Button
               variant="contained"
-              color="primary"
               onClick={() => navigate("/formdetails", { state: { formId: selectedForm.id, formNo: selectedForm.no } })}
               disabled={!selectedForm.id}
+              sx={{
+                backgroundColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+                '&:hover': {
+                  backgroundColor: theme.palette.mode === 'dark' ? '#0d47a1' : '#1565c0',
+                },
+              }}
             >
               Add Column
             </Button>
@@ -440,15 +445,15 @@ const CreateColumnTable = () => {
       {loading && <Box sx={{ display: "flex", justifyContent: "center", my: 3 }}><CircularProgress /></Box>}
       {!loading && selectedForm.id && (
         <>
-          <Typography variant="h6" sx={{ mb: 2 }}>
+          <Typography variant="h6" sx={{ mb: 2, color: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2' }}>
             Columns for {forms.find(f => f.FormId == selectedForm.id && f.FormNo == selectedForm.no)?.FormName} (FormNo: {selectedForm.no})
           </Typography>
           <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 3, bgcolor: 'background.paper' }}>
             <Box sx={{ overflowX: 'auto' }}>
               <Table sx={{ minWidth: 650 }}>
                 <TableHead>
-                  <TableRow sx={{ backgroundColor: "primary.main" }}>
-                    <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>S.No.</TableCell>
+                  <TableRow sx={{ backgroundColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2' }}>
+                    <TableCell sx={{ color: theme.palette.common.white, fontWeight: "bold" }}>S.No.</TableCell>
                     <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Column Name</TableCell>
                     <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Data Type</TableCell>
                     <TableCell sx={{ color: theme.palette.primary.contrastText, fontWeight: "bold" }}>Sequence No</TableCell>
@@ -475,7 +480,17 @@ const CreateColumnTable = () => {
                           <Switch
                             checked={col.IsValid || false} // Ensure it's a boolean
                             onChange={() => handleIsValidChange(col.Id, col.IsValid)}
-                            color="primary"
+                            sx={{
+                              '& .MuiSwitch-switchBase.Mui-checked': {
+                                color: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+                                '&:hover': {
+                                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(26, 35, 126, 0.08)' : 'rgba(25, 118, 210, 0.08)',
+                                },
+                              },
+                              '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                backgroundColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+                              },
+                            }}
                             inputProps={{ 'aria-label': 'toggle required status' }}
                           />
                         </TableCell>

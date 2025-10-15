@@ -101,7 +101,7 @@ const ContentTable = () => {
         gutterBottom
         sx={{
           fontWeight: 600,
-          color: 'primary.main',
+          color: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
           mb: { xs: 2, sm: 4 },
           textAlign: { xs: 'center', sm: 'left' }
         }}
@@ -121,7 +121,7 @@ const ContentTable = () => {
       >
         <Table size={isMobile ? 'small' : 'medium'}>
           <TableHead>
-            <TableRow sx={{ backgroundColor: 'primary.main' }}>
+            <TableRow sx={{ backgroundColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2' }}>
               <TableCell sx={{ color: 'white', fontWeight: 600, fontSize: { xs: '0.9rem', sm: '1rem' } }}>
                 Form Name
               </TableCell>
@@ -158,13 +158,13 @@ const ContentTable = () => {
                     sx={{
                       textTransform: 'none',
                       borderRadius: 2,
-                      borderColor: 'primary.main',
-                      color: 'primary.main',
+                      borderColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+                      color: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
                       fontSize: { xs: '0.7rem', sm: '0.9rem' },
                       '&:hover': {
-                        backgroundColor: 'primary.main',
+                        backgroundColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
                         color: 'white',
-                        borderColor: 'primary.main'
+                        borderColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2'
                       }
                     }}
                   >
@@ -205,7 +205,6 @@ const ContentTable = () => {
                   >
                     <Button
                       variant="contained"
-                      color="primary"
                       onClick={(e) => handleOptionsClick(e, formName)}
                       startIcon={<ExpandMore />}
                       sx={{
@@ -214,7 +213,11 @@ const ContentTable = () => {
                         px: { xs: 1, sm: 3 },
                         fontSize: { xs: '0.75rem', sm: '0.9rem' },
                         boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                        width: { xs: '100%', sm: 'auto' }
+                        width: { xs: '100%', sm: 'auto' },
+                        backgroundColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+                        '&:hover': {
+                          backgroundColor: theme.palette.mode === 'dark' ? '#0d47a1' : '#1565c0',
+                        }
                       }}
                     >
                       Options
@@ -362,7 +365,13 @@ const ContentTable = () => {
             sx={{
               textTransform: 'none',
               borderRadius: 2,
-              px: 3
+              px: 3,
+              borderColor: theme.palette.mode === 'dark' ? 'white' : 'primary.main',
+              color: theme.palette.mode === 'dark' ? 'white' : 'primary.main',
+              '&:hover': {
+                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(25, 118, 210, 0.08)',
+                borderColor: theme.palette.mode === 'dark' ? 'white' : 'primary.main',
+              }
             }}
           >
             Close

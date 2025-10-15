@@ -130,7 +130,7 @@ const ChartCard = ({ children, title, subtitle, icon, loading }) => {
         >
           <Box display="flex" alignItems="center" justifyContent="space-between">
             <Box>
-              <Typography variant="h5" fontWeight="bold" color="primary" gutterBottom>
+              <Typography variant="h5" fontWeight="bold" color="text.primary" gutterBottom>
                 {title}
               </Typography>
               <Typography variant="body2" color="textSecondary">
@@ -665,7 +665,7 @@ export default function Dashboard() {
       <Container maxWidth="xl" sx={{ mt: 10, pb: 4 }}>
         {/* Welcome Section */}
         <Box sx={{ mb: 5 }}>
-          <Typography variant="h3" fontWeight="bold" gutterBottom color="primary">
+          <Typography variant="h3" fontWeight="bold" gutterBottom color="">
             Dashboard
           </Typography>
           <Typography variant="h6" color="textSecondary" sx={{ opacity: 0.8 }}>

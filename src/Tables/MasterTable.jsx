@@ -136,27 +136,29 @@ export default function MasterTable() {
           sx={{ 
             mb: { xs: 1, sm: 0 }, 
             fontWeight: 'bold', 
-            color: 'primary.main',
+            color: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
             textAlign: { xs: 'center', sm: 'left' },
             fontSize: { xs: '1.25rem', sm: '1.5rem' }
           }}
         >
           Form Master Table
         </Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleCreateNewForm}
-          size={isSmallScreen ? "small" : "medium"}
-          fullWidth={isSmallScreen}
-          sx={{ 
-            maxWidth: { xs: '100%', sm: '200px' },
-            minWidth: { xs: 'auto', sm: '140px' }
-          }}
-        >
-          Create New Form
-        </Button>
-      </Box>
+                <Button
+                  variant="contained"
+                  onClick={handleCreateNewForm}
+                  size={isSmallScreen ? "small" : "medium"}
+                  fullWidth={isSmallScreen}
+                  sx={{
+                    maxWidth: { xs: '100%', sm: '200px' },
+                    minWidth: { xs: 'auto', sm: '140px' },
+                    backgroundColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+                    '&:hover': {
+                      backgroundColor: theme.palette.mode === 'dark' ? '#0d47a1' : '#1565c0',
+                    }
+                  }}
+                >
+                  Create New Form
+                </Button>      </Box>
 
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
@@ -190,7 +192,7 @@ export default function MasterTable() {
             }}
             size={isSmallScreen ? "small" : "medium"}
           >
-            <TableHead sx={{ backgroundColor: "primary.main" }}>
+            <TableHead sx={{ backgroundColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2' }}>
               <TableRow>
                 <TableCell 
                   sx={{ 

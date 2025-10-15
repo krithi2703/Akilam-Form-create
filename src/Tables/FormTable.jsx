@@ -227,19 +227,18 @@ export default function FormTable() {
         flexDirection={{ xs: 'column', sm: 'row' }}
         gap={2}
       >
-        <Typography
-          variant={{ xs: 'h5', sm: 'h4' }}
-          sx={{ 
-            fontWeight: 'bold', 
-            color: 'primary.main', 
-            mb: { xs: 2, sm: 0 },
-            textAlign: { xs: 'center', sm: 'left' },
-            fontSize: { xs: '1.5rem', sm: '2rem' }
-          }}
-        >
-          All Columns
-        </Typography>
-        <Stack 
+                <Typography
+                  variant={{ xs: 'h5', sm: 'h4' }}
+                  sx={{
+                    fontWeight: 'bold',
+                    color: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+                    mb: { xs: 2, sm: 0 },
+                    textAlign: { xs: 'center', sm: 'left' },
+                    fontSize: { xs: '1.5rem', sm: '2rem' }
+                  }}
+                >
+                  All Columns
+                </Typography>        <Stack 
           direction={{ xs: 'column', sm: 'row' }} 
           spacing={1}
           width={{ xs: '100%', sm: 'auto' }}
@@ -251,6 +250,12 @@ export default function FormTable() {
             onClick={handleAddColumn}
             size={isSmallScreen ? "small" : "medium"}
             fullWidth={isSmallScreen}
+            sx={{
+              backgroundColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+              '&:hover': {
+                backgroundColor: theme.palette.mode === 'dark' ? '#0d47a1' : '#1565c0',
+              }
+            }}
           >
             Add Column
           </Button>
@@ -283,7 +288,7 @@ export default function FormTable() {
           }}
           size={isSmallScreen ? "small" : "medium"}
         >
-          <TableHead sx={{ backgroundColor: 'primary.main' }}>
+          <TableHead sx={{ backgroundColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2' }}>
             <TableRow>
               <TableCell 
                 sx={{ 
@@ -421,19 +426,18 @@ export default function FormTable() {
                       justifyContent="center"
                       flexWrap="wrap"
                     >
-                      <IconButton
-                        size={isSmallScreen ? "small" : "medium"}
-                        onClick={() => handleEditColumn(col)}
-                        color="primary"
-                        sx={{ 
-                          '& .MuiSvgIcon-root': {
-                            fontSize: { xs: '1rem', sm: '1.25rem' }
-                          }
-                        }}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
+                                            <IconButton
+                                              size={isSmallScreen ? "small" : "medium"}
+                                              onClick={() => handleEditColumn(col)}
+                                              sx={{
+                                                color: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+                                                '& .MuiSvgIcon-root': {
+                                                  fontSize: { xs: '1rem', sm: '1.25rem' }
+                                                }
+                                              }}
+                                            >
+                                              <EditIcon />
+                                            </IconButton>                      <IconButton
                         size={isSmallScreen ? "small" : "medium"}
                         onClick={() => handleDeleteColumn(col.ColumnId)}
                         color="error"
@@ -530,18 +534,17 @@ export default function FormTable() {
             onSubmit={handleSaveColumnSubmit} 
             sx={{ pt: 1 }}
           >
-            <Typography
-              variant="subtitle1"
-              gutterBottom
-              sx={{ 
-                fontWeight: 'bold', 
-                color: 'primary.main',
-                fontSize: { xs: '0.875rem', sm: '1rem' }
-              }}
-            >
-              Column Details
-            </Typography>
-            <TextField
+                        <Typography
+                          variant="subtitle1"
+                          gutterBottom
+                          sx={{
+                            fontWeight: 'bold',
+                            color: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+                            fontSize: { xs: '0.875rem', sm: '1rem' }
+                          }}
+                        >
+                          Column Details
+                        </Typography>            <TextField
               label="Column Name"
               fullWidth
               value={newColumn.ColumnName}
@@ -598,23 +601,30 @@ export default function FormTable() {
           >
             Cancel
           </Button>
-          <Button
-            type="submit"
-            form="save-column-form"
-            variant="contained"
-            disabled={saving || !newColumn.ColumnName}
-            fullWidth={isSmallScreen}
-            size={isSmallScreen ? "small" : "medium"}
-          >
-            {saving ? (
-              <CircularProgress size={20} color="inherit" />
-            ) : editingColumn ? (
-              'Update'
-            ) : (
-              'Create'
-            )}
-            {' '}Column
-          </Button>
+                    <Button
+                      type="submit"
+                      form="save-column-form"
+                      variant="contained"
+                      disabled={saving || !newColumn.ColumnName}
+                      fullWidth={isSmallScreen}
+                      size={isSmallScreen ? "small" : "medium"}
+                      sx={{
+                        backgroundColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+                        '&:hover': {
+                          backgroundColor: theme.palette.mode === 'dark' ? '#0d47a1' : '#1565c0',
+                        }
+                      }}
+                    >
+                      {saving ? (
+                        <CircularProgress size={20} color="inherit" />
+                      ) : editingColumn ? (
+                        'Update'
+                      ) : (
+                        'Create'
+                      )}
+                      {' '}
+                      Column
+                    </Button>
         </DialogActions>
       </Dialog>
 

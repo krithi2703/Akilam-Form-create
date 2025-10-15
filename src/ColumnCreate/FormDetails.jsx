@@ -716,39 +716,6 @@ const FormDetails = () => {
             }
           }}
         >
-          <Link
-            underline="hover"
-            color="inherit"
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              navigate('/');
-            }}
-            sx={{ 
-              display: 'flex', 
-              alignItems: 'center',
-              fontSize: isSmallMobile ? '0.875rem' : '1rem',
-              color: isDarkMode ? 'text.primary' : 'inherit'
-            }}
-          >
-            <HomeIcon sx={{ mr: 0.5, fontSize: isSmallMobile ? '1rem' : '1.25rem' }} />
-            Home
-          </Link>
-          <Link
-            underline="hover"
-            color="inherit"
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              navigate('/forms');
-            }}
-            sx={{ 
-              fontSize: isSmallMobile ? '0.875rem' : '1rem',
-              color: isDarkMode ? 'text.primary' : 'inherit'
-            }}
-          >
-            Forms
-          </Link>
           <Typography 
             color="text.primary" 
             sx={{ 
@@ -867,7 +834,20 @@ const FormDetails = () => {
                       py: 1.5,
                       textTransform: 'none',
                       fontWeight: 600,
-                      fontSize: isMobile ? '0.875rem' : '1rem'
+                      fontSize: isMobile ? '0.875rem' : '1rem',
+                      ...(bannerImagePreviewUrl ? { // Outlined variant styles
+                        borderColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+                        color: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+                        '&:hover': {
+                          backgroundColor: theme.palette.mode === 'dark' ? 'rgba(26, 35, 126, 0.08)' : 'rgba(25, 118, 210, 0.08)',
+                          borderColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+                        }
+                      } : { // Contained variant styles
+                        backgroundColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+                        '&:hover': {
+                          backgroundColor: theme.palette.mode === 'dark' ? '#0d47a1' : '#1565c0',
+                        }
+                      })
                     }}
                   >
                     {bannerImagePreviewUrl ? 'Change Banner' : 'Upload Banner'}
@@ -928,7 +908,7 @@ const FormDetails = () => {
                       variant={isMobile ? "h5" : "h4"} 
                       component="h1" 
                       fontWeight="700"
-                      color="primary.main"
+                      color={theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2'}
                       gutterBottom
                     >
                       Form Configuration
@@ -944,7 +924,6 @@ const FormDetails = () => {
                   <Tooltip title="Add form information" arrow placement={isMobile ? "bottom" : "left"}>
                     <Button
                       variant="contained"
-                      color="primary"
                       startIcon={<AddIcon />}
                       onClick={() => setInfoDialogOpen(true)}
                       sx={{
@@ -954,7 +933,11 @@ const FormDetails = () => {
                         textTransform: 'none',
                         fontWeight: 600,
                         width: isMobile ? '100%' : 'auto',
-                        whiteSpace: 'nowrap'
+                        whiteSpace: 'nowrap',
+                        backgroundColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+                        '&:hover': {
+                          backgroundColor: theme.palette.mode === 'dark' ? '#0d47a1' : '#1565c0',
+                        }
                       }}
                     >
                       Add Form Info

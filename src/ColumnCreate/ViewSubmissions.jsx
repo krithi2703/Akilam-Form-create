@@ -1069,9 +1069,8 @@ const ViewSubmissions = () => {
                       background: `linear-gradient(to bottom, ${theme.palette.background.paper} 0%, ${alpha(theme.palette.background.default, 0.5)} 100%)`,
                       '& .MuiTableCell-head': {
                         fontWeight: 'bold',
-                        backgroundColor: isFormOnlyUser 
-                          ? alpha(theme.palette.primary.main, 0.1) 
-                          : alpha(theme.palette.primary.main, 0.05),
+                        backgroundColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+                        color: theme.palette.common.white,
                         borderBottom: '2px solid',
                         borderColor: 'divider',
                         fontSize: { xs: '0.75rem', sm: '0.875rem' },

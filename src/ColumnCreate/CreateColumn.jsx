@@ -312,14 +312,16 @@ export default function CreateColumn() {
                   startIcon={<AddIcon />}
                   onClick={() => setIsDefaultColumnsDialogOpen(true)}
                   sx={{
-                    boxShadow: "0 3px 10px rgba(255, 107, 53, 0.4)",
+                    backgroundColor: isDarkMode ? '#1a237e' : '#1976d2',
+                    boxShadow: isDarkMode ? '0 3px 10px rgba(26, 35, 126, 0.4)' : '0 3px 10px rgba(25, 118, 210, 0.4)',
                     borderRadius: 3,
                     fontWeight: 600,
                     textTransform: "none",
                     fontSize: "0.9rem",
                     px: 2,
                     "&:hover": {
-                      boxShadow: "0 5px 15px rgba(255, 107, 53, 0.6)",
+                      backgroundColor: isDarkMode ? '#0d47a1' : '#1565c0',
+                      boxShadow: isDarkMode ? '0 5px 15px rgba(26, 35, 126, 0.6)' : '0 5px 15px rgba(25, 118, 210, 0.6)',
                       transform: "translateY(-1px)",
                     },
                     transition: "all 0.3s ease",
@@ -460,9 +462,11 @@ export default function CreateColumn() {
                         fontWeight: 700,
                         textTransform: "none",
                         fontSize: "1rem",
-                        boxShadow: "0 4px 15px rgba(255, 152, 0, 0.4)",
+                        backgroundColor: isDarkMode ? '#1a237e' : '#1976d2',
+                        boxShadow: isDarkMode ? '0 4px 15px rgba(26, 35, 126, 0.4)' : '0 4px 15px rgba(25, 118, 210, 0.4)',
                         "&:hover": {
-                          boxShadow: "0 6px 20px rgba(255, 152, 0, 0.6)",
+                          backgroundColor: isDarkMode ? '#0d47a1' : '#1565c0',
+                          boxShadow: isDarkMode ? '0 6px 20px rgba(26, 35, 126, 0.6)' : '0 6px 20px rgba(25, 118, 210, 0.6)',
                           transform: "translateY(-2px)",
                         },
                         transition: "all 0.3s ease",
@@ -482,9 +486,11 @@ export default function CreateColumn() {
                         fontWeight: 700,
                         textTransform: "none",
                         fontSize: "1rem",
-                        boxShadow: "0 4px 15px rgba(76, 175, 80, 0.4)",
+                        backgroundColor: isDarkMode ? '#1a237e' : '#1976d2',
+                        boxShadow: isDarkMode ? '0 4px 15px rgba(26, 35, 126, 0.4)' : '0 4px 15px rgba(25, 118, 210, 0.4)',
                         "&:hover": {
-                          boxShadow: "0 6px 20px rgba(76, 175, 80, 0.6)",
+                          backgroundColor: isDarkMode ? '#0d47a1' : '#1565c0',
+                          boxShadow: isDarkMode ? '0 6px 20px rgba(26, 35, 126, 0.6)' : '0 6px 20px rgba(25, 118, 210, 0.6)',
                           transform: "translateY(-2px)",
                         },
                         transition: "all 0.3s ease",
@@ -715,9 +721,11 @@ export default function CreateColumn() {
                       fontWeight: 700,
                       textTransform: "none",
                       fontSize: "1.1rem",
-                      boxShadow: "0 4px 20px rgba(156, 39, 176, 0.4)",
+                      backgroundColor: isDarkMode ? '#1a237e' : '#1976d2',
+                      boxShadow: isDarkMode ? '0 4px 20px rgba(26, 35, 126, 0.4)' : '0 4px 20px rgba(25, 118, 210, 0.4)',
                       "&:hover": {
-                        boxShadow: "0 6px 25px rgba(156, 39, 176, 0.6)",
+                        backgroundColor: isDarkMode ? '#0d47a1' : '#1565c0',
+                        boxShadow: isDarkMode ? '0 6px 25px rgba(26, 35, 126, 0.6)' : '0 6px 25px rgba(25, 118, 210, 0.6)',
                         transform: "translateY(-2px)",
                       },
                       "&:disabled": {
@@ -898,11 +906,11 @@ export default function CreateColumn() {
               fontSize: "1rem",
               px: 4,
               py: 1,
-              background: "linear-gradient(45deg, #4CAF50 30%, #66BB6A 90%)",
-              boxShadow: "0 4px 15px rgba(76, 175, 80, 0.4)",
+              backgroundColor: isDarkMode ? '#1a237e' : '#1976d2',
+              boxShadow: isDarkMode ? '0 4px 15px rgba(26, 35, 126, 0.4)' : '0 4px 15px rgba(25, 118, 210, 0.4)',
               "&:hover": {
-                background: "linear-gradient(45deg, #388E3C 30%, #4CAF50 90%)",
-                boxShadow: "0 6px 20px rgba(76, 175, 80, 0.6)",
+                backgroundColor: isDarkMode ? '#0d47a1' : '#1565c0',
+                boxShadow: isDarkMode ? '0 6px 20px rgba(26, 35, 126, 0.6)' : '0 6px 20px rgba(25, 118, 210, 0.6)',
                 transform: "translateY(-2px)",
               },
               "&:disabled": {
