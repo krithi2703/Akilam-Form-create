@@ -266,6 +266,7 @@ const FormDetails = () => {
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
   const [isValidFormFront, setIsValidFormFront] = useState(false);
   const [isValidFormBack, setIsValidFormBack] = useState(false);
+  const [contentExists, setContentExists] = useState(false); // New state
 
   const userId = sessionStorage.getItem('userId');
 
@@ -415,6 +416,21 @@ const FormDetails = () => {
             setBannerImagePreviewUrl("");
           }
         }
+
+        // --- Fetch existing content info ---
+        // const contentResponse = await api.get(`/content-dtl/form/${formId}`);
+        // if (contentResponse.data && contentResponse.data.length > 0) {
+        //   setContentExists(true);
+        //   // Assuming contentResponse.data contains isValidFormFront and isValidFormBack for the form
+        //   // If there can be multiple content entries, we might need to aggregate or pick one.
+        //   // For simplicity, let's assume the first entry's values are representative.
+        //   setIsValidFormFront(contentResponse.data[0].isValidFormFront);
+        //   setIsValidFormBack(contentResponse.data[0].isValidFormBack);
+        // } else {
+          setContentExists(false);
+          setIsValidFormFront(false);
+          setIsValidFormBack(false);
+        // }
 
         // --- Fetch available validation types ---
         const validationTypesResponse = await api.get('/validation/types');
@@ -1626,6 +1642,7 @@ const FormDetails = () => {
                   onChange={(e) => setIsValidFormFront(e.target.checked)}
                   color="primary"
                   size={isMobile ? "small" : "medium"}
+                  disabled={contentExists}
                 />
               }
               label={
@@ -1641,6 +1658,7 @@ const FormDetails = () => {
                   onChange={(e) => setIsValidFormBack(e.target.checked)}
                   color="primary"
                   size={isMobile ? "small" : "medium"}
+                  disabled={contentExists}
                 />
               }
               label={
@@ -1681,6 +1699,7 @@ const FormDetails = () => {
             variant="contained"
             startIcon={<CheckCircleIcon />}
             fullWidth={isMobile}
+            disabled={!(isValidFormFront || isValidFormBack || contentExists)}
             sx={{
               borderRadius: 2,
               px: 3,

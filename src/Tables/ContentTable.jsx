@@ -19,12 +19,18 @@ import {
   Tooltip,
   Menu,
   MenuItem,
-  useMediaQuery
+  useMediaQuery,
+  FormControl,
+  InputLabel,
+  Switch,
+  FormControlLabel,
+  Select
 } from '@mui/material';
 import {
   Visibility,
   ContentCopy,
-  ExpandMore
+  ExpandMore,
+  Add as AddIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
@@ -37,6 +43,12 @@ const ContentTable = () => {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
   const [currentFormName, setCurrentFormName] = useState(null);
+  const [addContentDialogOpen, setAddContentDialogOpen] = useState(false); // New state for dialog
+  const [selectedFormToAddContent, setSelectedFormToAddContent] = useState(''); // New state for selected form
+  const [allForms, setAllForms] = useState([]); // New state for all forms
+  const [isValidFormFrontForContent, setIsValidFormFrontForContent] = useState(false); // New state for front content switch
+  const [isValidFormBackForContent, setIsValidFormBackForContent] = useState(false); // New state for back content switch
+
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -56,7 +68,17 @@ const ContentTable = () => {
       }
     };
 
+    const fetchForms = async () => {
+      try {
+        const response = await axios.get('/formmaster'); // Assuming /formmaster returns all forms
+        setAllForms(response.data);
+      } catch (error) {
+        console.error('Error fetching forms:', error);
+      }
+    };
+
     fetchContent();
+    fetchForms();
   }, []);
 
   const handleOptionsClick = (event, formName) => {
@@ -92,22 +114,70 @@ const ContentTable = () => {
     navigator.clipboard.writeText(text);
   };
 
+  const handleAddContentClick = () => {
+    setAddContentDialogOpen(true);
+  };
+
+  const handleAddContentDialogClose = () => {
+    setAddContentDialogOpen(false);
+    setSelectedFormToAddContent('');
+    setIsValidFormFrontForContent(false);
+    setIsValidFormBackForContent(false);
+  };
+
+  const handleAddContentSubmit = () => {
+    if (!selectedFormToAddContent) {
+      alert('Please select a form.');
+      return;
+    }
+    const form = allForms.find(f => f.FormId === selectedFormToAddContent);
+    navigate('/content', {
+      state: {
+        formId: selectedFormToAddContent,
+        formName: form ? form.FormName : '',
+        isValidFormFront: isValidFormFrontForContent,
+        isValidFormBack: isValidFormBackForContent,
+      },
+    });
+    handleAddContentDialogClose();
+  };
+
   return (
     <Box sx={{ p: { xs: 2, sm: 3 } }}>
-      {/* Title */}
-      <Typography
-        variant={isMobile ? 'h5' : 'h4'}
-        component="h1"
-        gutterBottom
-        sx={{
-          fontWeight: 600,
-          color: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
-          mb: { xs: 2, sm: 4 },
-          textAlign: { xs: 'center', sm: 'left' }
-        }}
-      >
-        Content Management
-      </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 2, sm: 4 } }}>
+              {/* Title */}
+              <Typography
+                variant={isMobile ? 'h5' : 'h4'}
+                component="h1"
+                gutterBottom
+                sx={{
+                  fontWeight: 600,
+                  color: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+                  textAlign: { xs: 'center', sm: 'left' },
+                  mb: 0 // Remove bottom margin from title when in flex container
+                }}
+              >
+                Content Management
+              </Typography>
+                              <Button
+                                variant="contained"
+                                onClick={handleAddContentClick}
+                                startIcon={<AddIcon />}
+                                sx={{
+                                  backgroundColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+                                  '&:hover': {
+                                    backgroundColor: theme.palette.mode === 'dark' ? '#0d47a1' : '#1565c0',
+                                  },
+                                  color: 'white',
+                                  textTransform: 'none',
+                                  borderRadius: 2,
+                                  px: { xs: 1.5, sm: 3 },
+                                  py: { xs: 0.8, sm: 1.2 },
+                                  fontSize: { xs: '0.8rem', sm: '0.9rem' }
+                                }}
+                              >
+                                Add Content
+                              </Button>            </Box>
 
       {/* Table Container */}
       <TableContainer
@@ -143,10 +213,9 @@ const ContentTable = () => {
                 key={formName}
                 sx={{
                   '&:hover': { backgroundColor: 'action.hover', transition: 'background-color 0.2s ease' },
-                  '&:nth-of-type(odd)': { backgroundColor: 'background.default' }
                 }}
               >
-                <TableCell sx={{ fontWeight: 600, fontSize: '1rem', color: 'text.primary' }}>
+                <TableCell sx={{ fontWeight: 500, fontSize: '1rem', color: 'text.primary' }}>
                   {formName}
                 </TableCell>
 
@@ -158,8 +227,8 @@ const ContentTable = () => {
                     sx={{
                       textTransform: 'none',
                       borderRadius: 2,
-                      borderColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
-                      color: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+                      borderColor: theme.palette.mode === 'dark' ? 'white' : '#1976d2',
+                      color: theme.palette.mode === 'dark' ? 'white' : '#1976d2',
                       fontSize: { xs: '0.7rem', sm: '0.9rem' },
                       '&:hover': {
                         backgroundColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
@@ -230,7 +299,7 @@ const ContentTable = () => {
         </Table>
       </TableContainer>
 
-      {/* Menu for Options - Fixed positioning */}
+{/* Menu for Options - Fixed positioning */}
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
@@ -378,6 +447,90 @@ const ContentTable = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Add Content Dialog */}
+      <Dialog
+        open={addContentDialogOpen}
+        onClose={handleAddContentDialogClose}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Typography variant="h6" fontWeight="bold">
+            Add Content
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>Select Form</InputLabel>
+            <Select
+              value={selectedFormToAddContent}
+              label="Select Form"
+              onChange={(e) => setSelectedFormToAddContent(e.target.value)}
+            >
+              {Array.isArray(allForms) && allForms.length > 0 ? (
+                allForms.map((form) => (
+                  <MenuItem key={form.FormId} value={form.FormId}>
+                    {form.FormName}
+                  </MenuItem>
+                ))
+              ) : (
+                <MenuItem value="">No forms available</MenuItem>
+              )}
+            </Select>
+          </FormControl>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isValidFormFrontForContent}
+                onChange={(e) => setIsValidFormFrontForContent(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="Show info Before Form"
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isValidFormBackForContent}
+                onChange={(e) => setIsValidFormBackForContent(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="Show info After Form"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={handleAddContentDialogClose} 
+            variant="outlined"
+            sx={{
+              borderColor: theme.palette.mode === 'dark' ? '#fb8c00' : '#ff9800',
+              color: theme.palette.mode === 'dark' ? '#fb8c00' : '#ff9800',
+              '&:hover': {
+                backgroundColor: theme.palette.mode === 'dark' ? 'rgba(251, 140, 0, 0.08)' : 'rgba(255, 152, 0, 0.08)',
+                borderColor: theme.palette.mode === 'dark' ? '#fb8c00' : '#ff9800',
+              }
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleAddContentSubmit} 
+            variant="contained"
+            disabled={!selectedFormToAddContent || (!isValidFormFrontForContent && !isValidFormBackForContent)}
+            sx={{
+              backgroundColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+              '&:hover': {
+                backgroundColor: theme.palette.mode === 'dark' ? '#0d47a1' : '#1565c0',
+              }
+            }}
+          >
+            Enter
+          </Button>
+        </DialogActions>
+      </Dialog>
+
     </Box>
   );
 };

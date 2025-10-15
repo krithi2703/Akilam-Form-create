@@ -79,7 +79,8 @@ function App() {
               component="main"
               sx={{
                 flexGrow: 1,
-                p: shouldShowLayout ? 3 : 0, // No padding for form-only views
+                py: shouldShowLayout ? 3 : 0,
+                px: 0, // No padding for form-only views
                 mt: shouldShowLayout ? 8 : 0,
                 transition: 'margin-left 0.3s, width 0.3s',
                 width:

@@ -51,6 +51,9 @@ export default function FormTable() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [columnToDelete, setColumnToDelete] = useState(null);
 
+  const [editWarningDialogOpen, setEditWarningDialogOpen] = useState(false);
+  const [columnToEdit, setColumnToEdit] = useState(null);
+
   // Pagination state
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
@@ -94,12 +97,21 @@ export default function FormTable() {
   };
 
   const handleEditColumn = (column) => {
-    setEditingColumn(column);
-    setNewColumn({
-      ColumnName: column.ColumnName,
-      DataType: column.DataType,
-    });
-    setDialogOpen(true);
+    setColumnToEdit(column);
+    setEditWarningDialogOpen(true);
+  };
+
+  const confirmEditColumn = () => {
+    setEditWarningDialogOpen(false);
+    if (columnToEdit) {
+      setEditingColumn(columnToEdit);
+      setNewColumn({
+        ColumnName: columnToEdit.ColumnName,
+        DataType: columnToEdit.DataType,
+      });
+      setDialogOpen(true);
+    }
+    setColumnToEdit(null);
   };
 
   const handleDeleteColumn = (columnId) => {
@@ -666,6 +678,49 @@ export default function FormTable() {
             size={isSmallScreen ? "small" : "medium"}
           >
             Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Warning Dialog */}
+      <Dialog
+        open={editWarningDialogOpen}
+        onClose={() => setEditWarningDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        fullScreen={isSmallScreen}
+      >
+        <DialogTitle sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+          Confirm Edit
+        </DialogTitle>
+        <DialogContent>
+          <Typography sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+            Are you sure you want to edit this column? This action will open the edit form.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ 
+          px: 3, 
+          pb: 2,
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: 1
+        }}>
+          <Button 
+            onClick={() => setEditWarningDialogOpen(false)} 
+            variant="outlined"
+            fullWidth={isSmallScreen}
+            size={isSmallScreen ? "small" : "medium"}
+          >
+            No
+          </Button>
+          <Button
+            onClick={confirmEditColumn}
+            variant="contained"
+            color="primary"
+            fullWidth={isSmallScreen}
+            size={isSmallScreen ? "small" : "medium"}
+            autoFocus
+          >
+            Yes
           </Button>
         </DialogActions>
       </Dialog>
