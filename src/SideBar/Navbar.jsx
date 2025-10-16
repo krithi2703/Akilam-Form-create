@@ -22,7 +22,6 @@ import {
   Brightness4 as DarkIcon,
   Brightness7 as LightIcon,
   Menu as MenuIcon,
-  AccountCircle,
   ExitToApp,
   Dashboard,
   Notifications,
@@ -114,10 +113,7 @@ export default function NavBar({
     navigate("/dashboard");
   };
 
-  const handleProfileClick = () => {
-    handleMenuClose();
-    navigate("/profile");
-  };
+
 
   return (
     <AppBar 
@@ -452,32 +448,7 @@ export default function NavBar({
           transformOrigin={{ horizontal: 'right', vertical: 'top' }}
           anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
         >
-          <MenuItem 
-            onClick={handleProfileClick}
-            sx={{ 
-              py: 2,
-              borderRadius: 2,
-              mx: 1,
-              mt: 1,
-              color: darkMode ? '#ffffff' : 'text.primary',
-              '&:hover': {
-                background: darkMode 
-                  ? 'linear-gradient(45deg, rgba(33,150,243,0.2), rgba(33,150,243,0.3))'
-                  : 'linear-gradient(45deg, rgba(33,150,243,0.1), rgba(33,150,243,0.2))',
-                transform: 'translateX(5px)',
-                transition: 'all 0.2s ease'
-              }
-            }}
-          >
-            <AccountCircle sx={{ 
-              mr: 2, 
-              color: darkMode ? '#90caf9' : 'primary.main', 
-              fontSize: 24 
-            }} />
-            <Typography fontWeight="600" color={darkMode ? '#ffffff' : 'text.primary'}>
-              My Profile
-            </Typography>
-          </MenuItem>
+
           
           <MenuItem 
             onClick={handleDashboardClick}

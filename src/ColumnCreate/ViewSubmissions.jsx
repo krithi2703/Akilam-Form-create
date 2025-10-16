@@ -540,16 +540,9 @@ const ViewSubmissions = () => {
       case "h6":
       case "p":
         return (
-          <TextField
-            fullWidth
-            label={ColumnName}
-            value={ColumnName} // Display ColumnName as value
-            sx={{ mb: 2 }}
-            InputProps={{
-              readOnly: true, // Make it read-only
-            }}
-            size={isMobile ? "small" : "medium"}
-          />
+          <Typography variant={DataType.toLowerCase()} sx={{ mb: 2 }}>
+            {ColumnName}
+          </Typography>
         );
       case 'file':
         return (
@@ -761,16 +754,9 @@ const ViewSubmissions = () => {
           );
         }
         return (
-          <TextField
-            fullWidth
-            label={col.ColumnName}
-            value={value}
-            sx={{ mb: 2 }}
-            InputProps={{
-              readOnly: true, // Make it read-only
-            }}
-            size={isMobile ? "small" : "medium"}
-          />
+          <Typography variant={col.DataType.toLowerCase()}>
+            {col.ColumnName}
+          </Typography>
         );
       default:
         return (

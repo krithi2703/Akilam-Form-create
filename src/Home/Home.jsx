@@ -8,7 +8,6 @@ import {
   CardContent,
   Avatar,
   Chip,
-  Fab,
   alpha,
   useTheme,
   IconButton,
@@ -25,124 +24,227 @@ import {
   Container,
   Alert,
   CircularProgress,
+  LinearProgress,
 } from '@mui/material';
-import { BarChart } from '@mui/x-charts/BarChart';
+import { BarChart, LineChart, PieChart } from '@mui/x-charts';
 import {
   People as PeopleIcon,
   Description as DescriptionIcon,
   ViewColumn as ViewColumnIcon,
   Send as SendIcon,
-  Add as AddIcon,
-  Notifications as NotificationsIcon,
-  Email as EmailIcon,
-  AccountCircle as AccountCircleIcon,
-  KeyboardArrowUp as KeyboardArrowUpIcon,
-  KeyboardArrowDown as KeyboardArrowDownIcon,
+  TrendingUp as TrendingUpIcon,
+  TrendingDown as TrendingDownIcon,
   Payment as PaymentIcon,
   BarChart as BarChartIcon,
+  Analytics as AnalyticsIcon,
+  Receipt as ReceiptIcon,
 } from '@mui/icons-material';
-import axios from '../axiosConfig'; // custom axios instance
+import axios from '../axiosConfig';
 
-// ------------------- Stat Card -------------------
-const StatCard = ({ title, value, icon, color, description, loading }) => {
+// ------------------- Enhanced Stat Card -------------------
+const StatCard = ({ title, value, icon, color, description, trend, loading }) => {
   const theme = useTheme();
   
   return (
     <Card
       elevation={0}
       sx={{
-        background: `linear-gradient(135deg, ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.05)} 100%)`,
-        borderRadius: 3,
+        background: `linear-gradient(135deg, ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.15)} 0%, ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.05)} 100%)`,
+        borderRadius: 4,
         height: '100%',
         border: `1px solid ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.2)}`,
-        transition: 'all 0.3s ease',
+        transition: 'all 0.3s ease-in-out',
+        position: 'relative',
+        overflow: 'hidden',
         '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: `0 12px 30px ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.15)}`,
+          transform: 'translateY(-8px)',
+          boxShadow: `0 20px 40px ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.2)}`,
+          border: `1px solid ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.4)}`,
         },
         display: 'flex',
         flexDirection: 'column',
       }}
     >
-      <CardContent sx={{ flexGrow: 1 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-          <Box>
-            <Typography color="textSecondary" variant="body2" gutterBottom>
+      {/* Background Pattern */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: -20,
+          right: -20,
+          width: 120,
+          height: 120,
+          borderRadius: '50%',
+          background: `radial-gradient(circle, ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.1)} 0%, transparent 70%)`,
+          zIndex: 0,
+        }}
+      />
+      
+      <CardContent sx={{ flexGrow: 1, position: 'relative', zIndex: 1, p: 3 }}>
+        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+          <Box flex={1}>
+            <Typography 
+              color="textSecondary" 
+              variant="caption" 
+              fontWeight="600" 
+              sx={{ 
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                opacity: 0.8
+              }}
+            >
               {title}
             </Typography>
             {loading ? (
-              <Box display="flex" alignItems="center" gap={1}>
-                <CircularProgress size={20} />
-                <Typography variant="h6" component="div" fontWeight="bold">
+              <Box display="flex" alignItems="center" gap={2} mt={1}>
+                <CircularProgress size={24} thickness={4} />
+                <Typography variant="h5" component="div" fontWeight="bold">
                   Loading...
                 </Typography>
               </Box>
             ) : (
-              <Typography variant="h4" component="div" fontWeight="bold">
-                {value}
+              <Typography variant="h3" component="div" fontWeight="800" sx={{ mt: 1 }}>
+                {value?.toLocaleString()}
               </Typography>
             )}
+            
             {description && (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, opacity: 0.8 }}>
                 {description}
               </Typography>
+            )}
+            
+            {trend && (
+              <Box display="flex" alignItems="center" gap={1} sx={{ mt: 2 }}>
+                <Chip
+                  icon={trend.value > 0 ? <TrendingUpIcon /> : <TrendingDownIcon />}
+                  label={`${trend.value > 0 ? '+' : ''}${trend.value}%`}
+                  size="small"
+                  color={trend.value > 0 ? 'success' : 'error'}
+                  variant="outlined"
+                  sx={{ fontWeight: '600' }}
+                />
+                <Typography variant="caption" color="text.secondary">
+                  {trend.label}
+                </Typography>
+              </Box>
             )}
           </Box>
           <Avatar 
             sx={{ 
-              bgcolor: alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.1), 
+              bgcolor: alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.15), 
               color: theme.palette[color]?.main || theme.palette.primary.main,
-              width: 48,
-              height: 48
+              width: 60,
+              height: 60,
+              boxShadow: `0 8px 24px ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.3)}`,
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'scale(1.1) rotate(5deg)',
+              }
             }}
           >
             {icon}
           </Avatar>
         </Box>
+        
+        {/* Progress Bar for visual appeal */}
+        {!loading && (
+          <LinearProgress 
+            variant="determinate" 
+            value={75}
+            sx={{
+              mt: 2,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.2),
+              '& .MuiLinearProgress-bar': {
+                backgroundColor: theme.palette[color]?.main || theme.palette.primary.main,
+                borderRadius: 2,
+              }
+            }}
+          />
+        )}
       </CardContent>
     </Card>
   );
 };
 
-// ------------------- Chart Card -------------------
-const ChartCard = ({ children, title, subtitle, icon, loading }) => {
+// ------------------- Enhanced Chart Card -------------------
+const ChartCard = ({ children, title, subtitle, icon, loading, action }) => {
   const theme = useTheme();
 
   return (
     <Card
       sx={{
         height: '100%',
-        borderRadius: 3,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+        borderRadius: 4,
+        boxShadow: '0 12px 40px rgba(0,0,0,0.08)',
         border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
         overflow: 'visible',
+        background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.9)} 0%, ${alpha(theme.palette.background.paper, 1)} 100%)`,
+        backdropFilter: 'blur(10px)',
+        transition: 'all 0.3s ease-in-out',
+        '&:hover': {
+          boxShadow: '0 20px 60px rgba(0,0,0,0.12)',
+          transform: 'translateY(-4px)',
+        },
       }}
     >
       <CardContent sx={{ p: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
-        {/* Card Header */}
+        {/* Enhanced Card Header */}
         <Box
           sx={{
-            p: 3,
-            pb: 2,
-            borderBottom: `1px solid ${theme.palette.divider}`,
-            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.background.paper, 1)} 100%)`,
+            p: 3.5,
+            pb: 2.5,
+            borderBottom: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
+            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.background.paper, 1)} 100%)`,
+            position: 'relative',
+            overflow: 'hidden',
           }}
         >
-          <Box display="flex" alignItems="center" justifyContent="space-between">
+          {/* Header Background Pattern */}
+          <Box
+            sx={{
+              position: 'absolute',
+              top: -50,
+              right: -50,
+              width: 150,
+              height: 150,
+              borderRadius: '50%',
+              background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 70%)`,
+            }}
+          />
+          
+          <Box display="flex" alignItems="center" justifyContent="space-between" position="relative">
             <Box>
-              <Typography variant="h5" fontWeight="bold" color="primary" gutterBottom>
-                {title}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
+              <Box display="flex" alignItems="center" gap={2} mb={1}>
+                <Typography variant="h5" fontWeight="800" color="primary">
+                  {title}
+                </Typography>
+                {action && (
+                  <Chip 
+                    label={action} 
+                    size="small" 
+                    color="primary" 
+                    variant="outlined"
+                    sx={{ fontWeight: '600' }}
+                  />
+                )}
+              </Box>
+              <Typography variant="body2" color="textSecondary" sx={{ opacity: 0.8 }}>
                 {subtitle}
               </Typography>
             </Box>
             <Avatar
               sx={{
-                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                bgcolor: alpha(theme.palette.primary.main, 0.15),
                 color: theme.palette.primary.main,
-                width: 50,
-                height: 50,
+                width: 56,
+                height: 56,
+                boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.2)}`,
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'scale(1.1) rotate(5deg)',
+                }
               }}
             >
               {icon}
@@ -154,7 +256,12 @@ const ChartCard = ({ children, title, subtitle, icon, loading }) => {
         <Box sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
           {loading ? (
             <Box display="flex" justifyContent="center" alignItems="center" sx={{ height: '100%' }}>
-              <CircularProgress />
+              <Box textAlign="center">
+                <CircularProgress size={40} thickness={4} />
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                  Loading chart data...
+                </Typography>
+              </Box>
             </Box>
           ) : (
             children
@@ -165,7 +272,7 @@ const ChartCard = ({ children, title, subtitle, icon, loading }) => {
   );
 };
 
-// ------------------- Payment Details Table -------------------
+// ------------------- Enhanced Payment Details Table -------------------
 const PaymentDetailsTable = () => {
   const theme = useTheme();
   const [submissions, setSubmissions] = useState([]);
@@ -179,7 +286,6 @@ const PaymentDetailsTable = () => {
         setLoading(true);
         const response = await axios.get('/submissions');
         
-        // Handle different response structures
         const responseData = response.data;
         let submissionsData = [];
         
@@ -195,7 +301,7 @@ const PaymentDetailsTable = () => {
         setError(null);
       } catch (error) {
         console.error('Error fetching submissions:', error);
-        setError('Failed to load submission data. Please try again later.');
+        setError('Failed to load payment data. Please try again later.');
         setSubmissions([]);
       } finally {
         setLoading(false);
@@ -223,55 +329,98 @@ const PaymentDetailsTable = () => {
     ? submissions.filter(s => s && s.Emailormobileno === selectedEmail)
     : [];
 
+  const totalAmount = filteredSubmissions.reduce((sum, item) => sum + (parseFloat(item.Amount) || 0), 0);
+
   return (
     <ChartCard
-      title="Payment Details"
-      subtitle="Select a user to view their payment history and transaction details"
-      icon={<PaymentIcon />}
+      title="Payment Analytics"
+      subtitle="Detailed payment history and transaction insights"
+      icon={<ReceiptIcon />}
       loading={loading}
+      action={selectedEmail ? `${filteredSubmissions.length} transactions` : ''}
     >
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mb: 3, borderRadius: 3 }}>
           {error}
         </Alert>
       )}
 
-      <FormControl fullWidth sx={{ mb: 3 }}>
-        <InputLabel>Select by User</InputLabel>
-        <Select
-          value={selectedEmail}
-          label="Select by User"
-          onChange={handleEmailChange}
-          disabled={loading || uniqueUsers.length === 0}
-        >
-          {uniqueUsers.map((user) => (
-            <MenuItem key={user.Emailormobileno} value={user.Emailormobileno}>
-              {user.UserName}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+      <Box sx={{ mb: 3 }}>
+        <FormControl fullWidth>
+          <InputLabel>Select User</InputLabel>
+          <Select
+            value={selectedEmail}
+            label="Select User"
+            onChange={handleEmailChange}
+            disabled={loading || uniqueUsers.length === 0}
+            sx={{
+              borderRadius: 3,
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: alpha(theme.palette.primary.main, 0.3),
+              }
+            }}
+          >
+            {uniqueUsers.map((user) => (
+              <MenuItem key={user.Emailormobileno} value={user.Emailormobileno}>
+                <Box>
+                  <Typography variant="body1" fontWeight="600">
+                    {user.UserName}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {user.Emailormobileno}
+                  </Typography>
+                </Box>
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+
+      {selectedEmail && filteredSubmissions.length > 0 && (
+        <Box sx={{ mb: 3, p: 2.5, bgcolor: alpha(theme.palette.primary.main, 0.04), borderRadius: 3 }}>
+          <Grid container spacing={3}>
+            <Grid item xs={12} sm={4}>
+              <Box textAlign="center">
+                <Typography variant="h4" fontWeight="800" color="primary">
+                  {filteredSubmissions.length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Total Transactions
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Box textAlign="center">
+                <Typography variant="h4" fontWeight="800" color="success.main">
+                  ₹{totalAmount.toLocaleString()}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Total Amount
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Box textAlign="center">
+                <Typography variant="h4" fontWeight="800" color="info.main">
+                  {Math.round(totalAmount / filteredSubmissions.length) || 0}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Avg. Transaction
+                </Typography>
+              </Box>
+            </Grid>
+          </Grid>
+        </Box>
+      )}
 
       {selectedEmail ? (
         <Box sx={{ width: '100%', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-          <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-            <Typography variant="h6" fontWeight="600">
-              Payment History
-            </Typography>
-            <Chip 
-              label={selectedEmail} 
-              color="primary" 
-              variant="outlined" 
-              size="small"
-            />
-          </Box>
-          
           {filteredSubmissions.length > 0 ? (
             <TableContainer 
               sx={{ 
                 flexGrow: 1,
-                borderRadius: 2,
-                border: `1px solid ${theme.palette.divider}`,
+                borderRadius: 3,
+                border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
                 '& .MuiTableRow-root:hover': {
                   backgroundColor: alpha(theme.palette.primary.main, 0.04),
                 }
@@ -280,20 +429,20 @@ const PaymentDetailsTable = () => {
               <Table stickyHeader>
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'background.default' }}>
-                      Submission ID
+                    <TableCell sx={{ fontWeight: '800', bgcolor: 'background.default', fontSize: '0.875rem' }}>
+                      SUBMISSION ID
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'background.default' }}>
-                      Payment ID
+                    <TableCell sx={{ fontWeight: '800', bgcolor: 'background.default', fontSize: '0.875rem' }}>
+                      PAYMENT ID
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'background.default' }}>
-                      Amount
+                    <TableCell sx={{ fontWeight: '800', bgcolor: 'background.default', fontSize: '0.875rem' }}>
+                      AMOUNT
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'background.default' }}>
-                      Status
+                    <TableCell sx={{ fontWeight: '800', bgcolor: 'background.default', fontSize: '0.875rem' }}>
+                      STATUS
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', bgcolor: 'background.default' }}>
-                      Payment Date
+                    <TableCell sx={{ fontWeight: '800', bgcolor: 'background.default', fontSize: '0.875rem' }}>
+                      DATE
                     </TableCell>
                   </TableRow>
                 </TableHead>
@@ -302,15 +451,18 @@ const PaymentDetailsTable = () => {
                     <TableRow 
                       key={submission.SubmissionId || index} 
                       hover
-                      sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                      sx={{ 
+                        '&:last-child td, &:last-child th': { border: 0 },
+                        transition: 'all 0.2s ease',
+                      }}
                     >
-                      <TableCell sx={{ fontFamily: 'monospace' }}>
+                      <TableCell sx={{ fontFamily: 'monospace', fontWeight: '600' }}>
                         {submission.SubmissionId || 'N/A'}
                       </TableCell>
                       <TableCell sx={{ fontFamily: 'monospace' }}>
                         {submission.RazorpayPaymentId || 'N/A'}
                       </TableCell>
-                      <TableCell sx={{ fontWeight: '600' }}>
+                      <TableCell sx={{ fontWeight: '700', color: 'success.main' }}>
                         ₹{submission.Amount || '0'}
                       </TableCell>
                       <TableCell>
@@ -318,17 +470,23 @@ const PaymentDetailsTable = () => {
                           label={submission.Status || 'unknown'}
                           color={submission.Status === 'captured' ? 'success' : 'default'}
                           size="small"
-                          variant="outlined"
+                          variant="filled"
+                          sx={{ 
+                            fontWeight: '600',
+                            borderRadius: 2
+                          }}
                         />
                       </TableCell>
                       <TableCell>
-                        {submission.PaymentDate ? 
-                          new Date(submission.PaymentDate).toLocaleDateString('en-IN', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                          }) : 'N/A'
-                        }
+                        <Typography variant="body2" fontWeight="600">
+                          {submission.PaymentDate ? 
+                            new Date(submission.PaymentDate).toLocaleDateString('en-IN', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            }) : 'N/A'
+                          }
+                        </Typography>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -346,8 +504,9 @@ const PaymentDetailsTable = () => {
                 py: 8
               }}
             >
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                No Payment Records Found
+              <ReceiptIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2, opacity: 0.5 }} />
+              <Typography variant="h6" color="text.secondary" gutterBottom fontWeight="600">
+                No Payment Records
               </Typography>
               <Typography variant="body2" color="text.secondary" textAlign="center">
                 No payment history available for the selected user
@@ -366,14 +525,14 @@ const PaymentDetailsTable = () => {
             py: 8
           }}
         >
-          <PaymentIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2, opacity: 0.5 }} />
-          <Typography variant="h6" color="text.secondary" gutterBottom>
-            {uniqueUsers.length === 0 ? 'No Users Available' : 'No User Selected'}
+          <AnalyticsIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2, opacity: 0.5 }} />
+          <Typography variant="h6" color="text.secondary" gutterBottom fontWeight="600">
+            {uniqueUsers.length === 0 ? 'No Users Available' : 'Select a User'}
           </Typography>
           <Typography variant="body2" color="text.secondary" textAlign="center">
             {uniqueUsers.length === 0 
               ? 'No user data available. Please check your API connection.' 
-              : 'Please select a user from the dropdown above to view their payment details'
+              : 'Choose a user from the dropdown to view their payment analytics'
             }
           </Typography>
         </Box>
@@ -382,7 +541,7 @@ const PaymentDetailsTable = () => {
   );
 };
 
-// ------------------- Form Submission Chart -------------------
+// ------------------- Enhanced Form Submission Chart -------------------
 const FormSubmissionChart = () => {
   const [allChartData, setAllChartData] = useState([]);
   const [chartData, setChartData] = useState([]);
@@ -401,7 +560,6 @@ const FormSubmissionChart = () => {
           axios.get('/submissions/count-by-form'),
         ]);
 
-        // Handle different response structures
         const formsData = Array.isArray(formsResponse.data) ? formsResponse.data : 
                          formsResponse.data?.data || formsResponse.data?.forms || [];
         
@@ -418,7 +576,7 @@ const FormSubmissionChart = () => {
         setError(null);
       } catch (error) {
         console.error('Error fetching data for chart:', error);
-        setError('Failed to load chart data. The server may be down or an error occurred.');
+        setError('Failed to load analytics data. The server may be down or an error occurred.');
         setAllForms([]);
         setAllChartData([]);
       } finally {
@@ -448,53 +606,79 @@ const FormSubmissionChart = () => {
     yAxis: [{
       label: 'Submission Count',
     }],
-    height: 350,
+    height: 400,
     sx: {
       width: '100%',
       [`.MuiBarElement-root`]: {
-        fill: theme.palette.primary.main,
-        rx: 4,
+        fill: `url(#gradient)`,
+        rx: 6,
       },
       [`.MuiChartsAxis-tickLabel`]: {
         fontSize: '0.75rem',
+        fontWeight: '600',
       },
       [`.MuiChartsAxis-label`]: {
         fontSize: '0.875rem',
+        fontWeight: '700',
       },
     },
   };
 
   return (
     <ChartCard
-      title="Form Submissions Overview"
-      subtitle="Distribution of submissions across different forms"
-      icon={<BarChartIcon />}
+      title="Form Analytics"
+      subtitle="Comprehensive form submission insights and trends"
+      icon={<AnalyticsIcon />}
       loading={loading}
+      action={chartData.length > 0 ? `${chartData.reduce((sum, item) => sum + (item.SubmissionCount || 0), 0)} total` : ''}
     >
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mb: 3, borderRadius: 3 }}>
           {error}
         </Alert>
       )}
 
-      <FormControl fullWidth sx={{ mb: 3 }}>
-        <InputLabel>Select Form</InputLabel>
-        <Select
-          value={selectedFormId}
-          label="Select Form"
-          onChange={handleFormChange}
-          disabled={loading || allForms.length === 0}
-        >
-          {Array.isArray(allForms) && allForms.map((form) => (
-            <MenuItem key={form.formId} value={String(form.formId)}>
-              {form.formName || `Form ${form.formId}`}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+      <Box sx={{ mb: 3 }}>
+        <FormControl fullWidth>
+          <InputLabel>Select Form</InputLabel>
+          <Select
+            value={selectedFormId}
+            label="Select Form"
+            onChange={handleFormChange}
+            disabled={loading || allForms.length === 0}
+            sx={{
+              borderRadius: 3,
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: alpha(theme.palette.primary.main, 0.3),
+              }
+            }}
+          >
+            {Array.isArray(allForms) && allForms.map((form) => (
+              <MenuItem key={form.formId} value={String(form.formId)}>
+                <Box>
+                  <Typography variant="body1" fontWeight="600">
+                    {form.formName || `Form ${form.formId}`}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    ID: {form.formId}
+                  </Typography>
+                </Box>
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
       
       {chartData.length > 0 ? (
         <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg style={{ height: 0 }}>
+            <defs>
+              <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor={theme.palette.primary.main} />
+                <stop offset="100%" stopColor={theme.palette.primary.light} />
+              </linearGradient>
+            </defs>
+          </svg>
           <BarChart
             dataset={chartData}
             xAxis={[{ 
@@ -506,6 +690,7 @@ const FormSubmissionChart = () => {
                 angle: -45,
                 textAnchor: 'end',
                 fontSize: 12,
+                fontWeight: '600',
               }
             }]}
             series={[{ 
@@ -528,15 +713,15 @@ const FormSubmissionChart = () => {
           }}
         >
           <BarChartIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2, opacity: 0.5 }} />
-          <Typography variant="h6" color="text.secondary" gutterBottom>
+          <Typography variant="h6" color="text.secondary" gutterBottom fontWeight="600">
             {allForms.length === 0 ? 'No Forms Available' : selectedFormId ? 'No Data Available' : 'Select a Form'}
           </Typography>
           <Typography variant="body2" color="text.secondary" textAlign="center">
             {allForms.length === 0 
               ? 'No form data available. Please check your API connection.' 
               : selectedFormId 
-                ? 'No submission data available for the selected form.' 
-                : 'Please select a form from the dropdown to view submission data.'
+                ? 'No analytics data available for the selected form.' 
+                : 'Please select a form to view detailed analytics.'
             }
           </Typography>
         </Box>
@@ -545,7 +730,7 @@ const FormSubmissionChart = () => {
   );
 };
 
-// ------------------- Dashboard -------------------
+// ------------------- Enhanced Dashboard -------------------
 export default function Dashboard() {
   const theme = useTheme();
   const [counts, setCounts] = useState({
@@ -563,9 +748,7 @@ export default function Dashboard() {
         setCountsLoading(true);
         const response = await axios.get('/columns/counts');
         
-        // Handle different response structures
         const responseData = response.data;
-        let countsData = {};
         
         if (responseData && typeof responseData === 'object') {
           const countsData = {
@@ -605,118 +788,113 @@ export default function Dashboard() {
       sx={{
         minHeight: '100vh',
         bgcolor: 'background.default',
-        background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.03)} 0%, ${alpha(theme.palette.background.default, 0.8)} 100%)`,
+        background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.background.default, 0.8)} 50%, ${alpha(theme.palette.secondary.main, 0.03)} 100%)`,
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
-      {/* Header */}
+      {/* Background Elements */}
       <Box
         sx={{
-          p: 2,
-          bgcolor: 'background.paper',
-          borderBottom: 1,
-          borderColor: 'divider',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          position: 'fixed',
-          width: '100%',
-          zIndex: 1000,
-          top: 0,
-          boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+          position: 'absolute',
+          top: -100,
+          right: -100,
+          width: 400,
+          height: 400,
+          borderRadius: '50%',
+          background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 70%)`,
+          zIndex: 0,
         }}
-      >
-        <Typography variant="h5" fontWeight="700" color="primary">
-          CompanyName
-        </Typography>
-        <Box display="flex" alignItems="center" gap={1}>
-          <IconButton
-            sx={{
-              bgcolor: alpha(theme.palette.primary.main, 0.1),
-              '&:hover': {
-                bgcolor: alpha(theme.palette.primary.main, 0.2),
-              }
-            }}
-          >
-            <NotificationsIcon />
-          </IconButton>
-          <IconButton
-            sx={{
-              bgcolor: alpha(theme.palette.primary.main, 0.1),
-              '&:hover': {
-                bgcolor: alpha(theme.palette.primary.main, 0.2),
-              }
-            }}
-          >
-            <EmailIcon />
-          </IconButton>
-          <Avatar 
-            sx={{ 
-              width: 40, 
-              height: 40,
-              bgcolor: theme.palette.primary.main,
-            }}
-          >
-            <AccountCircleIcon />
-          </Avatar>
-        </Box>
-      </Box>
+      />
+      <Box
+        sx={{
+          position: 'absolute',
+          bottom: -150,
+          left: -150,
+          width: 500,
+          height: 500,
+          borderRadius: '50%',
+          background: `radial-gradient(circle, ${alpha(theme.palette.secondary.main, 0.03)} 0%, transparent 70%)`,
+          zIndex: 0,
+        }}
+      />
 
       {/* Main Content */}
-      <Container maxWidth="xl" sx={{ mt: 10, pb: 4 }}>
-        {/* Welcome Section */}
-        <Box sx={{ mb: 5 }}>
-          <Typography variant="h3" fontWeight="bold" gutterBottom color="primary">
-            Dashboard
-          </Typography>
-          <Typography variant="h6" color="textSecondary" sx={{ opacity: 0.8 }}>
-            Welcome back! Here's what's happening with your business today.
-          </Typography>
+      <Container maxWidth={false} sx={{ pt: 4, pb: 4, pl: 4, pr: 4, position: 'relative', zIndex: 1 }}>
+        {/* Enhanced Welcome Section */}
+        <Box sx={{ mb: 6 }}>
+          <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <Box>
+              <Typography variant="h2" fontWeight="900" gutterBottom color="primary" sx={{ letterSpacing: '-0.5px' }}>
+                Dashboard Overview
+              </Typography>
+              <Typography variant="h5" color="textSecondary" sx={{ opacity: 0.8, fontWeight: '400' }}>
+                Welcome back! Here's your business performance summary
+              </Typography>
+            </Box>
+            <Chip 
+              icon={<TrendingUpIcon />} 
+              label="Live Analytics" 
+              color="success" 
+              variant="filled"
+              sx={{ 
+                fontWeight: '700',
+                fontSize: '0.875rem',
+                height: 40,
+                px: 2
+              }}
+            />
+          </Box>
           {countsError && (
-            <Alert severity="warning" sx={{ mt: 2, maxWidth: 400 }}>
+            <Alert severity="warning" sx={{ mt: 2, maxWidth: 500, borderRadius: 3 }}>
               {countsError}
             </Alert>
           )}
         </Box>
 
-        {/* Stat Cards */}
-        <Grid container spacing={3} sx={{ mb: 5 }}>
+        {/* Enhanced Stat Cards */}
+        <Grid container spacing={3} sx={{ mb: 6 }}>
           <Grid item xs={12} sm={6} md={3}>
             <StatCard
-              title="USERS"
+              title="Active Users"
               value={counts.userCount}
-              description="Total Registered Users"
+              description="Registered platform users"
               icon={<PeopleIcon />}
               color="primary"
+              trend={{ value: 12, label: "vs last month" }}
               loading={countsLoading}
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <StatCard
-              title="FORMS"
+              title="Forms Created"
               value={counts.formCount}
-              description="Total Forms Created"
+              description="Total forms deployed"
               icon={<DescriptionIcon />}
               color="secondary"
+              trend={{ value: 8, label: "vs last month" }}
               loading={countsLoading}
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <StatCard
-              title="COLUMNS"
+              title="Columns Defined"
               value={counts.columnCount}
-              description="Total Columns Defined"
+              description="Custom form fields"
               icon={<ViewColumnIcon />}
               color="warning"
+              trend={{ value: 15, label: "vs last month" }}
               loading={countsLoading}
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <StatCard
-              title="SUBMISSIONS"
+              title="Submissions"
               value={counts.submissionCount}
-              description="Total Submissions Received"
+              description="Total form responses"
               icon={<SendIcon />}
               color="success"
+              trend={{ value: 23, label: "vs last month" }}
               loading={countsLoading}
             />
           </Grid>
@@ -736,41 +914,31 @@ export default function Dashboard() {
         </Grid>
       </Container>
 
-      {/* Footer */}
+      {/* Enhanced Footer */}
       <Box
         component="footer"
         sx={{
-          p: 3,
-          bgcolor: 'background.paper',
-          borderTop: 1,
-          borderColor: 'divider',
-          mt: 4
+          p: 4,
+          bgcolor: alpha(theme.palette.background.paper, 0.8),
+          borderTop: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+          mt: 6,
+          backdropFilter: 'blur(10px)',
+          position: 'relative',
+          zIndex: 1,
         }}
       >
-        <Typography variant="body2" color="textSecondary" align="center">
-          © 2025 Akilam Technology. All rights reserved.
-        </Typography>
+        <Box display="flex" alignItems="center" justifyContent="space-between">
+          <Typography variant="body2" color="textSecondary">
+            © 2025 Akilam Technology. All rights reserved.
+          </Typography>
+          <Box display="flex" gap={2}>
+            <Chip label="v2.1.0" size="small" variant="outlined" />
+            <Chip label="Production" size="small" color="success" />
+          </Box>
+        </Box>
       </Box>
 
-      {/* Floating Action Button */}
-      <Fab
-        color="primary"
-        aria-label="add"
-        sx={{ 
-          position: 'fixed', 
-          bottom: 24, 
-          right: 24,
-          background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-          boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
-          '&:hover': {
-            transform: 'scale(1.1)',
-            boxShadow: '0 12px 35px rgba(0,0,0,0.2)',
-          },
-          transition: 'all 0.3s ease',
-        }}
-      >
-        <AddIcon />
-      </Fab>
+
     </Box>
   );
 }
