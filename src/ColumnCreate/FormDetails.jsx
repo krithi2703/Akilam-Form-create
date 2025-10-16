@@ -6,7 +6,6 @@ import {
   Grid,
   TextField,
   Button,
-  CircularProgress,
   Alert,
   Card,
   CardContent,
@@ -63,6 +62,7 @@ import api from '../axiosConfig';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import ColumnOptionEditorDialog from './ColumnOptionEditorDialog';
+import { RingLoader } from 'react-spinners';
 
 // Enhanced ValidationRuleDialog with better styling and dark mode support
 const ValidationRuleDialog = ({ open, onClose, onSave, validationOptions, initialValue }) => {
@@ -690,18 +690,15 @@ const FormDetails = () => {
         }}
       >
         <Box textAlign="center">
-          <CircularProgress 
+          <RingLoader 
+            color={theme.palette.primary.main}
             size={isMobile ? 50 : 60} 
-            thickness={4} 
-            sx={{ 
-              color: 'primary.main',
-              mb: 2
-            }} 
           />
           <Typography 
             variant={isMobile ? "h6" : "h5"} 
             color="text.secondary"
             fontWeight="500"
+            sx={{mt: 2}}
           >
             Loading Form Details...
           </Typography>

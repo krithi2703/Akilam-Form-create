@@ -7,7 +7,6 @@ import {
   TextField,
   Button,
   Alert,
-  CircularProgress,
   Stack,
   Dialog,
   DialogTitle,
@@ -17,6 +16,7 @@ import {
 import api from "../axiosConfig";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
+import { RingLoader } from "react-spinners";
 
 export default function MasterPage() {
   const navigate = useNavigate();
@@ -353,7 +353,7 @@ export default function MasterPage() {
               disabled={loading || activeStatus === 0}
               onClick={handleSubmit}
             >
-              {loading ? <CircularProgress size={24} /> : formId ? "Update" : "Submit"}
+              {loading ? <RingLoader color="white" size={24} /> : formId ? "Update" : "Submit"}
             </Button>
 
             {formId && activeStatus === 1 && (
@@ -397,7 +397,7 @@ export default function MasterPage() {
             onClick={handleSoftDelete}
             color="error"
             disabled={loading}
-            startIcon={loading && <CircularProgress size={16} />}
+            startIcon={loading && <RingLoader color="white" size={16} />}
           >
             {loading ? "Deleting..." : "Delete"}
           </Button>

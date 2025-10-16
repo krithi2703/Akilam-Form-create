@@ -4,6 +4,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, Box } from '@mui/material';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { RingLoader } from 'react-spinners';
 
 import Register from './Registration/Register';
 import CreateColumn from './ColumnCreate/CreateColumn';
@@ -30,6 +31,14 @@ function App() {
   const [isFormOnlyUser, setIsFormOnlyUser] = useState(sessionStorage.getItem('isFormOnlyUser') === 'true');
   const formOnlyUserFormId = sessionStorage.getItem('formId'); // Get formId for form-only user
   const location = useLocation();
+  const [appLoading, setAppLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAppLoading(false);
+    }, 1000); // Show loader for 1 second
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleLogout = () => {
     sessionStorage.clear();
@@ -51,6 +60,14 @@ function App() {
   // For "form only" users, the main layout (NavBar and SideBar) is never shown.
   // They have their own layout within the FormPage component.
   const shouldShowLayout = isLoggedIn && !isFormOnlyUser;
+
+  if (appLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <RingLoader color="skyblue" size={150} />
+      </Box>
+    );
+  }
 
   return (
     <ThemeProvider theme={theme}>

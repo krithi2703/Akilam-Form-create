@@ -13,7 +13,6 @@ import {
   Card,
   CardContent,
   Divider,
-  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -25,6 +24,7 @@ import api from "../axiosConfig";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import OtpInput from 'react-otp-input';
 import { sendWhatsAppMessage } from "../whatsappService";
+import { RingLoader } from "react-spinners";
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);
@@ -479,7 +479,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
                   onClick={() => handleSubmit("login")}
                   disabled={loading}
                 >
-                  {loading ? <CircularProgress size={24} /> : "Sign In"}
+                  {loading ? <RingLoader color="white" size={24} /> : "Sign In"}
                 </Button>
               </Box>
             )}
@@ -541,7 +541,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
                   onClick={() => handleSubmit("register")}
                   disabled={loading}
                 >
-                  {loading ? <CircularProgress size={24} /> : "Sign Up"}
+                  {loading ? <RingLoader color="white" size={24} /> : "Sign Up"}
                 </Button>
               </Box>
             )}
@@ -582,7 +582,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
                           onClick={() => handleSubmit("formregister")}
                           disabled={loading || !validateEmail(formRegData.identifier)}
                         >
-                          {loading ? <CircularProgress size={24} /> : "Register with Email"}
+                          {loading ? <RingLoader color="white" size={24} /> : "Register with Email"}
                         </Button>
                       </>
                     )}
@@ -618,7 +618,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
                           onClick={() => handleSubmit("formregister")}
                           disabled={loading || !/^(\+91)?[0-9]{10}$/.test(formRegData.identifier)}
                         >
-                          {loading ? <CircularProgress size={24} /> : "Register with Phone"}
+                          {loading ? <RingLoader color="white" size={24} /> : "Register with Phone"}
                         </Button>
                       </>
                     )}
@@ -744,7 +744,7 @@ export default function Register({ setIsLoggedIn, setIsFormOnlyUser }) {
             variant="contained" 
             disabled={otpLoading || otp.length !== 6}
           >
-            {otpLoading ? <CircularProgress size={24} /> : "Verify"}
+            {otpLoading ? <RingLoader color="white" size={24} /> : "Verify"}
           </Button>
         </DialogActions>
       </Dialog>

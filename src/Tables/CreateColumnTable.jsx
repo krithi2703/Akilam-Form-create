@@ -17,7 +17,6 @@ import {
   TableRow,
   Paper,
   MenuItem,
-  CircularProgress,
   Alert,
   Grid,
   Typography,
@@ -36,6 +35,7 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import api from "../axiosConfig";
 import { toast } from 'react-toastify';
+import { RingLoader } from "react-spinners";
 
 
 const CreateColumnTable = () => {
@@ -352,7 +352,7 @@ const CreateColumnTable = () => {
   if (loading && !forms.length) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", my: 3 }}>
-        <CircularProgress />
+        <RingLoader color="#36d7b7" />
       </Box>
     );
   }
@@ -442,7 +442,7 @@ const CreateColumnTable = () => {
 
 
       {/* Selected Form Columns Table */}
-      {loading && <Box sx={{ display: "flex", justifyContent: "center", my: 3 }}><CircularProgress /></Box>}
+      {loading && <Box sx={{ display: "flex", justifyContent: "center", my: 3 }}><RingLoader color="#36d7b7" /></Box>}
       {!loading && selectedForm.id && (
         <>
           <Typography variant="h6" sx={{ mb: 2, color: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2' }}>

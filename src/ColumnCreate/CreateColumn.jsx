@@ -28,7 +28,6 @@ import {
   Checkbox,
   ListItemText,
   Chip,
-  CircularProgress,
   useTheme,
   useMediaQuery,
 } from "@mui/material";
@@ -38,6 +37,7 @@ import AddIcon from "@mui/icons-material/Add";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import api from "../axiosConfig";
 import { toast } from "react-toastify";
+import { RingLoader } from "react-spinners";
 
 const dataTypes = [
   { value: "text", label: "Text" },
@@ -739,7 +739,7 @@ export default function CreateColumn() {
                   >
                     {loading ? (
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <CircularProgress size={24} sx={{ mr: 2, color: 'white' }} />
+                        <RingLoader color="white" size={24} />
                         Submitting...
                       </Box>
                     ) : (
@@ -791,7 +791,7 @@ export default function CreateColumn() {
         }}>
           {fetchingAllColumns ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
-              <CircularProgress size={40} />
+              <RingLoader color="#36d7b7" size={40} />
             </Box>
           ) : (
             <List>

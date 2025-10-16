@@ -9,7 +9,6 @@ import {
   TableHead,
   TableRow,
   Paper,
-  CircularProgress,
   Alert,
   Button,
   Stack,
@@ -35,6 +34,7 @@ import {
 import api from "../axiosConfig";
 import { useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
+import { RingLoader } from "react-spinners";
 
 export default function FormTable() {
   const [columns, setColumns] = useState([]);
@@ -200,7 +200,7 @@ export default function FormTable() {
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}>
-        <CircularProgress size={40} />
+        <RingLoader color="#36d7b7" size={40} />
       </Box>
     );
   }
@@ -628,7 +628,7 @@ export default function FormTable() {
                       }}
                     >
                       {saving ? (
-                        <CircularProgress size={20} color="inherit" />
+                        <RingLoader color="white" size={20} />
                       ) : editingColumn ? (
                         'Update'
                       ) : (

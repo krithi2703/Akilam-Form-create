@@ -8,7 +8,6 @@ import {
   Container,
   Box,
   Typography,
-  CircularProgress,
   Alert,
   Card,
   CardMedia,
@@ -50,6 +49,7 @@ import Register from "../Registration/Register";
 import { sendWhatsAppMessage } from "../whatsappService";
 import { validateField } from "../utils/validationUtils";
 import PaymentButton from '../Razor/PaymentButton';
+import { RingLoader } from "react-spinners";
 
 // Helper to read query params
 function useQuery() {
@@ -473,7 +473,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
         height: "100vh",
         padding: 2
       }}>
-        <CircularProgress />
+        <RingLoader color="#36d7b7" />
       </Box>
     );
   }
@@ -694,7 +694,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
                 <FormControlLabel
                   key={option}
                   value={option}
-                  control={<Radio size={isMobile ? "small" : "medium"} />}
+                  control={<Radio size={isMobile ? "small" : "medium"} />} // Changed to small/medium based on isMobile
                   label={
                     <Typography sx={{ fontSize: responsiveFontSize }}>
                       {option}
@@ -1204,7 +1204,7 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
                     }}
                   >
                     {isSubmitting ? (
-                      <CircularProgress size={24} color="inherit" />
+                      <RingLoader color="white" size={24} />
                     ) : (
                       "Submit"
                     )}

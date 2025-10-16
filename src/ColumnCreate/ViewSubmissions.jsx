@@ -11,7 +11,6 @@ import {
   Container,
   Box,
   Typography,
-  CircularProgress,
   Alert,
   Card,
   CardContent,
@@ -66,6 +65,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import api from "../axiosConfig";
 import { sendWhatsAppMessage } from '../whatsappService';
 import { validateField } from "../utils/validationUtils";
+import { RingLoader } from 'react-spinners';
 
 // Helper to construct base URL for assets
 const getBaseUrl = () => {
@@ -341,7 +341,7 @@ const ViewSubmissions = () => {
       toast.success('Submission updated successfully!');
 
       if (editSubmission.Emailormobileno && formName) {
-        const message = `Your form "${formName}" has been updated successfully.`;
+        const message = `Your form \"${formName}\" has been updated successfully.`;
         try {
           await sendWhatsAppMessage(editSubmission.Emailormobileno, message);
           toast.success("WhatsApp notification sent.");
@@ -460,7 +460,7 @@ const ViewSubmissions = () => {
                 <FormControlLabel
                   key={option}
                   value={option}
-                  control={<Radio size={isMobile ? "small" : "medium"} />}
+                  control={<Radio size={isMobile ? "small" : "medium"} />} 
                   label={<Typography variant={isMobile ? "body2" : "body1"}>{option}</Typography>}
                 />
               ))}
@@ -589,7 +589,7 @@ const ViewSubmissions = () => {
                 const file = e.target.files[0];
                 const MAX_PHOTO_SIZE_BYTES = 2 * 1024 * 1024;
                 if (file && file.size > MAX_PHOTO_SIZE_BYTES) {
-                  toast.error(`Photo "${file.name}" exceeds the 2MB limit.`);
+                  toast.error(`Photo \"${file.name}\" exceeds the 2MB limit.`);
                   e.target.value = null;
                   handleEditChange(ColId, null);
                 } else {
@@ -791,10 +791,9 @@ const ViewSubmissions = () => {
         background: isFormOnlyUser ? 'transparent' : `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`
       }}>
         <Box sx={{ textAlign: 'center' }}>
-          <CircularProgress 
+          <RingLoader 
+            color={theme.palette.primary.main}
             size={isMobile ? 40 : 60} 
-            thickness={4}
-            sx={{ color: theme.palette.primary.main }}
           />
           <Typography 
             variant={isMobile ? "h6" : "h5"} 
@@ -807,7 +806,6 @@ const ViewSubmissions = () => {
               fontWeight: 600
             }}
           >
-            Loading Submissions...
           </Typography>
         </Box>
       </Box>
@@ -1444,7 +1442,7 @@ const ViewSubmissions = () => {
                 }
               }}
             >
-              {saving ? <CircularProgress size={24} color="inherit" /> : 'Update Submission'}
+              {saving ? <RingLoader color="white" size={24} /> : 'Update Submission'}
             </Button>
           </DialogActions>
         </Dialog>

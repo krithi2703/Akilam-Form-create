@@ -34,6 +34,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
+import { RingLoader } from 'react-spinners';
 
 const ContentTable = () => {
   const [content, setContent] = useState({});
@@ -48,42 +49,40 @@ const ContentTable = () => {
   const [allForms, setAllForms] = useState([]); // New state for all forms
   const [isValidFormFrontForContent, setIsValidFormFrontForContent] = useState(false); // New state for front content switch
   const [isValidFormBackForContent, setIsValidFormBackForContent] = useState(false); // New state for back content switch
+  const [loading, setLoading] = useState(true);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
-    const fetchContent = async () => {
-      try {
-        const userId = sessionStorage.getItem('userId');
-        if (!userId) {
-          console.error('User ID not found in session storage');
-          return;
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const userId = sessionStorage.getItem('userId');
+            if (!userId) {
+              console.error('User ID not found in session storage');
+              setLoading(false);
+              return;
+            }
+            const contentPromise = axios.get(`/content-dtl?userId=${userId}`);
+            const formsPromise = axios.get('/formmaster');
+            const [contentResponse, formsResponse] = await Promise.all([contentPromise, formsPromise]);
+
+            const filteredContent = Object.entries(contentResponse.data).reduce((acc, [formName, data]) => {
+                if (data.front.length > 0 || data.back.length > 0) {
+                    acc[formName] = data;
+                }
+                return acc;
+            }, {});
+            setContent(filteredContent);
+            setAllForms(formsResponse.data);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        } finally {
+            setLoading(false);
         }
-        const response = await axios.get(`/content-dtl?userId=${userId}`);
-        const filteredContent = Object.entries(response.data).reduce((acc, [formName, data]) => {
-          if (data.front.length > 0 || data.back.length > 0) {
-            acc[formName] = data;
-          }
-          return acc;
-        }, {});
-        setContent(filteredContent);
-      } catch (error) {
-        console.error('Error fetching content:', error);
-      }
     };
-
-    const fetchForms = async () => {
-      try {
-        const response = await axios.get('/formmaster'); // Assuming /formmaster returns all forms
-        setAllForms(response.data);
-      } catch (error) {
-        console.error('Error fetching forms:', error);
-      }
-    };
-
-    fetchContent();
-    fetchForms();
+    fetchData();
   }, []);
 
   const handleOptionsClick = (event, formName) => {
@@ -146,6 +145,14 @@ const ContentTable = () => {
     });
     handleAddContentDialogClose();
   };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+        <RingLoader color="#36d7b7" />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3 } }}>

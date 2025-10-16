@@ -8,7 +8,6 @@ import {
   TableHead,
   TableRow,
   Paper,
-  CircularProgress,
   Alert,
   Button,
   Typography,
@@ -21,6 +20,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import api from "../axiosConfig";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { RingLoader } from "react-spinners";
 
 const renderCellContent = (value) => {
   if (!value) {
@@ -162,7 +162,7 @@ export default function MasterTable() {
 
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
-          <CircularProgress size={isSmallScreen ? 24 : 40} />
+          <RingLoader color="#36d7b7" size={isSmallScreen ? 24 : 40} />
         </Box>
       )}
       

@@ -23,8 +23,6 @@ import {
   MenuItem,
   Container,
   Alert,
-  CircularProgress,
-  LinearProgress,
 } from '@mui/material';
 import { BarChart, LineChart, PieChart } from '@mui/x-charts';
 import {
@@ -40,6 +38,7 @@ import {
   Receipt as ReceiptIcon,
 } from '@mui/icons-material';
 import axios from '../axiosConfig';
+import { RingLoader } from 'react-spinners';
 
 // ------------------- Enhanced Stat Card -------------------
 const StatCard = ({ title, value, icon, color, description, trend, loading }) => {
@@ -96,7 +95,7 @@ const StatCard = ({ title, value, icon, color, description, trend, loading }) =>
             </Typography>
             {loading ? (
               <Box display="flex" alignItems="center" gap={2} mt={1}>
-                <CircularProgress size={24} thickness={4} />
+                <RingLoader color={theme.palette[color]?.main || theme.palette.primary.main} size={24} />
                 <Typography variant="h5" component="div" fontWeight="bold">
                   Loading...
                 </Typography>
@@ -148,20 +147,9 @@ const StatCard = ({ title, value, icon, color, description, trend, loading }) =>
         
         {/* Progress Bar for visual appeal */}
         {!loading && (
-          <LinearProgress 
-            variant="determinate" 
-            value={75}
-            sx={{
-              mt: 2,
-              height: 4,
-              borderRadius: 2,
-              backgroundColor: alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.2),
-              '& .MuiLinearProgress-bar': {
-                backgroundColor: theme.palette[color]?.main || theme.palette.primary.main,
-                borderRadius: 2,
-              }
-            }}
-          />
+          <Box sx={{ mt: 2, height: 4, borderRadius: 2, backgroundColor: alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.2)}}>
+            <Box sx={{ height: '100%', width: '75%', borderRadius: 2, backgroundColor: theme.palette[color]?.main || theme.palette.primary.main}} />
+          </Box>
         )}
       </CardContent>
     </Card>
@@ -265,7 +253,7 @@ const ChartCard = ({ children, title, subtitle, icon, loading, action }) => {
           {loading ? (
             <Box display="flex" justifyContent="center" alignItems="center" sx={{ height: '100%', flex: 1 }}>
               <Box textAlign="center">
-                <CircularProgress size={40} thickness={4} />
+                <RingLoader color={theme.palette.primary.main} size={40} />
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
                   Loading chart data...
                 </Typography>

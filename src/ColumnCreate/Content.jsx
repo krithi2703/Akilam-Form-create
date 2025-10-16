@@ -26,6 +26,7 @@ import {
 } from '@mui/icons-material';
 import api from '../axiosConfig';
 import { toast } from 'react-toastify';
+import { RingLoader } from 'react-spinners';
 
 export default function Content() {
     const theme = useTheme();
@@ -366,7 +367,7 @@ export default function Content() {
                                                 variant="contained"
                                                 color="primary"
                                                 disabled={isSubmitting}
-                                                startIcon={isSubmitting ? <CreateIcon /> : <SendIcon />}
+                                                startIcon={isSubmitting ? <RingLoader color="white" size={24} /> : <SendIcon />}
                                                 sx={{
                                                     px: 5,
                                                     py: 1.5,

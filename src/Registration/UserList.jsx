@@ -9,10 +9,10 @@ import {
   TableHead,
   TableRow,
   Paper,
-  CircularProgress,
   Alert
 } from '@mui/material';
 import axios from '../axiosConfig';
+import { RingLoader } from 'react-spinners';
 
 export default function UserList() {
   const [users, setUsers] = useState([]);
@@ -38,7 +38,7 @@ export default function UserList() {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
+        <RingLoader color="#36d7b7" />
       </Box>
     );
   }

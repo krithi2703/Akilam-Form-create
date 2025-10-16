@@ -4,7 +4,6 @@ import {
     Card,
     CardContent,
     Typography,
-    CircularProgress,
     Alert,
     Container,
     Tabs,
@@ -18,6 +17,7 @@ import {
 import { Add as AddIcon, Logout as LogoutIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import api from '../axiosConfig';
 import { useParams, useNavigate } from 'react-router-dom';
+import { RingLoader } from 'react-spinners';
 
 export default function ContentDetails({ isFormOnlyUser }) {
     const { formName: paramFormName, side: paramSide, formId: paramFormId } = useParams();
@@ -141,7 +141,7 @@ export default function ContentDetails({ isFormOnlyUser }) {
     if (loading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-                <CircularProgress />
+                <RingLoader color="#36d7b7" />
             </Box>
         );
     }

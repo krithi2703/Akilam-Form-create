@@ -12,12 +12,12 @@ import {
   ListItem,
   ListItemText,
   IconButton,
-  CircularProgress,
   Alert,
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon, Edit as EditIcon, Check as CheckIcon, Close as CloseIcon } from '@mui/icons-material';
 import api from '../axiosConfig';
 import { toast } from 'react-toastify';
+import { RingLoader } from 'react-spinners';
 
 const ColumnOptionEditorDialog = ({ open, onClose, onSuccessfulSubmit, colId, dataType, columnName, formId }) => {
   const [optionName, setOptionName] = useState('');
@@ -214,7 +214,7 @@ const ColumnOptionEditorDialog = ({ open, onClose, onSuccessfulSubmit, colId, da
           <Button type="submit" variant="contained" startIcon={<AddIcon />} sx={{ mt: 2 }}>Add Option</Button>
         </Box>
         <Box sx={{ mt: 3 }}>
-          {fetchingOptions ? <CircularProgress /> : (
+          {fetchingOptions ? <RingLoader color="#36d7b7" /> : (
             <List>
               {currentOptions.map((option, index) => (
                 <ListItem key={option.id} secondaryAction={
@@ -242,7 +242,7 @@ const ColumnOptionEditorDialog = ({ open, onClose, onSuccessfulSubmit, colId, da
         </Box>
       </DialogContent>
       <DialogActions>
-        {loading && <CircularProgress size={24} sx={{ mr: 2 }} />}
+        {loading && <RingLoader color="#36d7b7" size={24} />}
         <Button onClick={onClose} disabled={loading}>Close</Button>
         <Button onClick={handleFinalSubmit} variant="contained" color="primary" disabled={loading}>Submit</Button>
       </DialogActions>
