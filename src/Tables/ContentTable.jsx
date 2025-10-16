@@ -55,7 +55,12 @@ const ContentTable = () => {
   useEffect(() => {
     const fetchContent = async () => {
       try {
-        const response = await axios.get('/content-dtl/');
+        const userId = sessionStorage.getItem('userId');
+        if (!userId) {
+          console.error('User ID not found in session storage');
+          return;
+        }
+        const response = await axios.get(`/content-dtl?userId=${userId}`);
         const filteredContent = Object.entries(response.data).reduce((acc, [formName, data]) => {
           if (data.front.length > 0 || data.back.length > 0) {
             acc[formName] = data;
@@ -208,7 +213,16 @@ const ContentTable = () => {
           </TableHead>
 
           <TableBody>
-            {Object.entries(content).map(([formName, data]) => (
+            {Object.keys(content).length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} align="center">
+                  <Typography sx={{ p: 3 }}>
+                    No content has been created yet.
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              Object.entries(content).map(([formName, data]) => (
               <TableRow
                 key={formName}
                 sx={{
@@ -294,7 +308,7 @@ const ContentTable = () => {
                   </Box>
                 </TableCell>
               </TableRow>
-            ))}
+            )))}
           </TableBody>
         </Table>
       </TableContainer>

@@ -187,9 +187,11 @@ const ChartCard = ({ children, title, subtitle, icon, loading, action }) => {
           boxShadow: '0 20px 60px rgba(0,0,0,0.12)',
           transform: 'translateY(-4px)',
         },
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
-      <CardContent sx={{ p: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <CardContent sx={{ p: 0, height: '100%', display: 'flex', flexDirection: 'column', flex: 1 }}>
         {/* Enhanced Card Header */}
         <Box
           sx={{
@@ -252,10 +254,16 @@ const ChartCard = ({ children, title, subtitle, icon, loading, action }) => {
           </Box>
         </Box>
         
-        {/* Card Content */}
-        <Box sx={{ p: 3, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+        {/* Card Content - Fixed for proper chart display */}
+        <Box sx={{ 
+          p: 3, 
+          flex: 1, 
+          display: 'flex', 
+          flexDirection: 'column',
+          minHeight: 0, // Important for flexbox children
+        }}>
           {loading ? (
-            <Box display="flex" justifyContent="center" alignItems="center" sx={{ height: '100%' }}>
+            <Box display="flex" justifyContent="center" alignItems="center" sx={{ height: '100%', flex: 1 }}>
               <Box textAlign="center">
                 <CircularProgress size={40} thickness={4} />
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
@@ -264,7 +272,14 @@ const ChartCard = ({ children, title, subtitle, icon, loading, action }) => {
               </Box>
             </Box>
           ) : (
-            children
+            <Box sx={{ 
+              flex: 1, 
+              display: 'flex', 
+              flexDirection: 'column',
+              minHeight: 0,
+            }}>
+              {children}
+            </Box>
           )}
         </Box>
       </CardContent>
@@ -414,11 +429,17 @@ const PaymentDetailsTable = () => {
       )}
 
       {selectedEmail ? (
-        <Box sx={{ width: '100%', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ 
+          width: '100%', 
+          flex: 1, 
+          display: 'flex', 
+          flexDirection: 'column',
+          minHeight: 0,
+        }}>
           {filteredSubmissions.length > 0 ? (
             <TableContainer 
               sx={{ 
-                flexGrow: 1,
+                flex: 1,
                 borderRadius: 3,
                 border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
                 '& .MuiTableRow-root:hover': {
@@ -496,7 +517,7 @@ const PaymentDetailsTable = () => {
           ) : (
             <Box 
               sx={{ 
-                flexGrow: 1, 
+                flex: 1, 
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center',
@@ -517,7 +538,7 @@ const PaymentDetailsTable = () => {
       ) : (
         <Box 
           sx={{ 
-            flexGrow: 1, 
+            flex: 1, 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center',
@@ -543,10 +564,7 @@ const PaymentDetailsTable = () => {
 
 // ------------------- Enhanced Form Submission Chart -------------------
 const FormSubmissionChart = () => {
-  const [allChartData, setAllChartData] = useState([]);
   const [chartData, setChartData] = useState([]);
-  const [allForms, setAllForms] = useState([]);
-  const [selectedFormId, setSelectedFormId] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const theme = useTheme();
@@ -555,30 +573,17 @@ const FormSubmissionChart = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [formsResponse, countsResponse] = await Promise.all([
-          axios.get('/formname'),
-          axios.get('/submissions/count-by-form'),
-        ]);
-
-        const formsData = Array.isArray(formsResponse.data) ? formsResponse.data : 
-                         formsResponse.data?.data || formsResponse.data?.forms || [];
+        const countsResponse = await axios.get('/submissions/count-by-form');
         
         const countsData = Array.isArray(countsResponse.data) ? countsResponse.data : 
                           countsResponse.data?.data || countsResponse.data?.counts || [];
 
-        setAllForms(formsData);
-        setAllChartData(countsData);
-
-        if (formsData.length > 0) {
-          setSelectedFormId(String(formsData[0].formId));
-        }
-        
+        setChartData(countsData);
         setError(null);
       } catch (error) {
         console.error('Error fetching data for chart:', error);
         setError('Failed to load analytics data. The server may be down or an error occurred.');
-        setAllForms([]);
-        setAllChartData([]);
+        setChartData([]);
       } finally {
         setLoading(false);
       }
@@ -587,28 +592,15 @@ const FormSubmissionChart = () => {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    if (selectedFormId && allChartData.length > 0) {
-      const filteredData = allChartData.filter(
-        (item) => item && String(item.FormId) === selectedFormId
-      );
-      setChartData(filteredData);
-    } else {
-      setChartData([]);
-    }
-  }, [selectedFormId, allChartData]);
-
-  const handleFormChange = (event) => {
-    setSelectedFormId(event.target.value);
-  };
-
   const chartSetting = {
     yAxis: [{
       label: 'Submission Count',
     }],
     height: 400,
+    margin: { left: 70, right: 30, top: 30, bottom: 80 },
     sx: {
       width: '100%',
+      flex: 1,
       [`.MuiBarElement-root`]: {
         fill: `url(#gradient)`,
         rx: 6,
@@ -626,52 +618,28 @@ const FormSubmissionChart = () => {
 
   return (
     <ChartCard
-      title="Form Analytics"
-      subtitle="Comprehensive form submission insights and trends"
+      title="Form Submission Counts"
+      subtitle="Total submissions for each form"
       icon={<AnalyticsIcon />}
       loading={loading}
-      action={chartData.length > 0 ? `${chartData.reduce((sum, item) => sum + (item.SubmissionCount || 0), 0)} total` : ''}
+      action={chartData.length > 0 ? `${chartData.reduce((sum, item) => sum + (item.SubmissionCount || 0), 0)} total submissions` : ''}
     >
       {error && (
         <Alert severity="error" sx={{ mb: 3, borderRadius: 3 }}>
           {error}
         </Alert>
       )}
-
-      <Box sx={{ mb: 3 }}>
-        <FormControl fullWidth>
-          <InputLabel>Select Form</InputLabel>
-          <Select
-            value={selectedFormId}
-            label="Select Form"
-            onChange={handleFormChange}
-            disabled={loading || allForms.length === 0}
-            sx={{
-              borderRadius: 3,
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: alpha(theme.palette.primary.main, 0.3),
-              }
-            }}
-          >
-            {Array.isArray(allForms) && allForms.map((form) => (
-              <MenuItem key={form.formId} value={String(form.formId)}>
-                <Box>
-                  <Typography variant="body1" fontWeight="600">
-                    {form.formName || `Form ${form.formId}`}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    ID: {form.formId}
-                  </Typography>
-                </Box>
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
       
       {chartData.length > 0 ? (
-        <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <svg style={{ height: 0 }}>
+        <Box sx={{ 
+          flex: 1, 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          width: '100%',
+          minHeight: 0,
+        }}>
+          <svg style={{ height: 0, position: 'absolute' }}>
             <defs>
               <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" stopColor={theme.palette.primary.main} />
@@ -679,32 +647,41 @@ const FormSubmissionChart = () => {
               </linearGradient>
             </defs>
           </svg>
-          <BarChart
-            dataset={chartData}
-            xAxis={[{ 
-              scaleType: 'band', 
-              dataKey: 'FormName', 
-              tickPlacement: 'middle', 
-              tickLabelPlacement: 'middle',
-              tickLabelStyle: {
-                angle: -45,
-                textAnchor: 'end',
-                fontSize: 12,
-                fontWeight: '600',
-              }
-            }]}
-            series={[{ 
-              dataKey: 'SubmissionCount', 
-              label: 'Submissions',
-              color: theme.palette.primary.main
-            }]}
-            {...chartSetting}
-          />
+          <Box sx={{ 
+            width: '100%', 
+            height: '100%', 
+            display: 'flex', 
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+            <BarChart
+              dataset={chartData}
+              xAxis={[{ 
+                scaleType: 'band', 
+                dataKey: 'FormId', 
+                tickPlacement: 'middle', 
+                tickLabelPlacement: 'middle',
+                tickLabelStyle: {
+                  angle: -45,
+                  textAnchor: 'end',
+                  fontSize: 12,
+                  fontWeight: '600',
+                },
+                label: 'Form ID'
+              }]}
+              series={[{ 
+                dataKey: 'SubmissionCount', 
+                label: 'Submissions',
+                color: theme.palette.primary.main
+              }]}
+              {...chartSetting}
+            />
+          </Box>
         </Box>
       ) : (
         <Box 
           sx={{ 
-            flexGrow: 1, 
+            flex: 1, 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center',
@@ -714,15 +691,10 @@ const FormSubmissionChart = () => {
         >
           <BarChartIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2, opacity: 0.5 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom fontWeight="600">
-            {allForms.length === 0 ? 'No Forms Available' : selectedFormId ? 'No Data Available' : 'Select a Form'}
+            {loading ? 'Loading...' : 'No Data Available'}
           </Typography>
           <Typography variant="body2" color="text.secondary" textAlign="center">
-            {allForms.length === 0 
-              ? 'No form data available. Please check your API connection.' 
-              : selectedFormId 
-                ? 'No analytics data available for the selected form.' 
-                : 'Please select a form to view detailed analytics.'
-            }
+            {loading ? 'Fetching chart data...' : 'No submission data available.'}
           </Typography>
         </Box>
       )}
@@ -904,12 +876,16 @@ export default function Dashboard() {
         <Grid container spacing={4}>
           {/* Form Submission Chart */}
           <Grid item xs={12} lg={6}>
-            <FormSubmissionChart />
+            <Box sx={{ height: '600px' }}> {/* Fixed height container */}
+              <FormSubmissionChart />
+            </Box>
           </Grid>
           
           {/* Payment Details Table */}
           <Grid item xs={12} lg={6}>
-            <PaymentDetailsTable />
+            <Box sx={{ height: '600px' }}> {/* Fixed height container */}
+              <PaymentDetailsTable />
+            </Box>
           </Grid>
         </Grid>
       </Container>
@@ -937,8 +913,6 @@ export default function Dashboard() {
           </Box>
         </Box>
       </Box>
-
-
     </Box>
   );
 }

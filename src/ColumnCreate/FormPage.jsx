@@ -122,14 +122,14 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
     if (isFormOnlyUserSession) {
       try {
         const contentResponse = await api.get(`/content-dtl/${formId}`);
-        if (contentResponse.data && (contentResponse.data.front.length > 0 || contentResponse.data.back.length > 0)) {
+        if (contentResponse.data && contentResponse.data.back.length > 0) {
           navigate(`/content-details/${formId}/back`);
         } else {
-          navigate(`/form/view/${formId}`);
+          handleLogout();
         }
       } catch (error) {
         console.error("Error checking content details after submission:", error);
-        navigate(`/form/view/${formId}`);
+        handleLogout();
       }
     } else {
       handleLogout();
