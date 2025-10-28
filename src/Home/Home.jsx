@@ -344,7 +344,7 @@ const PaymentDetailsTable = () => {
                 </Typography>
               </Box>
             </Grid>
-            <Grid item xs={4}>
+            <Grid xs={4}>
               <Box textAlign="center">
                 <Typography variant={isMobile ? "h6" : "h5"} fontWeight="700" color="success.main">
                   ₹{totalAmount.toLocaleString()}
@@ -354,7 +354,7 @@ const PaymentDetailsTable = () => {
                 </Typography>
               </Box>
             </Grid>
-            <Grid item xs={4}>
+            <Grid xs={4}>
               <Box textAlign="center">
                 <Typography variant={isMobile ? "h6" : "h5"} fontWeight="700" color="info.main">
                   {Math.round(totalAmount / filteredSubmissions.length) || 0}
@@ -708,7 +708,7 @@ export default function Dashboard() {
 
         {/* Stat Cards */}
         <Grid container spacing={isMobile ? 1.5 : 2} sx={{ mb: isMobile ? 3 : 4 }}>
-          <Grid item xs={6} sm={6} md={3}>
+          <Grid xs={6} sm={6} md={3}>
             <StatCard
               title="Users"
               value={counts.userCount}
@@ -719,7 +719,7 @@ export default function Dashboard() {
               loading={countsLoading}
             />
           </Grid>
-          <Grid item xs={6} sm={6} md={3}>
+          <Grid xs={6} sm={6} md={3}>
             <StatCard
               title="Forms"
               value={counts.formCount}
@@ -730,7 +730,7 @@ export default function Dashboard() {
               loading={countsLoading}
             />
           </Grid>
-          <Grid item xs={6} sm={6} md={3}>
+          <Grid xs={6} sm={6} md={3}>
             <StatCard
               title="Columns"
               value={counts.columnCount}
@@ -741,7 +741,7 @@ export default function Dashboard() {
               loading={countsLoading}
             />
           </Grid>
-          <Grid item xs={6} sm={6} md={3}>
+          <Grid xs={6} sm={6} md={3}>
             <StatCard
               title="Submissions"
               value={counts.submissionCount}
@@ -756,13 +756,13 @@ export default function Dashboard() {
 
         {/* Chart and Payment Details Section */}
         <Grid container spacing={isMobile ? 2 : 3}>
-          <Grid item xs={12} lg={6}>
+          <Grid xs={12} lg={6}>
             <Box sx={{ height: isMobile ? '400px' : '500px' }}>
               <FormSubmissionChart />
             </Box>
           </Grid>
           
-          <Grid item xs={12} lg={6}>
+          <Grid xs={12} lg={6}>
             <Box sx={{ height: isMobile ? '400px' : '500px' }}>
               <PaymentDetailsTable />
             </Box>
