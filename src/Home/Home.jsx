@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Grid,
   Paper,
   Typography,
   Card,
@@ -23,6 +22,8 @@ import {
   MenuItem,
   Container,
   Alert,
+  useMediaQuery,
+  Grid,
 } from '@mui/material';
 import { BarChart, LineChart, PieChart } from '@mui/x-charts';
 import {
@@ -40,80 +41,66 @@ import {
 import axios from '../axiosConfig';
 import { RingLoader } from 'react-spinners';
 
-// ------------------- Enhanced Stat Card -------------------
+// ------------------- Responsive Stat Card -------------------
 const StatCard = ({ title, value, icon, color, description, trend, loading }) => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
   return (
     <Card
       elevation={0}
       sx={{
         background: `linear-gradient(135deg, ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.15)} 0%, ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.05)} 100%)`,
-        borderRadius: 4,
+        borderRadius: 2,
         height: '100%',
         border: `1px solid ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.2)}`,
         transition: 'all 0.3s ease-in-out',
         position: 'relative',
         overflow: 'hidden',
         '&:hover': {
-          transform: 'translateY(-8px)',
-          boxShadow: `0 20px 40px ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.2)}`,
-          border: `1px solid ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.4)}`,
+          transform: isMobile ? 'none' : 'translateY(-4px)',
+          boxShadow: isMobile ? 'none' : `0 8px 24px ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.15)}`,
         },
         display: 'flex',
         flexDirection: 'column',
       }}
     >
-      {/* Background Pattern */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: -20,
-          right: -20,
-          width: 120,
-          height: 120,
-          borderRadius: '50%',
-          background: `radial-gradient(circle, ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.1)} 0%, transparent 70%)`,
-          zIndex: 0,
-        }}
-      />
-      
-      <CardContent sx={{ flexGrow: 1, position: 'relative', zIndex: 1, p: 3 }}>
+      <CardContent sx={{ flexGrow: 1, position: 'relative', zIndex: 1, p: isMobile ? 2 : 3 }}>
         <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
           <Box flex={1}>
             <Typography 
               color="textSecondary" 
-              variant="caption" 
+              variant={isMobile ? "caption" : "body2"} 
               fontWeight="600" 
               sx={{ 
                 textTransform: 'uppercase',
-                letterSpacing: '1px',
+                letterSpacing: '0.5px',
                 opacity: 0.8
               }}
             >
               {title}
             </Typography>
             {loading ? (
-              <Box display="flex" alignItems="center" gap={2} mt={1}>
-                <RingLoader color={theme.palette[color]?.main || theme.palette.primary.main} size={24} />
-                <Typography variant="h5" component="div" fontWeight="bold">
+              <Box display="flex" alignItems="center" gap={1} mt={1}>
+                <RingLoader color={theme.palette[color]?.main || theme.palette.primary.main} size={isMobile ? 16 : 20} />
+                <Typography variant={isMobile ? "h6" : "h5"} component="div" fontWeight="bold">
                   Loading...
                 </Typography>
               </Box>
             ) : (
-              <Typography variant="h3" component="div" fontWeight="800" sx={{ mt: 1 }}>
+              <Typography variant={isMobile ? "h4" : "h3"} component="div" fontWeight="800" sx={{ mt: 0.5 }}>
                 {value?.toLocaleString()}
               </Typography>
             )}
             
-            {description && (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, opacity: 0.8 }}>
+            {description && !isMobile && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1, opacity: 0.8 }}>
                 {description}
               </Typography>
             )}
             
-            {trend && (
-              <Box display="flex" alignItems="center" gap={1} sx={{ mt: 2 }}>
+            {trend && !isMobile && (
+              <Box display="flex" alignItems="center" gap={1} sx={{ mt: 1.5 }}>
                 <Chip
                   icon={trend.value > 0 ? <TrendingUpIcon /> : <TrendingDownIcon />}
                   label={`${trend.value > 0 ? '+' : ''}${trend.value}%`}
@@ -132,22 +119,17 @@ const StatCard = ({ title, value, icon, color, description, trend, loading }) =>
             sx={{ 
               bgcolor: alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.15), 
               color: theme.palette[color]?.main || theme.palette.primary.main,
-              width: 60,
-              height: 60,
-              boxShadow: `0 8px 24px ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.3)}`,
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                transform: 'scale(1.1) rotate(5deg)',
-              }
+              width: isMobile ? 40 : 50,
+              height: isMobile ? 40 : 50,
+              boxShadow: `0 4px 12px ${alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.2)}`,
             }}
           >
             {icon}
           </Avatar>
         </Box>
         
-        {/* Progress Bar for visual appeal */}
-        {!loading && (
-          <Box sx={{ mt: 2, height: 4, borderRadius: 2, backgroundColor: alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.2)}}>
+        {!loading && !isMobile && (
+          <Box sx={{ mt: 1.5, height: 3, borderRadius: 2, backgroundColor: alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.2)}}>
             <Box sx={{ height: '100%', width: '75%', borderRadius: 2, backgroundColor: theme.palette[color]?.main || theme.palette.primary.main}} />
           </Box>
         )}
@@ -156,61 +138,40 @@ const StatCard = ({ title, value, icon, color, description, trend, loading }) =>
   );
 };
 
-// ------------------- Enhanced Chart Card -------------------
+// ------------------- Responsive Chart Card -------------------
 const ChartCard = ({ children, title, subtitle, icon, loading, action }) => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
     <Card
       sx={{
         height: '100%',
-        borderRadius: 4,
-        boxShadow: '0 12px 40px rgba(0,0,0,0.08)',
+        borderRadius: 2,
+        boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
         border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-        overflow: 'visible',
-        background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.9)} 0%, ${alpha(theme.palette.background.paper, 1)} 100%)`,
-        backdropFilter: 'blur(10px)',
-        transition: 'all 0.3s ease-in-out',
-        '&:hover': {
-          boxShadow: '0 20px 60px rgba(0,0,0,0.12)',
-          transform: 'translateY(-4px)',
-        },
+        overflow: 'hidden',
+        background: theme.palette.background.paper,
         display: 'flex',
         flexDirection: 'column',
       }}
     >
       <CardContent sx={{ p: 0, height: '100%', display: 'flex', flexDirection: 'column', flex: 1 }}>
-        {/* Enhanced Card Header */}
         <Box
           sx={{
-            p: 3.5,
-            pb: 2.5,
-            borderBottom: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
-            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.background.paper, 1)} 100%)`,
-            position: 'relative',
-            overflow: 'hidden',
+            p: isMobile ? 2 : 3,
+            pb: isMobile ? 1.5 : 2,
+            borderBottom: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
+            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.background.paper, 1)} 100%)`,
           }}
         >
-          {/* Header Background Pattern */}
-          <Box
-            sx={{
-              position: 'absolute',
-              top: -50,
-              right: -50,
-              width: 150,
-              height: 150,
-              borderRadius: '50%',
-              background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 70%)`,
-            }}
-          />
-          
-          <Box display="flex" alignItems="center" justifyContent="space-between" position="relative">
-            <Box>
-              <Box display="flex" alignItems="center" gap={2} mb={1}>
-                <Typography variant="h5" fontWeight="800" color="primary">
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Box flex={1}>
+              <Box display="flex" alignItems="center" gap={1} mb={0.5}>
+                <Typography variant={isMobile ? "h6" : "h5"} fontWeight="700">
                   {title}
                 </Typography>
-                {action && (
+                {action && !isMobile && (
                   <Chip 
                     label={action} 
                     size="small" 
@@ -220,21 +181,16 @@ const ChartCard = ({ children, title, subtitle, icon, loading, action }) => {
                   />
                 )}
               </Box>
-              <Typography variant="body2" color="textSecondary" sx={{ opacity: 0.8 }}>
+              <Typography variant={isMobile ? "caption" : "body2"} color="textSecondary" sx={{ opacity: 0.8 }}>
                 {subtitle}
               </Typography>
             </Box>
             <Avatar
               sx={{
-                bgcolor: alpha(theme.palette.primary.main, 0.15),
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
                 color: theme.palette.primary.main,
-                width: 56,
-                height: 56,
-                boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.2)}`,
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  transform: 'scale(1.1) rotate(5deg)',
-                }
+                width: isMobile ? 40 : 48,
+                height: isMobile ? 40 : 48,
               }}
             >
               {icon}
@@ -242,20 +198,19 @@ const ChartCard = ({ children, title, subtitle, icon, loading, action }) => {
           </Box>
         </Box>
         
-        {/* Card Content - Fixed for proper chart display */}
         <Box sx={{ 
-          p: 3, 
+          p: isMobile ? 2 : 3, 
           flex: 1, 
           display: 'flex', 
           flexDirection: 'column',
-          minHeight: 0, // Important for flexbox children
+          minHeight: 0,
         }}>
           {loading ? (
             <Box display="flex" justifyContent="center" alignItems="center" sx={{ height: '100%', flex: 1 }}>
               <Box textAlign="center">
-                <RingLoader color={theme.palette.primary.main} size={40} />
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                  Loading chart data...
+                <RingLoader color={theme.palette.primary.main} size={isMobile ? 30 : 40} />
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+                  Loading...
                 </Typography>
               </Box>
             </Box>
@@ -275,9 +230,10 @@ const ChartCard = ({ children, title, subtitle, icon, loading, action }) => {
   );
 };
 
-// ------------------- Enhanced Payment Details Table -------------------
+// ------------------- Responsive Payment Details Table -------------------
 const PaymentDetailsTable = () => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [submissions, setSubmissions] = useState([]);
   const [selectedEmail, setSelectedEmail] = useState('');
   const [error, setError] = useState(null);
@@ -304,7 +260,7 @@ const PaymentDetailsTable = () => {
         setError(null);
       } catch (error) {
         console.error('Error fetching submissions:', error);
-        setError('Failed to load payment data. Please try again later.');
+        setError('Failed to load payment data.');
         setSubmissions([]);
       } finally {
         setLoading(false);
@@ -337,41 +293,37 @@ const PaymentDetailsTable = () => {
   return (
     <ChartCard
       title="Payment Analytics"
-      subtitle="Detailed payment history and transaction insights"
+      subtitle="Payment history and transactions"
       icon={<ReceiptIcon />}
       loading={loading}
-      action={selectedEmail ? `${filteredSubmissions.length} transactions` : ''}
+      action={selectedEmail ? `${filteredSubmissions.length} txns` : ''}
     >
       {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: 3 }}>
+        <Alert severity="error" sx={{ mb: 2, borderRadius: 1 }}>
           {error}
         </Alert>
       )}
 
-      <Box sx={{ mb: 3 }}>
-        <FormControl fullWidth>
+      <Box sx={{ mb: 2 }}>
+        <FormControl fullWidth size={isMobile ? "small" : "medium"}>
           <InputLabel>Select User</InputLabel>
           <Select
             value={selectedEmail}
             label="Select User"
             onChange={handleEmailChange}
             disabled={loading || uniqueUsers.length === 0}
-            sx={{
-              borderRadius: 3,
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: alpha(theme.palette.primary.main, 0.3),
-              }
-            }}
           >
             {uniqueUsers.map((user) => (
               <MenuItem key={user.Emailormobileno} value={user.Emailormobileno}>
                 <Box>
-                  <Typography variant="body1" fontWeight="600">
+                  <Typography variant="body2" fontWeight="600">
                     {user.UserName}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {user.Emailormobileno}
-                  </Typography>
+                  {!isMobile && (
+                    <Typography variant="caption" color="text.secondary">
+                      {user.Emailormobileno}
+                    </Typography>
+                  )}
                 </Box>
               </MenuItem>
             ))}
@@ -380,35 +332,35 @@ const PaymentDetailsTable = () => {
       </Box>
 
       {selectedEmail && filteredSubmissions.length > 0 && (
-        <Box sx={{ mb: 3, p: 2.5, bgcolor: alpha(theme.palette.primary.main, 0.04), borderRadius: 3 }}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={4}>
+        <Box sx={{ mb: 2, p: 2, bgcolor: alpha(theme.palette.primary.main, 0.03), borderRadius: 1 }}>
+          <Grid container spacing={2}>
+            <Grid xs={4}>
               <Box textAlign="center">
-                <Typography variant="h4" fontWeight="800" color="primary">
+                <Typography variant={isMobile ? "h6" : "h5"} fontWeight="700">
                   {filteredSubmissions.length}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Total Transactions
+                <Typography variant="caption" color="text.secondary">
+                  Transactions
                 </Typography>
               </Box>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={4}>
               <Box textAlign="center">
-                <Typography variant="h4" fontWeight="800" color="success.main">
+                <Typography variant={isMobile ? "h6" : "h5"} fontWeight="700" color="success.main">
                   ₹{totalAmount.toLocaleString()}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Total Amount
+                <Typography variant="caption" color="text.secondary">
+                  Total
                 </Typography>
               </Box>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={4}>
               <Box textAlign="center">
-                <Typography variant="h4" fontWeight="800" color="info.main">
+                <Typography variant={isMobile ? "h6" : "h5"} fontWeight="700" color="info.main">
                   {Math.round(totalAmount / filteredSubmissions.length) || 0}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Avg. Transaction
+                <Typography variant="caption" color="text.secondary">
+                  Average
                 </Typography>
               </Box>
             </Grid>
@@ -428,29 +380,31 @@ const PaymentDetailsTable = () => {
             <TableContainer 
               sx={{ 
                 flex: 1,
-                borderRadius: 3,
-                border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
                 '& .MuiTableRow-root:hover': {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.04),
+                  backgroundColor: alpha(theme.palette.primary.main, 0.02),
                 }
               }}
             >
-              <Table stickyHeader>
+              <Table stickyHeader size={isMobile ? "small" : "medium"}>
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: '800', bgcolor: 'background.default', fontSize: '0.875rem' }}>
-                      SUBMISSION ID
+                    {!isMobile && (
+                      <TableCell sx={{ fontWeight: '700', fontSize: '0.75rem' }}>
+                        SUBMISSION ID
+                      </TableCell>
+                    )}
+                    <TableCell sx={{ fontWeight: '700', fontSize: '0.75rem' }}>
+                      {isMobile ? 'PAYMENT' : 'PAYMENT ID'}
                     </TableCell>
-                    <TableCell sx={{ fontWeight: '800', bgcolor: 'background.default', fontSize: '0.875rem' }}>
-                      PAYMENT ID
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: '800', bgcolor: 'background.default', fontSize: '0.875rem' }}>
+                    <TableCell sx={{ fontWeight: '700', fontSize: '0.75rem' }}>
                       AMOUNT
                     </TableCell>
-                    <TableCell sx={{ fontWeight: '800', bgcolor: 'background.default', fontSize: '0.875rem' }}>
-                      STATUS
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: '800', bgcolor: 'background.default', fontSize: '0.875rem' }}>
+                    {!isMobile && (
+                      <TableCell sx={{ fontWeight: '700', fontSize: '0.75rem' }}>
+                        STATUS
+                      </TableCell>
+                    )}
+                    <TableCell sx={{ fontWeight: '700', fontSize: '0.75rem' }}>
                       DATE
                     </TableCell>
                   </TableRow>
@@ -460,37 +414,35 @@ const PaymentDetailsTable = () => {
                     <TableRow 
                       key={submission.SubmissionId || index} 
                       hover
-                      sx={{ 
-                        '&:last-child td, &:last-child th': { border: 0 },
-                        transition: 'all 0.2s ease',
-                      }}
                     >
-                      <TableCell sx={{ fontFamily: 'monospace', fontWeight: '600' }}>
-                        {submission.SubmissionId || 'N/A'}
+                      {!isMobile && (
+                        <TableCell sx={{ fontFamily: 'monospace', fontWeight: '600', fontSize: '0.75rem' }}>
+                          {submission.SubmissionId ? `${submission.SubmissionId.slice(0, 8)}...` : 'N/A'}
+                        </TableCell>
+                      )}
+                      <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                        {submission.RazorpayPaymentId ? `${submission.RazorpayPaymentId.slice(0, 8)}...` : 'N/A'}
                       </TableCell>
-                      <TableCell sx={{ fontFamily: 'monospace' }}>
-                        {submission.RazorpayPaymentId || 'N/A'}
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: '700', color: 'success.main' }}>
+                      <TableCell sx={{ fontWeight: '700', color: 'success.main', fontSize: '0.75rem' }}>
                         ₹{submission.Amount || '0'}
                       </TableCell>
+                      {!isMobile && (
+                        <TableCell>
+                          <Chip
+                            label={submission.Status || 'unknown'}
+                            color={submission.Status === 'captured' ? 'success' : 'default'}
+                            size="small"
+                            sx={{ 
+                              fontWeight: '600',
+                              fontSize: '0.7rem'
+                            }}
+                          />
+                        </TableCell>
+                      )}
                       <TableCell>
-                        <Chip
-                          label={submission.Status || 'unknown'}
-                          color={submission.Status === 'captured' ? 'success' : 'default'}
-                          size="small"
-                          variant="filled"
-                          sx={{ 
-                            fontWeight: '600',
-                            borderRadius: 2
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight="600">
+                        <Typography variant="caption" fontWeight="600">
                           {submission.PaymentDate ? 
                             new Date(submission.PaymentDate).toLocaleDateString('en-IN', {
-                              year: 'numeric',
                               month: 'short',
                               day: 'numeric'
                             }) : 'N/A'
@@ -510,15 +462,12 @@ const PaymentDetailsTable = () => {
                 alignItems: 'center', 
                 justifyContent: 'center',
                 flexDirection: 'column',
-                py: 8
+                py: 4
               }}
             >
-              <ReceiptIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2, opacity: 0.5 }} />
-              <Typography variant="h6" color="text.secondary" gutterBottom fontWeight="600">
+              <ReceiptIcon sx={{ fontSize: isMobile ? 40 : 48, color: 'text.secondary', mb: 1, opacity: 0.5 }} />
+              <Typography variant={isMobile ? "body1" : "h6"} color="text.secondary" gutterBottom fontWeight="600">
                 No Payment Records
-              </Typography>
-              <Typography variant="body2" color="text.secondary" textAlign="center">
-                No payment history available for the selected user
               </Typography>
             </Box>
           )}
@@ -531,18 +480,12 @@ const PaymentDetailsTable = () => {
             alignItems: 'center', 
             justifyContent: 'center',
             flexDirection: 'column',
-            py: 8
+            py: 4
           }}
         >
-          <AnalyticsIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2, opacity: 0.5 }} />
-          <Typography variant="h6" color="text.secondary" gutterBottom fontWeight="600">
-            {uniqueUsers.length === 0 ? 'No Users Available' : 'Select a User'}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" textAlign="center">
-            {uniqueUsers.length === 0 
-              ? 'No user data available. Please check your API connection.' 
-              : 'Choose a user from the dropdown to view their payment analytics'
-            }
+          <AnalyticsIcon sx={{ fontSize: isMobile ? 40 : 48, color: 'text.secondary', mb: 1, opacity: 0.5 }} />
+          <Typography variant={isMobile ? "body1" : "h6"} color="text.secondary" gutterBottom fontWeight="600">
+            {uniqueUsers.length === 0 ? 'No Users' : 'Select User'}
           </Typography>
         </Box>
       )}
@@ -550,12 +493,13 @@ const PaymentDetailsTable = () => {
   );
 };
 
-// ------------------- Enhanced Form Submission Chart -------------------
+// ------------------- Responsive Form Submission Chart -------------------
 const FormSubmissionChart = () => {
   const [chartData, setChartData] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     const fetchData = async () => {
@@ -563,14 +507,19 @@ const FormSubmissionChart = () => {
         setLoading(true);
         const countsResponse = await axios.get('/submissions/count-by-form');
         
-        const countsData = Array.isArray(countsResponse.data) ? countsResponse.data : 
+        const rawData = Array.isArray(countsResponse.data) ? countsResponse.data : 
                           countsResponse.data?.data || countsResponse.data?.counts || [];
+        
+        const countsData = rawData.map(item => ({
+          ...item,
+          SubmissionCount: Number(item.SubmissionCount) || 0,
+        }));
 
         setChartData(countsData);
         setError(null);
       } catch (error) {
         console.error('Error fetching data for chart:', error);
-        setError('Failed to load analytics data. The server may be down or an error occurred.');
+        setError('Failed to load analytics data.');
         setChartData([]);
       } finally {
         setLoading(false);
@@ -581,39 +530,35 @@ const FormSubmissionChart = () => {
   }, []);
 
   const chartSetting = {
-    yAxis: [{
-      label: 'Submission Count',
-    }],
-    height: 400,
-    margin: { left: 70, right: 30, top: 30, bottom: 80 },
+    height: isMobile ? 300 : 350,
+    margin: { 
+      left: isMobile ? 50 : 60, 
+      right: 20, 
+      top: 20, 
+      bottom: isMobile ? 60 : 70 
+    },
     sx: {
-      width: '100%',
-      flex: 1,
+      // width: '100%',
       [`.MuiBarElement-root`]: {
-        fill: `url(#gradient)`,
-        rx: 6,
+        fill: theme.palette.primary.main,
       },
       [`.MuiChartsAxis-tickLabel`]: {
-        fontSize: '0.75rem',
+        fontSize: isMobile ? '0.7rem' : '0.75rem',
         fontWeight: '600',
-      },
-      [`.MuiChartsAxis-label`]: {
-        fontSize: '0.875rem',
-        fontWeight: '700',
       },
     },
   };
 
   return (
     <ChartCard
-      title="Form Submission Counts"
-      subtitle="Total submissions for each form"
+      title="Form Submissions"
+      subtitle="Submissions per form"
       icon={<AnalyticsIcon />}
       loading={loading}
-      action={chartData.length > 0 ? `${chartData.reduce((sum, item) => sum + (item.SubmissionCount || 0), 0)} total submissions` : ''}
+      action={chartData.length > 0 ? `${chartData.reduce((sum, item) => sum + (item.SubmissionCount || 0), 0)} total` : ''}
     >
       {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: 3 }}>
+        <Alert severity="error" sx={{ mb: 2, borderRadius: 1 }}>
           {error}
         </Alert>
       )}
@@ -627,44 +572,25 @@ const FormSubmissionChart = () => {
           width: '100%',
           minHeight: 0,
         }}>
-          <svg style={{ height: 0, position: 'absolute' }}>
-            <defs>
-              <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor={theme.palette.primary.main} />
-                <stop offset="100%" stopColor={theme.palette.primary.light} />
-              </linearGradient>
-            </defs>
-          </svg>
-          <Box sx={{ 
-            width: '100%', 
-            height: '100%', 
-            display: 'flex', 
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}>
-            <BarChart
-              dataset={chartData}
-              xAxis={[{ 
-                scaleType: 'band', 
-                dataKey: 'FormId', 
-                tickPlacement: 'middle', 
-                tickLabelPlacement: 'middle',
-                tickLabelStyle: {
-                  angle: -45,
-                  textAnchor: 'end',
-                  fontSize: 12,
-                  fontWeight: '600',
-                },
-                label: 'Form ID'
-              }]}
-              series={[{ 
-                dataKey: 'SubmissionCount', 
-                label: 'Submissions',
-                color: theme.palette.primary.main
-              }]}
-              {...chartSetting}
-            />
-          </Box>
+          <BarChart
+            dataset={chartData}
+            xAxis={[{ 
+              scaleType: 'band', 
+              dataKey: 'FormId', 
+              tickLabelStyle: {
+                angle: isMobile ? -45 : -45,
+                textAnchor: 'end',
+                fontSize: isMobile ? 10 : 12,
+              },
+              label: isMobile ? '' : 'Form ID'
+            }]}
+            series={[{ 
+              dataKey: 'SubmissionCount', 
+              label: 'Submissions',
+              color: theme.palette.primary.main
+            }]}
+            {...chartSetting}
+          />
         </Box>
       ) : (
         <Box 
@@ -674,15 +600,12 @@ const FormSubmissionChart = () => {
             alignItems: 'center', 
             justifyContent: 'center',
             flexDirection: 'column',
-            py: 8
+            py: 4
           }}
         >
-          <BarChartIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2, opacity: 0.5 }} />
-          <Typography variant="h6" color="text.secondary" gutterBottom fontWeight="600">
-            {loading ? 'Loading...' : 'No Data Available'}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" textAlign="center">
-            {loading ? 'Fetching chart data...' : 'No submission data available.'}
+          <BarChartIcon sx={{ fontSize: isMobile ? 40 : 48, color: 'text.secondary', mb: 1, opacity: 0.5 }} />
+          <Typography variant={isMobile ? "body1" : "h6"} color="text.secondary" gutterBottom fontWeight="600">
+            {loading ? 'Loading...' : 'No Data'}
           </Typography>
         </Box>
       )}
@@ -690,9 +613,12 @@ const FormSubmissionChart = () => {
   );
 };
 
-// ------------------- Enhanced Dashboard -------------------
+// ------------------- Responsive Dashboard -------------------
 export default function Dashboard() {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+  
   const [counts, setCounts] = useState({
     formCount: 0,
     columnCount: 0,
@@ -748,110 +674,78 @@ export default function Dashboard() {
       sx={{
         minHeight: '100vh',
         bgcolor: 'background.default',
-        background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.background.default, 0.8)} 50%, ${alpha(theme.palette.secondary.main, 0.03)} 100%)`,
-        position: 'relative',
-        overflow: 'hidden',
+        background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.03)} 0%, ${alpha(theme.palette.background.default, 1)} 100%)`,
       }}
     >
-      {/* Background Elements */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: -100,
-          right: -100,
-          width: 400,
-          height: 400,
-          borderRadius: '50%',
-          background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 70%)`,
-          zIndex: 0,
-        }}
-      />
-      <Box
-        sx={{
-          position: 'absolute',
-          bottom: -150,
-          left: -150,
-          width: 500,
-          height: 500,
-          borderRadius: '50%',
-          background: `radial-gradient(circle, ${alpha(theme.palette.secondary.main, 0.03)} 0%, transparent 70%)`,
-          zIndex: 0,
-        }}
-      />
-
-      {/* Main Content */}
-      <Container maxWidth={false} sx={{ pt: 4, pb: 4, pl: 4, pr: 4, position: 'relative', zIndex: 1 }}>
-        {/* Enhanced Welcome Section */}
-        <Box sx={{ mb: 6 }}>
-          <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-            <Box>
-              <Typography variant="h2" fontWeight="900" gutterBottom color="primary" sx={{ letterSpacing: '-0.5px' }}>
-                Dashboard Overview
-              </Typography>
-              <Typography variant="h5" color="textSecondary" sx={{ opacity: 0.8, fontWeight: '400' }}>
-                Welcome back! Here's your business performance summary
-              </Typography>
-            </Box>
-            <Chip 
-              icon={<TrendingUpIcon />} 
-              label="Live Analytics" 
-              color="success" 
-              variant="filled"
-              sx={{ 
-                fontWeight: '700',
-                fontSize: '0.875rem',
-                height: 40,
-                px: 2
-              }}
-            />
-          </Box>
+      <Container maxWidth={false} sx={{ 
+        pt: isMobile ? 2 : 3, 
+        pb: isMobile ? 2 : 4, 
+        px: isMobile ? 2 : 3 
+      }}>
+        {/* Header Section */}
+        <Box sx={{ mb: isMobile ? 3 : 4 }}>
+          <Typography 
+            variant={isMobile ? "h4" : "h3"} 
+            fontWeight="700" 
+            gutterBottom 
+            color="primary"
+          >
+            Dashboard
+          </Typography>
+          <Typography 
+            variant={isMobile ? "body2" : "h6"} 
+            color="textSecondary" 
+            sx={{ opacity: 0.8 }}
+          >
+            Welcome back! Here's your performance summary
+          </Typography>
           {countsError && (
-            <Alert severity="warning" sx={{ mt: 2, maxWidth: 500, borderRadius: 3 }}>
+            <Alert severity="warning" sx={{ mt: 1, borderRadius: 1 }}>
               {countsError}
             </Alert>
           )}
         </Box>
 
-        {/* Enhanced Stat Cards */}
-        <Grid container spacing={3} sx={{ mb: 6 }}>
-          <Grid item xs={12} sm={6} md={3}>
+        {/* Stat Cards */}
+        <Grid container spacing={isMobile ? 1.5 : 2} sx={{ mb: isMobile ? 3 : 4 }}>
+          <Grid item xs={6} sm={6} md={3}>
             <StatCard
-              title="Active Users"
+              title="Users"
               value={counts.userCount}
-              description="Registered platform users"
+              description="Registered users"
               icon={<PeopleIcon />}
               color="primary"
               trend={{ value: 12, label: "vs last month" }}
               loading={countsLoading}
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={6} sm={6} md={3}>
             <StatCard
-              title="Forms Created"
+              title="Forms"
               value={counts.formCount}
-              description="Total forms deployed"
+              description="Total forms"
               icon={<DescriptionIcon />}
               color="secondary"
               trend={{ value: 8, label: "vs last month" }}
               loading={countsLoading}
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={6} sm={6} md={3}>
             <StatCard
-              title="Columns Defined"
+              title="Columns"
               value={counts.columnCount}
-              description="Custom form fields"
+              description="Form fields"
               icon={<ViewColumnIcon />}
               color="warning"
               trend={{ value: 15, label: "vs last month" }}
               loading={countsLoading}
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={6} sm={6} md={3}>
             <StatCard
               title="Submissions"
               value={counts.submissionCount}
-              description="Total form responses"
+              description="Form responses"
               icon={<SendIcon />}
               color="success"
               trend={{ value: 23, label: "vs last month" }}
@@ -861,46 +755,33 @@ export default function Dashboard() {
         </Grid>
 
         {/* Chart and Payment Details Section */}
-        <Grid container spacing={4}>
-          {/* Form Submission Chart */}
+        <Grid container spacing={isMobile ? 2 : 3}>
           <Grid item xs={12} lg={6}>
-            <Box sx={{ height: '600px' }}> {/* Fixed height container */}
+            <Box sx={{ height: isMobile ? '400px' : '500px' }}>
               <FormSubmissionChart />
             </Box>
           </Grid>
           
-          {/* Payment Details Table */}
           <Grid item xs={12} lg={6}>
-            <Box sx={{ height: '600px' }}> {/* Fixed height container */}
+            <Box sx={{ height: isMobile ? '400px' : '500px' }}>
               <PaymentDetailsTable />
             </Box>
           </Grid>
         </Grid>
-      </Container>
 
-      {/* Enhanced Footer */}
-      <Box
-        component="footer"
-        sx={{
-          p: 4,
-          bgcolor: alpha(theme.palette.background.paper, 0.8),
-          borderTop: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
-          mt: 6,
-          backdropFilter: 'blur(10px)',
-          position: 'relative',
-          zIndex: 1,
-        }}
-      >
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Typography variant="body2" color="textSecondary">
+        {/* Footer */}
+        <Box
+          sx={{
+            mt: isMobile ? 3 : 4,
+            pt: 2,
+            borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+          }}
+        >
+          <Typography variant="caption" color="textSecondary">
             © 2025 Akilam Technology. All rights reserved.
           </Typography>
-          <Box display="flex" gap={2}>
-            <Chip label="v2.1.0" size="small" variant="outlined" />
-            <Chip label="Production" size="small" color="success" />
-          </Box>
         </Box>
-      </Box>
+      </Container>
     </Box>
   );
 }

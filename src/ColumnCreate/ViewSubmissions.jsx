@@ -1093,6 +1093,15 @@ const ViewSubmissions = () => {
                     >
                       <TableHead>
                         <TableRow>
+                          <TableCell
+                            sx={{
+                              width: isMobile ? 40 : 60,
+                              minWidth: isMobile ? 40 : 60,
+                              textAlign: 'center'
+                            }}
+                          >
+                            S.No.
+                          </TableCell>
                           {displayedColumnsForTable.map((col) => (
                             <TableCell
                               key={col.ColId}
@@ -1127,7 +1136,7 @@ const ViewSubmissions = () => {
                       </TableHead>
                       <TableBody>
                         {submissions.length > 0 ? (
-                          submissions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((submission) => (
+                          submissions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((submission, index) => (
                             <TableRow
                               key={submission.SubmissionId}
                               hover
@@ -1137,6 +1146,7 @@ const ViewSubmissions = () => {
                                 }
                               }}
                             >
+                              <TableCell sx={{ textAlign: 'center' }}>{page * rowsPerPage + index + 1}</TableCell>
                               {displayedColumnsForTable.map((col) => (
                                 <TableCell key={col.ColId}>
                                   {renderCellContent(col, submission)}
@@ -1186,7 +1196,7 @@ const ViewSubmissions = () => {
                         ) : (
                           <TableRow>
                             <TableCell
-                              colSpan={(isMobile ? 3 : 7)}
+                              colSpan={(isMobile ? 4 : 8)}
                               align="center"
                               sx={{
                                 p: 4,

@@ -12,7 +12,9 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  IconButton,
 } from "@mui/material";
+import { Article as ArticleIcon } from "@mui/icons-material";
 import api from "../axiosConfig";
 import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -365,6 +367,19 @@ export default function MasterPage() {
                 disabled={loading}
               >
                 Soft Delete
+              </Button>
+            )}
+
+            {formId && ( // Only show if formId exists
+              <Button
+                variant="outlined"
+                color="info"
+                fullWidth
+                onClick={() => navigate(`/form/preview/${formId}?formNo=1`)} // Assuming formNo=1 for master form preview
+                disabled={loading}
+                startIcon={<ArticleIcon />} // Add the icon
+              >
+                View Form
               </Button>
             )}
 

@@ -1170,16 +1170,15 @@ const FormPage = ({ isPreview = false, setIsLoggedIn, setIsFormOnlyUser }) => {
                       Registration Ended
                     </Typography>
                   ) : (
-                    <Button
-                      variant="contained"
-                      color="info"
-                      onClick={handleDistribute}
-                      fullWidth={isMobile}
-                      size={isMobile ? "small" : "medium"}
-                    >
-                      Distribute
-                    </Button>
-                  )}
+                  <Button
+                    variant="contained"
+                    color="info"
+                    onClick={handleDistribute}
+                    fullWidth={isMobile}
+                    size={isMobile ? "small" : "medium"}
+                  >
+                    Distribute
+                  </Button>                  )}
                 </>
               ) : (
                 <>

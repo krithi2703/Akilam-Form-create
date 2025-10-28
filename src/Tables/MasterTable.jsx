@@ -17,6 +17,10 @@ import {
   useTheme,
 } from "@mui/material";
 import EditIcon from '@mui/icons-material/Edit';
+import NoteAddIcon from '@mui/icons-material/NoteAdd';
+import TableViewIcon from '@mui/icons-material/TableView';
+import PreviewIcon from '@mui/icons-material/Preview';
+import ViewListIcon from '@mui/icons-material/ViewList';
 import api from "../axiosConfig";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -56,9 +60,50 @@ export default function MasterTable() {
         return;
       }
 
-      const res = await api.get("/formmaster");
+      const masterPromise = api.get("/formmaster");
+      const detailsPromise = api.get("/formdetails/show");
 
-      setData(res.data);
+      const [masterResponse, detailsResponse] = await Promise.all([
+        masterPromise,
+        detailsPromise,
+      ]);
+
+      const detailsMap = new Map();
+      if (detailsResponse.data && Array.isArray(detailsResponse.data)) {
+        detailsResponse.data.forEach((formGroup) => {
+          const columns = Array.isArray(formGroup.columns)
+            ? formGroup.columns
+            : [];
+          const latestColumn = columns.reduce((latest, current) => {
+            return latest && latest.FormNo > current.FormNo ? latest : current;
+          }, null);
+
+          const formNo = latestColumn ? latestColumn.FormNo : null;
+
+          if (formNo) {
+            const existing = detailsMap.get(formGroup.FormId);
+            if (
+              !existing ||
+              new Date(formGroup.EndDate) > new Date(existing.EndDate)
+            ) {
+              detailsMap.set(formGroup.FormId, {
+                FormNo: formNo,
+                EndDate: formGroup.EndDate,
+              });
+            }
+          }
+        });
+      }
+
+      const combinedData = masterResponse.data.map((masterForm) => {
+        const details = detailsMap.get(masterForm.FormId);
+        return {
+          ...masterForm,
+          FormNo: details ? details.FormNo : 1,
+        };
+      });
+
+      setData(combinedData);
     } catch (err) {
       console.error(err);
       toast.error("Failed to fetch form records");
@@ -88,6 +133,11 @@ export default function MasterTable() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleViewSubmissions = async (formId, formNo) => {
+    if (!formId) return;
+    navigate(`/form/submissions/${formId}`, { state: { formNo: formNo } });
   };
 
   const handleCreateNewForm = () => {
@@ -143,22 +193,23 @@ export default function MasterTable() {
         >
           Form Master Table
         </Typography>
-                <Button
-                  variant="contained"
-                  onClick={handleCreateNewForm}
-                  size={isSmallScreen ? "small" : "medium"}
-                  fullWidth={isSmallScreen}
-                  sx={{
-                    maxWidth: { xs: '100%', sm: '200px' },
-                    minWidth: { xs: 'auto', sm: '140px' },
-                    backgroundColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
-                    '&:hover': {
-                      backgroundColor: theme.palette.mode === 'dark' ? '#0d47a1' : '#1565c0',
-                    }
-                  }}
-                >
-                  Create New Form
-                </Button>      </Box>
+        <Button
+          variant="contained"
+          onClick={handleCreateNewForm}
+          size={isSmallScreen ? "small" : "medium"}
+          fullWidth={isSmallScreen}
+          sx={{
+            maxWidth: { xs: '100%', sm: '200px' },
+            minWidth: { xs: 'auto', sm: '140px' },
+            backgroundColor: theme.palette.mode === 'dark' ? '#1a237e' : '#1976d2',
+            '&:hover': {
+              backgroundColor: theme.palette.mode === 'dark' ? '#0d47a1' : '#1565c0',
+            }
+          }}
+        >
+          Create New Form
+        </Button>
+      </Box>
 
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
@@ -179,7 +230,7 @@ export default function MasterTable() {
             maxWidth: '100%',
             overflowX: 'auto',
             '& .MuiTable-root': {
-              minWidth: isSmallScreen ? '600px' : 'auto'
+              minWidth: isSmallScreen ? '800px' : 'auto'
             }
           }}
         >
@@ -198,9 +249,10 @@ export default function MasterTable() {
                   sx={{ 
                     borderRight: "1px solid #ccc", 
                     color: "#fff",
-                    width: isSmallScreen ? "60px" : "80px",
-                    px: { xs: 1, sm: 2 },
-                    py: { xs: 1, sm: 2 }
+                    width: isSmallScreen ? "50px" : "80px",
+                    px: { xs: 0.5, sm: 2 },
+                    py: { xs: 1, sm: 2 },
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' }
                   }}
                 >
                   S.No.
@@ -210,8 +262,10 @@ export default function MasterTable() {
                     borderRight: "1px solid #ccc", 
                     color: "#fff", 
                     textAlign: 'center',
-                    px: { xs: 1, sm: 2 },
-                    py: { xs: 1, sm: 2 }
+                    px: { xs: 0.5, sm: 2 },
+                    py: { xs: 1, sm: 2 },
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                    width: isSmallScreen ? "120px" : "auto"
                   }}
                 >
                   Form Name
@@ -229,9 +283,10 @@ export default function MasterTable() {
                   sx={{ 
                     borderRight: "1px solid #ccc", 
                     color: "#fff",  
-                    width: isSmallScreen ? "120px" : "200px",
-                    px: { xs: 1, sm: 2 },
-                    py: { xs: 1, sm: 2 }
+                    width: isSmallScreen ? "90px" : "200px",
+                    px: { xs: 0.5, sm: 2 },
+                    py: { xs: 1, sm: 2 },
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' }
                   }}
                 >
                   Created Date
@@ -240,9 +295,10 @@ export default function MasterTable() {
                   sx={{ 
                     borderRight: "1px solid #ccc", 
                     color: "#fff", 
-                    width: isSmallScreen ? "120px" : "200px",
-                    px: { xs: 1, sm: 2 },
-                    py: { xs: 1, sm: 2 }
+                    width: isSmallScreen ? "90px" : "200px",
+                    px: { xs: 0.5, sm: 2 },
+                    py: { xs: 1, sm: 2 },
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' }
                   }}
                 >
                   End Date
@@ -252,9 +308,10 @@ export default function MasterTable() {
                     borderRight: "1px solid #ccc", 
                     color: "#fff",
                     textAlign: 'center', 
-                    width: isSmallScreen ? '30%' : '25%',
-                    px: { xs: 1, sm: 2 },
-                    py: { xs: 1, sm: 2 }
+                    width: isSmallScreen ? '150px' : '25%',
+                    px: { xs: 0.5, sm: 2 },
+                    py: { xs: 1, sm: 2 },
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' }
                   }}
                 >
                   Actions
@@ -268,9 +325,10 @@ export default function MasterTable() {
                   <TableCell 
                     sx={{ 
                       borderRight: "1px solid #ccc",
-                      px: { xs: 1, sm: 2 },
+                      px: { xs: 0.5, sm: 2 },
                       py: { xs: 1, sm: 2 },
-                      textAlign:'center'
+                      textAlign:'center',
+                      fontSize: { xs: '0.75rem', sm: '0.875rem' }
                     }}
                   >
                     {index + 1}
@@ -278,9 +336,10 @@ export default function MasterTable() {
                   <TableCell 
                     sx={{ 
                       borderRight: "1px solid #ccc",
-                      px: { xs: 1, sm: 2 },
+                      px: { xs: 0.5, sm: 2 },
                       py: { xs: 1, sm: 2 },
-                      wordBreak: 'break-word'
+                      wordBreak: 'break-word',
+                      fontSize: { xs: '0.75rem', sm: '0.875rem' }
                     }}
                   >
                     {renderCellContent(row.FormName)}
@@ -296,8 +355,9 @@ export default function MasterTable() {
                   <TableCell 
                     sx={{ 
                       borderRight: "1px solid #ccc",
-                      px: { xs: 1, sm: 2 },
-                      py: { xs: 1, sm: 2 }
+                      px: { xs: 0.5, sm: 2 },
+                      py: { xs: 1, sm: 2 },
+                      fontSize: { xs: '0.75rem', sm: '0.875rem' }
                     }}
                   >
                     {renderCellContent(row.CreatedDate)}
@@ -305,16 +365,18 @@ export default function MasterTable() {
                   <TableCell 
                     sx={{ 
                       borderRight: "1px solid #ccc",
-                      px: { xs: 1, sm: 2 },
-                      py: { xs: 1, sm: 2 }
+                      px: { xs: 0.5, sm: 2 },
+                      py: { xs: 1, sm: 2 },
+                      fontSize: { xs: '0.75rem', sm: '0.875rem' }
                     }}
                   >
                     {renderCellContent(row.Enddate)}
                   </TableCell>
                   <TableCell
                     sx={{
-                      px: { xs: 1, sm: 2 },
-                      py: { xs: 1, sm: 2 }
+                      px: { xs: 0.5, sm: 2 },
+                      py: { xs: 1, sm: 2 },
+                      borderRight: "1px solid #ccc"
                     }}
                   >
                     {row.Active === 0 ? (
@@ -323,7 +385,7 @@ export default function MasterTable() {
                         color="error" 
                         sx={{ 
                           fontWeight: 'bold',
-                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                          fontSize: { xs: '0.7rem', sm: '0.875rem' },
                           textAlign: 'center'
                         }}
                       >
@@ -333,49 +395,78 @@ export default function MasterTable() {
                       <Box 
                         sx={{ 
                           display: 'flex', 
-                          flexDirection: { xs: 'column', sm: 'row' }, 
-                          gap: 1, 
+                          flexDirection: 'row', 
+                          gap: { xs: 0.5, sm: 1 }, 
                           alignItems: 'center', 
                           justifyContent: 'center', 
-                          flexWrap: 'wrap'
+                          flexWrap: 'nowrap'
                         }}
                       >
-                        <Button
-                          variant="contained"
+                        <IconButton
                           color="info"
                           size={isSmallScreen ? "small" : "medium"}
                           onClick={() => navigate(`/masterpage?editId=${row.FormId}`)}
+                          sx={{ 
+                            padding: { xs: '4px', sm: '8px' },
+                            '& .MuiSvgIcon-root': {
+                              fontSize: { xs: '1rem', sm: '1.25rem' }
+                            }
+                          }}
                         >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="contained"
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton
                           color="primary"
                           size={isSmallScreen ? "small" : "medium"}
-                          sx={{ 
-                            flexShrink: 0,
-                            fontSize: { xs: '0.7rem', sm: '0.875rem' },
-                            minWidth: { xs: '80px', sm: 'auto' },
-                            px: { xs: 1, sm: 2 }
-                          }}
                           onClick={() => handleCreateNewVersion(row.FormId)}
+                          sx={{ 
+                            padding: { xs: '4px', sm: '8px' },
+                            '& .MuiSvgIcon-root': {
+                              fontSize: { xs: '1rem', sm: '1.25rem' }
+                            }
+                          }}
                         >
-                          {isSmallScreen ? 'Create' : 'Create Form'}
-                        </Button>
-                        <Button
-                          variant="contained"
+                          <NoteAddIcon />
+                        </IconButton>
+                        <IconButton
                           color="success"
                           size={isSmallScreen ? "small" : "medium"}
-                          sx={{ 
-                            flexShrink: 0,
-                            fontSize: { xs: '0.7rem', sm: '0.875rem' },
-                            minWidth: { xs: '80px', sm: 'auto' },
-                            px: { xs: 1, sm: 2 }
-                          }}
                           onClick={() => navigate("/create-column-table", { state: { formId: row.FormId, formName: row.FormName } })}
+                          sx={{ 
+                            padding: { xs: '4px', sm: '8px' },
+                            '& .MuiSvgIcon-root': {
+                              fontSize: { xs: '1rem', sm: '1.25rem' }
+                            }
+                          }}
                         >
-                          {isSmallScreen ? 'Table' : 'Form Table'}
-                        </Button>
+                          <TableViewIcon />
+                        </IconButton>
+                        <IconButton
+                          color="warning"
+                          size={isSmallScreen ? "small" : "medium"}
+                          onClick={() => navigate(`/form/preview/${row.FormId}`)}
+                          sx={{ 
+                            padding: { xs: '4px', sm: '8px' },
+                            '& .MuiSvgIcon-root': {
+                              fontSize: { xs: '1rem', sm: '1.25rem' }
+                            }
+                          }}
+                        >
+                          <PreviewIcon />
+                        </IconButton>
+                        <IconButton
+                          color="secondary"
+                          size={isSmallScreen ? "small" : "medium"}
+                          onClick={() => handleViewSubmissions(row.FormId, row.FormNo)}
+                          sx={{ 
+                            padding: { xs: '4px', sm: '8px' },
+                            '& .MuiSvgIcon-root': {
+                              fontSize: { xs: '1rem', sm: '1.25rem' }
+                            }
+                          }}
+                        >
+                          <ViewListIcon />
+                        </IconButton>
                       </Box>
                     )}
                   </TableCell>

@@ -61,6 +61,7 @@ export default function NavBar({
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const isMediumScreen = useMediaQuery(theme.breakpoints.down('md'));
+  const isLargeScreen = useMediaQuery(theme.breakpoints.down('lg'));
   const navigate = useNavigate();
   
   const [userName, setUserName] = useState('');
@@ -113,8 +114,6 @@ export default function NavBar({
     navigate("/dashboard");
   };
 
-
-
   return (
     <AppBar 
       position="fixed" 
@@ -153,9 +152,10 @@ export default function NavBar({
       }}
     >
       <Toolbar sx={{ 
-        minHeight: { xs: 68, sm: 76 },
+        minHeight: { xs: 56, sm: 64, md: 72 },
         position: 'relative',
-        zIndex: 1
+        zIndex: 1,
+        px: { xs: 1, sm: 2, md: 3 }
       }}>
         {/* Animated Background Elements */}
         <Box
@@ -164,10 +164,11 @@ export default function NavBar({
             top: -20,
             left: '10%',
             animation: `${floatAnimation} 6s ease-in-out infinite`,
-            opacity: 0.7
+            opacity: 0.7,
+            display: { xs: 'none', sm: 'block' }
           }}
         >
-          <Star sx={{ fontSize: 16, color: '#ffffff' }} />
+          <Star sx={{ fontSize: { xs: 12, sm: 14, md: 16 }, color: '#ffffff' }} />
         </Box>
         <Box
           sx={{
@@ -175,10 +176,11 @@ export default function NavBar({
             top: -10,
             right: '20%',
             animation: `${floatAnimation} 4s ease-in-out infinite 1s`,
-            opacity: 0.5
+            opacity: 0.5,
+            display: { xs: 'none', sm: 'block' }
           }}
         >
-          <Rocket sx={{ fontSize: 12, color: '#ffffff' }} />
+          <Rocket sx={{ fontSize: { xs: 10, sm: 12, md: 14 }, color: '#ffffff' }} />
         </Box>
 
         {/* Hamburger Menu for Mobile */}
@@ -189,13 +191,14 @@ export default function NavBar({
             edge="start"
             onClick={toggleSidebar}
             sx={{ 
-              mr: 2, 
+              ml: 1,
+              mr: { xs: 1, sm: 2 },
               display: { md: 'none' },
               background: 'linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0.2))',
               backdropFilter: 'blur(10px)',
               border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: 3,
-              p: 1.5,
+              borderRadius: 2,
+              p: { xs: 0.8, sm: 1 },
               color: '#ffffff',
               '&:hover': {
                 background: 'linear-gradient(45deg, rgba(255,255,255,0.2), rgba(255,255,255,0.3))',
@@ -206,7 +209,7 @@ export default function NavBar({
               }
             }}
           >
-            <MenuIcon />
+            <MenuIcon sx={{ fontSize: { xs: 20, sm: 24 } }} />
           </IconButton>
         </Fade>
 
@@ -228,8 +231,8 @@ export default function NavBar({
           >
             <Rocket 
               sx={{ 
-                mr: 1, 
-                fontSize: { xs: 28, sm: 32 },
+                mr: { xs: 0.5, sm: 1 },
+                fontSize: { xs: 22, sm: 26, md: 30, lg: 32 },
                 animation: `${floatAnimation} 3s ease-in-out infinite`,
                 color: '#ffffff'
               }} 
@@ -240,14 +243,14 @@ export default function NavBar({
               noWrap
               sx={{
                 fontWeight: 800,
-                fontSize: { xs: '1.2rem', sm: '1.4rem', md: '1.6rem' },
+                fontSize: { xs: '1rem', sm: '1.2rem', md: '1.4rem', lg: '1.6rem' },
                 background: 'linear-gradient(45deg, #ffffff 0%, #e3f2fd 50%, #ffffff 100%)',
                 backgroundClip: 'text',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 color: 'transparent',
                 textShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                letterSpacing: { xs: 0, sm: 1 },
+                letterSpacing: { xs: 0, sm: 0.5, md: 1 },
                 fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
                 position: 'relative',
                 '&::after': {
@@ -278,14 +281,14 @@ export default function NavBar({
               variant="body1"
               sx={{ 
                 fontWeight: '700', 
-                ml: { xs: 1, sm: 3, md: 5 },
-                fontSize: { xs: '0.9rem', sm: '1rem' },
+                ml: { xs: 1, sm: 2, md: 3, lg: 4 },
+                fontSize: { xs: '0.75rem', sm: '0.85rem', md: '0.9rem', lg: '1rem' },
                 display: { xs: 'none', sm: 'block' },
                 color: '#ffffff',
                 textShadow: '0 1px 3px rgba(0,0,0,0.8)',
                 position: 'relative',
-                padding: '6px 16px',
-                borderRadius: 4,
+                padding: { xs: '4px 12px', sm: '6px 16px' },
+                borderRadius: 3,
                 background: 'rgba(255,255,255,0.15)',
                 backdropFilter: 'blur(10px)',
                 border: '1px solid rgba(255,255,255,0.3)',
@@ -305,10 +308,8 @@ export default function NavBar({
           <Box sx={{ 
             display: 'flex', 
             alignItems: 'center', 
-            gap: { xs: 0.5, sm: 1.5, md: 2 } 
+            gap: { xs: 0.5, sm: 1, md: 1.5, lg: 2 } 
           }}>
-            {/* Notifications */}
-
             {/* Theme Toggle */}
             <IconButton 
               color="inherit" 
@@ -317,8 +318,8 @@ export default function NavBar({
                 background: 'linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0.2))',
                 backdropFilter: 'blur(10px)',
                 border: '1px solid rgba(255,255,255,0.2)',
-                borderRadius: 3,
-                p: 1.2,
+                borderRadius: 2,
+                p: { xs: 0.8, sm: 1 },
                 animation: `${pulseAnimation} 4s infinite`,
                 color: '#ffffff',
                 '&:hover': {
@@ -331,7 +332,10 @@ export default function NavBar({
                 }
               }}
             >
-              {darkMode ? <LightIcon /> : <DarkIcon />}
+              {darkMode ? 
+                <LightIcon sx={{ fontSize: { xs: 18, sm: 20, md: 22 } }} /> : 
+                <DarkIcon sx={{ fontSize: { xs: 18, sm: 20, md: 22 } }} />
+              }
             </IconButton>
 
             {/* User Profile Menu */}
@@ -341,8 +345,10 @@ export default function NavBar({
                   sx={{
                     bgcolor: 'rgba(255,255,255,0.3)',
                     fontWeight: 'bold',
-                    fontSize: '0.9rem',
-                    color: '#ffffff'
+                    fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.9rem' },
+                    color: '#ffffff',
+                    width: { xs: 28, sm: 32 },
+                    height: { xs: 28, sm: 32 }
                   }}
                 >
                   {userInitial}
@@ -356,9 +362,9 @@ export default function NavBar({
                 borderColor: 'rgba(255, 255, 255, 0.4)',
                 background: 'linear-gradient(45deg, rgba(255,255,255,0.15), rgba(255,255,255,0.25))',
                 backdropFilter: 'blur(10px)',
-                borderRadius: 4,
-                height: 42,
-                px: 1,
+                borderRadius: 3,
+                height: { xs: 36, sm: 40, md: 42 },
+                px: { xs: 0.5, sm: 1 },
                 fontWeight: 600,
                 '&:hover': {
                   background: 'linear-gradient(45deg, rgba(255,255,255,0.25), rgba(255,255,255,0.35))',
@@ -370,9 +376,10 @@ export default function NavBar({
                 },
                 '& .MuiChip-label': {
                   fontWeight: 600,
-                  fontSize: { xs: '0.8rem', sm: '0.9rem' },
+                  fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.9rem' },
                   color: '#ffffff',
-                  textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+                  textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                  px: { xs: 0.5, sm: 1 }
                 }
               }}
             />
@@ -381,20 +388,24 @@ export default function NavBar({
             <Button 
               color="inherit" 
               onClick={handleLogoutClick}
-              startIcon={<ExitToApp sx={{ color: '#ffffff' }} />}
+              startIcon={<ExitToApp sx={{ 
+                color: '#ffffff',
+                fontSize: { xs: 16, sm: 18, md: 20 }
+              }} />}
               sx={{
                 fontWeight: 700,
-                borderRadius: 4,
-                px: 3,
-                py: 1.2,
+                borderRadius: 3,
+                px: { xs: 1.5, sm: 2, md: 2.5 },
+                py: { xs: 0.8, sm: 1, md: 1.2 },
                 background: 'linear-gradient(45deg, rgba(255,255,255,0.15), rgba(255,255,255,0.25))',
                 backdropFilter: 'blur(10px)',
                 border: '1px solid rgba(255,255,255,0.3)',
                 textTransform: 'none',
-                fontSize: '0.9rem',
-                letterSpacing: 0.5,
+                fontSize: { xs: '0.7rem', sm: '0.8rem', md: '0.9rem' },
+                letterSpacing: { xs: 0, sm: 0.3, md: 0.5 },
                 color: '#ffffff',
                 textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                minWidth: 'auto',
                 '&:hover': {
                   background: 'linear-gradient(45deg, rgba(255,87,87,0.4), rgba(255,138,138,0.3))',
                   transform: 'translateY(-2px)',
@@ -402,10 +413,14 @@ export default function NavBar({
                   borderColor: 'rgba(255,255,255,0.5)',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   color: '#ffffff'
+                },
+                '& .MuiButton-startIcon': {
+                  marginRight: { xs: 0.5, sm: 1 },
+                  marginLeft: 0
                 }
               }}
             >
-              {isSmallScreen ? '' : 'Logout'}
+              {isMediumScreen ? '' : 'Logout'}
             </Button>
           </Box>
         </Fade>
@@ -417,9 +432,9 @@ export default function NavBar({
           onClose={handleMenuClose}
           PaperProps={{
             sx: {
-              mt: 2,
-              minWidth: 240,
-              borderRadius: 4,
+              mt: 1.5,
+              minWidth: { xs: 200, sm: 220, md: 240 },
+              borderRadius: 3,
               boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
               overflow: 'visible',
               background: darkMode 
@@ -432,7 +447,7 @@ export default function NavBar({
                 display: 'block',
                 position: 'absolute',
                 top: -8,
-                right: 20,
+                right: { xs: 16, sm: 20 },
                 width: 16,
                 height: 16,
                 background: darkMode 
@@ -448,12 +463,10 @@ export default function NavBar({
           transformOrigin={{ horizontal: 'right', vertical: 'top' }}
           anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
         >
-
-          
           <MenuItem 
             onClick={handleDashboardClick}
             sx={{ 
-              py: 2,
+              py: { xs: 1.5, sm: 2 },
               borderRadius: 2,
               mx: 1,
               color: darkMode ? '#ffffff' : 'text.primary',
@@ -469,22 +482,22 @@ export default function NavBar({
             <Dashboard sx={{ 
               mr: 2, 
               color: darkMode ? '#90caf9' : 'primary.main', 
-              fontSize: 24 
+              fontSize: { xs: 20, sm: 22, md: 24 } 
             }} />
-            <Typography fontWeight="600" color={darkMode ? '#ffffff' : 'text.primary'}>
+            <Typography fontWeight="600" color={darkMode ? '#ffffff' : 'text.primary'} fontSize={{ xs: '0.85rem', sm: '0.9rem', md: '1rem' }}>
               Dashboard
             </Typography>
           </MenuItem>
           
-          <Divider sx={{ my: 1 }} />
+          <Divider sx={{ my: { xs: 0.5, sm: 1 } }} />
           
           <MenuItem 
             onClick={handleLogoutClick}
             sx={{ 
-              py: 2,
+              py: { xs: 1.5, sm: 2 },
               borderRadius: 2,
               mx: 1,
-              mb: 1,
+              mb: { xs: 0.5, sm: 1 },
               color: 'error.main',
               '&:hover': {
                 background: 'linear-gradient(45deg, rgba(244,67,54,0.15), rgba(244,67,54,0.25))',
@@ -494,8 +507,8 @@ export default function NavBar({
               }
             }}
           >
-            <ExitToApp sx={{ mr: 2, fontSize: 24 }} />
-            <Typography fontWeight="600">Sign Out</Typography>
+            <ExitToApp sx={{ mr: 2, fontSize: { xs: 20, sm: 22, md: 24 } }} />
+            <Typography fontWeight="600" fontSize={{ xs: '0.85rem', sm: '0.9rem', md: '1rem' }}>Sign Out</Typography>
           </MenuItem>
         </Menu>
       </Toolbar>
@@ -507,7 +520,7 @@ export default function NavBar({
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         sx={{
-          mt: 9,
+          mt: { xs: 7, sm: 8, md: 9 },
           '& .MuiSnackbar-root': {
             top: '90px !important'
           }
@@ -517,8 +530,8 @@ export default function NavBar({
           onClose={handleCloseSnackbar} 
           severity="success" 
           sx={{ 
-            minWidth: 300,
-            borderRadius: 4,
+            minWidth: { xs: 280, sm: 300, md: 320 },
+            borderRadius: 3,
             boxShadow: '0 16px 48px rgba(0,0,0,0.3)',
             fontWeight: 700,
             background: 'linear-gradient(135deg, rgba(76,175,80,0.95), rgba(56,142,60,0.9))',
@@ -526,8 +539,8 @@ export default function NavBar({
             color: '#ffffff',
             border: '1px solid rgba(255,255,255,0.3)',
             '& .MuiAlert-message': {
-              fontSize: '1rem',
-              py: 1,
+              fontSize: { xs: '0.85rem', sm: '0.9rem', md: '1rem' },
+              py: { xs: 0.5, sm: 1 },
               color: '#ffffff'
             },
             '& .MuiAlert-icon': {
