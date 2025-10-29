@@ -5,6 +5,7 @@ const api = axios.create({
   //baseURL: 'http://136.185.14.8:8500/api',
   //baseURL: 'http://localhost:5000/api', // Set your API base URL
   baseURL:'http://103.185.75.196:8500/api',
+  //baseURL:'http://103.185.75.196:8500/api',
   headers: {
     'Content-Type': 'application/json',
   },
